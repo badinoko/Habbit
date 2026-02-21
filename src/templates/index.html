@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Главная - HabitFlow{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="welcome-banner">
+        <h1>Добро пожаловать в HabitFlow!</h1>
+        <p>Управляй своими задачами и формируй полезные привычки</p>
+    </div>
+
+    <div class="content-grid">
+        <!-- Ближайшие задачи -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-clock"></i>Задачи</h2>
+                <a href="/tasks" class="btn-link">Все задачи</a>
+            </div>
+            <div class="task-list">
+                {% if tasks %}
+                    {% for task in tasks %}
+                    <div class="task-item priority-{{ task.priority }}">
+                        <div class="task-checkbox">
+                            <input type="checkbox"
+                                    id="task-{{ task.id }}"
+                                    data-task-id="{{ task.id }}"
+                                   {% if task.completed %}checked{% endif %}>
+                            <label for="task-{{ task.id }}"></label>
+                        </div>
+                        <div class="task-content">
+                            <span class="task-title {% if task.completed %}completed{% endif %}">
+                                {{ task.name }}
+                            </span>
+                            {% if task.description %}
+                            <span class="task-description">
+                                {{ task.description[:80] }}{% if task.description|length > 80 %}...{% endif %}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="task-actions">
+                            {% if task.theme_name %}
+                            <span class="task-tag" style="background-color: {{ task.theme_color }}; color: #fff;">
+                                {{ task.theme_name }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <p>Нет активных задач</p>
+                        <a href="/tasks/new" class="new-task">
+                            <i class="fas fa-plus"></i> Создать задачу
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Трекер привычек -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-sync-alt"></i>Привычки</h2>
+                <a href="/soon" class="btn-link">Все привычки</a>
+            </div>
+            <div class="habits-grid">
+                <div class="habit-card">
+                    <div class="habit-header">
+                        <h3>Утренняя зарядка</h3>
+                        <span class="habit-streak">7 дней</span>
+                    </div>
+                    <div class="habit-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 85%"></div>
+                        </div>
+                        <span>85%</span>
+                    </div>
+                    <div class="habit-actions">
+                        <button class="btn-habit-complete">
+                            <i class="fas fa-check"></i> Отметить
+                        </button>
+                    </div>
+                </div>
+
+                <div class="habit-card">
+                    <div class="habit-header">
+                        <h3>Чтение книги</h3>
+                        <span class="habit-streak">14 дней</span>
+                    </div>
+                    <div class="habit-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 92%"></div>
+                        </div>
+                        <span>92%</span>
+                    </div>
+                    <div class="habit-actions">
+                        <button class="btn-habit-complete">
+                            <i class="fas fa-check"></i> Отметить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Быстрые действия -->
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-plus"></i> Быстрые действия</h2>
+            </div>
+            <div class="quick-actions">
+                <button class="btn-primary" onclick="window.location.href='/tasks/new'">
+                    <i class="fas fa-plus"></i> Новая задача
+                </button>
+                <button class="btn-secondary" onclick="window.location.href='/soon'">
+                    <i class="fas fa-sync-alt"></i> Новая привычка
+                </button>
+                <button class="btn-outline" onclick="window.location.href='/soon'">
+                    <i class="fas fa-chart-pie"></i> Статистика
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

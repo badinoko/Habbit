@@ -1,0 +1,66 @@
+{% extends "base_form.html" %}
+
+{% block title %}Обновление темы - HabitFlow{% endblock %}
+
+{% block form_icon %}<i class="fas fa-tag"></i> {% endblock %}
+
+{% block form_heading %}Обновление темы {{ theme_name }}{% endblock %}
+
+{% block form_description %}Введите новое название темы для организации ваших задач и привычек{% endblock %}
+
+{% block form_method %}put{% endblock %}
+
+{% block name_content %} {{ theme_name }} {% endblock %}
+
+{% block basic_fields %}
+<div class="form-group">
+    <label for="name">
+        <i class="fas fa-tag"></i>
+        Название темы *
+    </label>
+    <input type="text" id="name" name="name" value="{{ theme_name }}"
+           placeholder="Например: Работа, Здоровье, Хобби" class="form-control">
+    <div class="form-hint">Укажите категорию для группировки задач и привычек</div>
+</div>
+{% endblock %}
+
+{% block specific_fields %}
+<div class="form-section">
+    <div class="section-header">
+        <i class="fas fa-paint-brush"></i>
+        <h3>Внешний вид</h3>
+    </div>
+
+    <div class="form-group">
+        <label>
+            <i class="fas fa-fill-drip"></i>
+            Цвет темы
+        </label>
+        <div class="color-picker-container">
+            <div class="color-picker">
+                {% for color in colors %}
+                <div class="color-option">
+                    <input type="radio" id="color-{{ loop.index }}" name="color"
+                            value="{{ color }}" {% if loop.first %}checked{% endif %}>
+                    <label for="color-{{ loop.index }}" style="background-color: {{ color }};">
+                    </label>
+                </div>
+                {% endfor %}
+                <div class="color-option">
+                    <input type="radio" id="color-random" name="color" value="randoms">
+                    <label for="color-random" class="random-color-label">
+                        <i class="fas fa-dice"></i>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="{{ url_for('static', path='/js/update.js') }}"></script>
+{% endblock %}
+
+{% block form_action %}/themes/{{theme_name}}{% endblock %}
+
+{% block cancel_url %}/themes{% endblock %}
+
+{% block submit_text %}Обновить тему{% endblock %}

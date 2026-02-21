@@ -1,0 +1,135 @@
+{% extends "base_list.html" %}
+
+{% block page_icon %}<i class="fas fa-tasks"></i>{% endblock %}
+{% block page_title %}Задачи{% endblock %}
+{% block create_url %}/tasks/new{% endblock %}
+{% block create_button_text %}Добавить задачу{% endblock %}
+
+{% block filters %}
+<div class="filters-container">
+    <div class="filter-group">
+        <label for="status-filter"><i class="fas fa-check-circle"></i> Статус:</label>
+        <select id="status-filter" class="form-control">
+            <option value="active">Активные</option>
+            <option value="completed">Выполненные</option>
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <label for="sort-tasks"><i class="fas fa-sort"></i> Сортировка:</label>
+        <select id="sort-tasks" class="form-control">
+            <option value="created">По дате создания</option>
+            <option value="name">По названию</option>
+            <option value="priority">По приоритету</option>
+        </select>
+    </div>
+
+    <div class="filter-group">
+        <label><i class="fas fa-sort-amount-down"></i> Порядок:</label>
+        <div class="sort-order-buttons">
+            <button id="sort-asc" class="btn-order" data-order="asc" title="По возрастанию">
+                <i class="fas fa-sort-amount-up"></i>
+                <span>Возрастание</span>
+            </button>
+            <button id="sort-desc" class="btn-order active" data-order="desc" title="По убыванию">
+                <i class="fas fa-sort-amount-down"></i>
+                <span>Убывание</span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block list_content %}
+<div class="tasks-list">
+    {% if tasks %}
+        {% for task in tasks %}
+        <div class="task-item"
+             data-task-id="{{ task.id }}"
+             data-created="{{ task.created_at|default('')|string }}"
+             data-updated="{{ task.updated_at|default('')|string }}"
+             data-completed="{{ task.completed_at }}"
+             data-priority="{{ task.priority }}">
+            <div class="task-main">
+                <div class="task-checkbox">
+                    <input type="checkbox"
+                           {% if task.completed %}checked{% endif %}
+                           data-task-id="{{ task.id }}">
+                </div>
+
+                <div class="task-content">
+                    <div class="task-header">
+                        <h3 class="task-title {% if task.completed %}completed{% endif %}">
+                            {{ task.name }}
+                        </h3>
+                        <div class="task-meta">
+                            {% if task.created_at %}
+                            <span class="task-created-date" title="Создано: {{ task.created_at.strftime('%d.%m.%Y %H:%M') if task.created_at else '' }}">
+                                <i class="far fa-clock"></i>
+                                {{ task.created_at.strftime('%d.%m.%Y') if task.created_at else '' }}
+                            </span>
+                            {% endif %}
+
+                            {% if task.theme_name %}
+                            <span class="task-theme" style="background-color: {{ task.theme_color }}20; color: {{ task.theme_color }}; border: 1px solid {{ task.theme_color }}40;">
+                                <i class="fas fa-tag"></i>{{ task.theme_name }}
+                            </span>
+                            {% endif %}
+
+                            {% if task.priority == 'high' %}
+                            <span class="task-priority high" data-priority-value="3">
+                                <i class="fas fa-exclamation-circle"></i>Высокий
+                            </span>
+                            {% elif task.priority == 'medium' %}
+                            <span class="task-priority medium" data-priority-value="2">
+                                <i class="fas fa-info-circle"></i>Средний
+                            </span>
+                            {% elif task.priority == 'low' %}
+                            <span class="task-priority low" data-priority-value="1">
+                                <i class="fas fa-info-circle"></i>Низкий
+                            </span>
+                            {% endif %}
+
+                            {% if task.due_date %}
+                            <span class="task-due-date {% if task.is_overdue %}overdue{% endif %}">
+                                <i class="fas fa-calendar"></i>{{ task.due_date }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if task.description %}
+                    <p class="task-description">{{ task.description }}</p>
+                    {% endif %}
+
+                </div>
+            </div>
+
+            <div class="task-actions">
+                <a href="/tasks/{{ task.id }}"
+                    class="btn btn-outline btn-sm btn-task-edit"
+                    title="Редактировать">
+                        <i class="fas fa-edit"></i>
+                </a>
+
+                <button class="btn btn-outline btn-sm btn-task-delete"
+                        onclick="deleteTask('{{ task.id }}')"
+                        title="Удалить">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-tasks"></i>
+            <h3>Задачи не найдены</h3>
+            <p>Создайте свою первую задачу</p>
+            <a href="/tasks/new" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Добавить задачу
+            </a>
+        </div>
+    {% endif %}
+<script src="{{ url_for('static', path='/js/list_tasks.js') }}"></script>
+</div>
+{% endblock %}

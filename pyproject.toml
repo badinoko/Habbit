@@ -1,0 +1,136 @@
+[project]
+name = "habitflow"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Amir",email = "zamnatov2004@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi (>=0.118.0,<0.119.0)",
+    "sqlalchemy (>=2.0.43,<3.0.0)",
+    "alembic (>=1.16.5,<2.0.0)",
+    "pydantic (>=2.12.5,<3.0.0)",
+    "psycopg2-binary (>=2.9.10,<3.0.0)",
+    "asyncpg (>=0.30.0,<0.31.0)",
+    "uvicorn (>=0.37.0,<0.38.0)",
+    "pytest (>=8.4.2,<9.0.0)",
+    "httpx (>=0.28.1,<0.29.0)",
+    "pydantic-settings (>=2.11.0,<3.0.0)",
+    "jinja2 (>=3.1.6,<4.0.0)",
+    "orjson (>=3.11.3,<4.0.0)",
+    "redis (>=7.2.0,<8.0.0)",
+    "python-multipart (>=0.0.20,<0.0.21)",
+    "docker (>=7.1.0,<8.0.0)",
+    "itsdangerous (>=2.2.0,<3.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.dev.dependencies]
+pytest-asyncio = "^1.3.0"
+httpx = "^0.28.1"
+ruff = "^0.15.1"
+mypy = "^1.19.1"
+pre-commit = "^4.5.1"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = [
+    "asyncio: mark test as asyncio",
+]
+
+[tool.ruff]
+# Целевая версия Python
+target-version = "py312"
+# Максимальная длина строки (как у black)
+line-length = 88
+
+# Какие файлы игнорировать
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "migrations",
+    "alembic",
+]
+
+[tool.ruff.lint]
+# Какие правила включить (как в FastAPI [citation:6])
+select = [
+    "E",   # pycodestyle ошибки
+    "W",   # pycodestyle предупреждения
+    "F",   # pyflakes
+    "I",   # isort (сортировка импортов)
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade (современный синтаксис)
+    "ANN", # аннотации типов
+    "C90", # сложность кода (mccabe)
+    "SIM", # упрощение кода
+    "PERF", # производительность
+    "RUF", # специфичные для Ruff правила
+]
+
+# Правила, которые игнорируем
+ignore = [
+    "E501",  # длина строки (Ruff сам форматирует)
+    "B008",  # FastAPI использует вызовы в аргументах по умолчанию (Depends())
+    "ANN204", # отсутствие возвращаемого типа в магических методах
+    "RUF001",
+    "RUF002",
+    "RUF003"
+]
+
+# Игнорируем отсутствие аннотаций типов в тестах
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "ANN001",   # missing type annotation for function argument
+    "ANN201",   # missing return type annotation for public function
+    "ANN202",   # missing return type annotation for private function (если есть)
+]
+"src/routers/*.py" = ["ANN201"]
+"src/main.py" = ["ANN201"]
+"src/redis.py" = [
+    "ANN401",  # allow Any in this file
+]
+
+[tool.ruff.lint.isort]
+# Настройка сортировки импортов
+combine-as-imports = true
+known-first-party = ["src"]  # ваши локальные модули
+
+[tool.ruff.format]
+# Настройки форматирования
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.mypy]
+strict = true
+plugins = [
+    "pydantic.mypy",
+    "sqlalchemy.ext.mypy.plugin"
+]
+explicit_package_bases = true
+exclude = [
+    'src/repositories/base\.py$',  # экранируем точку
+]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_missing_imports = true
+disable_error_code = ["no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = "src.routers.*"
+disable_error_code = ["no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = "src.main"
+disable_error_code = ["no-untyped-def"]

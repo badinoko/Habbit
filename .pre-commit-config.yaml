@@ -1,0 +1,43 @@
+repos:
+  # Базовые проверки файлов
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace  # убирает лишние пробелы
+      - id: end-of-file-fixer     # добавляет новую строку в конце
+      - id: check-yaml             # проверяет YAML синтаксис
+      - id: check-toml             # проверяет TOML синтаксис
+      - id: check-added-large-files # проверяет большие файлы
+
+  # Ruff - линтинг и форматирование
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.2  # актуальная версия на момент установки
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]  # автоисправление
+      - id: ruff-format
+
+  # Mypy - проверка типов
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.19.1  # укажите версию, совместимую с вашим проектом (например, 1.15.0)
+    hooks:
+      - id: mypy
+        exclude: ^tests/
+        additional_dependencies:
+          # Основные библиотеки проекта
+          - pydantic
+          - pydantic-settings        # для BaseSettings
+          - sqlalchemy
+          - alembic
+          - fastapi
+          - redis
+          - pytest
+          - httpx
+          - docker
+          - psycopg2-binary           # или psycopg2
+          # Стабы типов для библиотек без встроенных типов
+          - types-docker
+          - types-psycopg2
+          - types-requests
+          - types-python-dateutil
+        args: [--config-file=pyproject.toml]

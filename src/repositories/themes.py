@@ -1,0 +1,58 @@
+from uuid import UUID
+
+from sqlalchemy import func, select
+
+from src.database.models import Task, Theme
+from src.schemas import ThemeCreate, ThemeInDB, ThemeUpdate
+
+from .base import GenericSqlRepository
+
+
+class ThemeRepository(
+    GenericSqlRepository[ThemeCreate, ThemeInDB, ThemeUpdate, Theme, UUID]
+):
+    """
+    Репозиторий для работы с темами
+    Наследуется от GenericSqlRepository без кэширования
+    """
+
+    _model = Theme
+    _create_schema = ThemeCreate
+    _read_schema = ThemeInDB
+    _update_schema = ThemeUpdate
+
+    async def get_by_name(self, name: str) -> ThemeInDB | None:
+        """Получить тему по имени"""
+        stmt = self._construct_list_stmt(name=name)
+        result = await self._session.execute(stmt)
+        theme = result.scalars().first()
+        return self._convert_model_to_read(theme) if theme else None
+
+    async def get_by_color(self, color: str) -> ThemeInDB | None:
+        """Получить тему по цвету"""
+        stmt = self._construct_list_stmt(color=color)
+        result = await self._session.execute(stmt)
+        theme = result.scalars().first()
+        return self._convert_model_to_read(theme) if theme else None
+
+    async def get_existing_colors_list(
+        self, skip: int = 0, limit: int = 100, **filters: object
+    ) -> set[str]:
+        """Получить список существующих цветов"""
+        themes = await self.list(skip=skip, limit=limit, **filters)
+        return {theme.color for theme in themes}
+
+    async def list_with_task_counts(
+        self, skip: int = 0, limit: int = 100
+    ) -> list[tuple[ThemeInDB, int]]:
+        query = (
+            select(Theme, func.count(Task.id).label("task_count"))
+            .outerjoin(Task, Theme.id == Task.theme_id)
+            .group_by(Theme.id)
+            .offset(skip)
+            .limit(limit)
+        )
+        result = await self._session.execute(query)
+        rows = result.unique().all()
+        # возвращаем список кортежей (Theme, task_count)
+        return [(row[0], row[1]) for row in rows]

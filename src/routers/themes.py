@@ -1,0 +1,171 @@
+from typing import Annotated, Any
+
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+
+from src.dependencies import get_theme_service
+from src.schemas import ThemeCreate, ThemeUpdate
+from src.services import ThemeService
+from src.services.themes import THEME_COLORS
+from src.utils import get_template_context, templates
+
+router = APIRouter(prefix="/themes", tags=["Themes"])
+
+
+@router.get(
+    "/",
+    status_code=status.HTTP_200_OK,
+    response_class=HTMLResponse,
+    summary="Returns all themes list page",
+)
+async def get_themes(
+    request: Request,
+    context: dict[str, Any] = Depends(get_template_context),
+    themes_service: ThemeService = Depends(get_theme_service),
+):
+    context.update(
+        {
+            "current_page": "None",
+            "themes_list": await themes_service.list_themes_with_task_counts(),
+        }
+    )
+    return templates.TemplateResponse(request, "themes/themes_list.html", context)
+
+
+@router.get(
+    "/new",
+    status_code=status.HTTP_200_OK,
+    response_class=HTMLResponse,
+    summary="Returns new theme creation page",
+)
+async def create_theme_page(
+    request: Request,
+    context: dict[str, Any] = Depends(get_template_context),
+    service: ThemeService = Depends(get_theme_service),
+):
+    existing_colors = await service.get_existing_colors()
+    context.update({"current_page": "themes", "colors": THEME_COLORS - existing_colors})
+    return templates.TemplateResponse(request, "themes/themes_form.html", context)
+
+
+@router.post(
+    "/",
+    status_code=status.HTTP_303_SEE_OTHER,
+    response_class=RedirectResponse,
+    summary="Creates new theme and redirects to themes list page",
+)
+async def create_theme(
+    request: Request,
+    theme_data: Annotated[ThemeCreate, Form()],
+    context: dict[str, Any] = Depends(get_template_context),
+    service: ThemeService = Depends(get_theme_service),
+):
+    try:
+        res = await service.create_theme(theme_data)
+        if not res:
+            context.update(
+                {
+                    "message_type": "error",
+                    "title": "Ошибка",
+                    "message": "Тема не создана",
+                }
+            )
+            return templates.TemplateResponse(
+                request,
+                "message.html",
+                context,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        return RedirectResponse(url="/themes", status_code=status.HTTP_303_SEE_OTHER)
+    except ValueError as e:
+        context.update(
+            {
+                "request": request,
+                "message_type": "error",
+                "title": "Ошибка",
+                "message": str(e),
+            }
+        )
+        return templates.TemplateResponse(
+            request, "message.html", context, status_code=status.HTTP_400_BAD_REQUEST
+        )
+    except RuntimeError as e:
+        context.update({"message_type": "error", "title": "Ошибка", "message": str(e)})
+        return templates.TemplateResponse(
+            request,
+            "message.html",
+            context,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@router.get(
+    "/{name}",
+    status_code=status.HTTP_200_OK,
+    response_class=HTMLResponse,
+    summary="Gets theme by name for update",
+    responses={
+        404: {"description": "Theme not found"},
+    },
+)
+async def get_theme(
+    name: str,
+    request: Request,
+    context: dict[str, Any] = Depends(get_template_context),
+    service: ThemeService = Depends(get_theme_service),
+):
+    theme = await service.get_theme_by_name(name)
+    if not theme:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Theme with name {name} not found",
+        )
+    existing_colors = await service.get_existing_colors()
+    colors = list(THEME_COLORS - existing_colors)
+    colors.insert(0, theme.color)
+    context.update({"theme_name": name, "colors": colors})
+    return templates.TemplateResponse(request, "themes/themes_update.html", context)
+
+
+@router.put(
+    "/{name}",
+    status_code=status.HTTP_200_OK,
+    response_class=JSONResponse,
+    summary="Updates theme",
+    responses={
+        404: {"description": "Theme not found"},
+    },
+)
+async def update_theme(
+    name: str,
+    theme_data: ThemeUpdate,
+    service: ThemeService = Depends(get_theme_service),
+):
+    theme = await service.get_theme_by_name(name)
+    if not theme:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Theme with name {name} not found",
+        )
+    res = await service.update_theme(theme, theme_data)
+    if not res:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
+        )
+    return {
+        "status": "success",
+        "theme": {"id": res.id, "name": res.name, "color": res.color},
+    }
+
+
+@router.delete(
+    "/{name}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    description="Deletes theme",
+)
+async def delete_theme(
+    name: str,
+    service: ThemeService = Depends(get_theme_service),
+):
+    await service.delete_theme(name)
