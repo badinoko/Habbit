@@ -43,7 +43,7 @@ HabitFlow — веб-приложение для управления задач
 
 ## Структура проекта
 
-
+```
 .
 ├── alembic.ini                # Конфигурация Alembic
 ├── docker-compose.yml         # Запуск всех сервисов (app, postgres, redis)
@@ -75,7 +75,7 @@ HabitFlow — веб-приложение для управления задач
 │   ├── conftest.py            # Фикстуры pytest
 │   └── integration/           # Интеграционные тесты
 └── README.md                  # Этот файл
-
+```
 
 ## Требования
 
