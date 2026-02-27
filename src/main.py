@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
+from src.config import settings
 from src.routers.tasks import router as tasks_router
 from src.routers.themes import router as themes_router
 from src.schemas.tasks import TaskResponse
@@ -18,7 +19,14 @@ app.mount("/static", StaticFiles(directory="src/static"), name="static")
 app.include_router(themes_router)
 app.include_router(tasks_router)
 
-app.add_middleware(SessionMiddleware, secret_key="your-secret-key")
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.session_secret_key,
+    session_cookie=settings.SESSION_COOKIE_NAME,
+    max_age=settings.SESSION_MAX_AGE,
+    same_site=settings.SESSION_SAME_SITE,
+    https_only=settings.SESSION_HTTPS_ONLY,
+)
 
 
 @app.get("/", response_class=HTMLResponse)

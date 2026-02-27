@@ -145,7 +145,7 @@ class TaskService:
             if ID_TO_PRIORITY.get(task.priority_id) in by_priority:
                 by_priority[ID_TO_PRIORITY[task.priority_id]] += 1
 
-            theme_name = str(task.theme_id) or "No theme"
+            theme_name = str(task.theme_id) if task.theme_id else "No theme"
             if theme_name not in by_theme:
                 by_theme[theme_name] = 0
             by_theme[theme_name] += 1

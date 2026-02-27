@@ -2,15 +2,10 @@ import itertools
 from uuid import UUID, uuid4
 
 import pytest
-from fastapi.testclient import TestClient
 
-from src.main import app
 from src.repositories import TaskRepository, ThemeRepository
 from src.schemas import TaskCreateAPI, ThemeCreate
 from src.services import TaskService
-
-client = TestClient(app)
-
 
 NAME = "Читать книги"
 THEME_NAME = "Хобби"
@@ -131,7 +126,6 @@ async def test_update_task(client, session):
     result = all_subsets_dict(fields_that_can_be_updated)
 
     for data in result:
-        print(data)
         response = await update_task(client, id, data)
         assert response.status_code == 200
 

@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class RedisAdapter:
     def __init__(self) -> None:
-        self.dsn = settings.redis.dsn  # type: ignore # TODO добавить в конфиг
+        self.dsn = settings.redis_dsn
         self._redis: Redis | None = None  # указываем тип
         self._retry_attempts = 3
         self._retry_delay = 1

@@ -36,7 +36,7 @@ HabitFlow — веб-приложение для управления задач
 ## Стек технологий
 
 - **Backend**: Python 3.12, FastAPI, SQLAlchemy 2.0, Alembic
-- **База данных**: PostgreSQL (asyncpg), Redis (для сессий/кэша)
+- **База данных**: PostgreSQL (asyncpg), Redis (опционально; адаптер есть, но по умолчанию не используется)
 - **Фронтенд**: Jinja2, HTML, CSS, JavaScript (минимальный)
 - **Инфраструктура**: Docker, Docker Compose
 - **Инструменты**: Poetry, pre-commit, Ruff, mypy, pytest
@@ -46,7 +46,7 @@ HabitFlow — веб-приложение для управления задач
 ```
 .
 ├── alembic.ini                # Конфигурация Alembic
-├── docker-compose.yml         # Запуск всех сервисов (app, postgres, redis)
+├── docker-compose.yml         # Запуск сервисов app + postgres
 ├── Dockerfile                 # Сборка образа приложения
 ├── Makefile                   # Удобные команды для разработки
 ├── pyproject.toml             # Зависимости и настройки инструментов
@@ -104,12 +104,13 @@ cp .env.example .env.docker
 
 Основные переменные:
 - `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` — данные для PostgreSQL.
-- `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` — для Redis (в разработке).
+- `SECRET_KEY` — секрет для подписи сессий (обязателен для стабильных сессий).
+- `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` — для Redis (опционально; не запускается в compose по умолчанию).
 - `APP_PORT` — порт приложения внутри контейнера.
 
 ### 3. Запуск через Docker (рекомендуется)
 
-Соберите и запустите контейнеры:
+Соберите и запустите контейнеры (по умолчанию `app` + `postgres`):
 
 ```bash
 make restart
@@ -219,5 +220,10 @@ alembic upgrade head
 | REDIS_PASSWORD       | Пароль Redis                      | (пусто)               |
 | REDIS_DB             | Номер базы Redis                  | 0                     |
 | APP_PORT             | Порт приложения в контейнере      | 8000                  |
+| SECRET_KEY           | Секрет подписи cookie-сессий      | (сгенерируйте сами)   |
+| SESSION_COOKIE_NAME  | Имя cookie сессии                 | habitflow_session     |
+| SESSION_MAX_AGE      | Время жизни сессии (сек.)         | 1209600               |
+| SESSION_SAME_SITE    | SameSite для cookie               | lax                   |
+| SESSION_HTTPS_ONLY   | Secure-флаг cookie (HTTPS only)   | False                 |
 | API_KEY              | Ключ API (опционально)            | (пусто)               |
 | DEBUG                | Режим отладки (True/False)        | True                  |

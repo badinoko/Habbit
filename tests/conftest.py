@@ -15,6 +15,25 @@ from pydantic_settings import BaseSettings
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
+# Defaults for app settings so importing src.main during tests does not depend on local .env
+os.environ.setdefault("POSTGRES_HOST", "localhost")
+os.environ.setdefault("POSTGRES_PORT", "5432")
+os.environ.setdefault("POSTGRES_USER", "postgres")
+os.environ.setdefault("POSTGRES_PASSWORD", "postgres")
+os.environ.setdefault("POSTGRES_DB", "postgres")
+os.environ.setdefault("REDIS_HOST", "localhost")
+os.environ.setdefault("REDIS_PORT", "6379")
+os.environ.setdefault("REDIS_PASSWORD", "")
+os.environ.setdefault("REDIS_DB", "0")
+os.environ.setdefault("APP_PORT", "8000")
+os.environ.setdefault("SECRET_KEY", "test-secret-key")
+os.environ.setdefault("SESSION_COOKIE_NAME", "habitflow_session")
+os.environ.setdefault("SESSION_MAX_AGE", "1209600")
+os.environ.setdefault("SESSION_SAME_SITE", "lax")
+os.environ.setdefault("SESSION_HTTPS_ONLY", "false")
+os.environ.setdefault("API_KEY", "test-api-key")
+os.environ.setdefault("DEBUG", "true")
+
 
 class DatabaseConfig(BaseSettings):
     user: str = Field(alias="DATABASE_USERNAME")
