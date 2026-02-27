@@ -70,7 +70,12 @@ async def task_page(
     task = await service.get_task(task_id)
     if not task:
         context = error_context_updater(context, "Задача не найдена")
-        return templates.TemplateResponse(request, "message.html", context)
+        return templates.TemplateResponse(
+            request,
+            "message.html",
+            context,
+            status_code=status.HTTP_404_NOT_FOUND,
+        )
     priority = await service.get_priority(task.priority_id)  # Getting priority NAME
     context.update(
         {

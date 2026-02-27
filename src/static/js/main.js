@@ -13,12 +13,16 @@ document.addEventListener('DOMContentLoaded', function() {
     addNotificationStyles();
 });
 
+function isTaskCompletedValue(completedAt) {
+    return Boolean(completedAt && completedAt !== 'None' && completedAt !== '' && completedAt !== 'null');
+}
+
 // Функция для инициализации состояния выполненных задач при загрузке страницы
 function initializeTaskStates() {
     const taskItems = document.querySelectorAll('.task-item');
     taskItems.forEach(taskItem => {
         const completedAt = taskItem.dataset.completed;
-        const isCompleted = completedAt && completedAt !== 'None' && completedAt !== '' && completedAt !== 'null';
+        const isCompleted = isTaskCompletedValue(completedAt);
 
         if (isCompleted) {
             // Задача выполнена – оставляем data-completed как есть
@@ -41,6 +45,11 @@ function initializeEventHandlers() {
     // Обработка чекбоксов задач
     const taskCheckboxes = document.querySelectorAll('.task-checkbox input[type="checkbox"]');
     taskCheckboxes.forEach(checkbox => {
+        if (checkbox.dataset.boundToggle === '1') {
+            return;
+        }
+        checkbox.dataset.boundToggle = '1';
+
         checkbox.addEventListener('change', function() {
             const taskItem = this.closest('.task-item');
             const taskId = this.dataset.taskId || taskItem.dataset.taskId;
@@ -50,24 +59,46 @@ function initializeEventHandlers() {
     });
 
     // Обработка кнопок привычек
-    const habitButtons = document.querySelectorAll('.btn-habit-complete:not(.completed)');
+    const habitButtons = document.querySelectorAll('.btn-habit-complete:not(.completed):not([disabled])');
     habitButtons.forEach(button => {
+        if (button.dataset.boundHabitComplete === '1') {
+            return;
+        }
+        button.dataset.boundHabitComplete = '1';
+
         button.addEventListener('click', function() {
             const habitId = this.dataset.habitId ||
                            this.id.replace('habit-', '') ||
-                           this.closest('.habit-card').dataset.habitId;
+                           this.closest('.habit-card')?.dataset.habitId;
+            if (!habitId) {
+                showNotification('Модуль привычек пока в разработке', 'info');
+                return;
+            }
             markHabitAsCompleted(habitId, this);
         });
     });
 
-    // Выбор темы
-    const topicItems = document.querySelectorAll('.topic-item');
-    topicItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const topicId = this.dataset.topicId;
-            filterByTopic(topicId, this);
+    // Выбор темы (AJAX-режим включается только при наличии выделенного контейнера)
+    const tasksContainer = document.getElementById('tasks-list-container');
+    if (tasksContainer) {
+        const themeFilterLinks = document.querySelectorAll('.theme-filter-link');
+        themeFilterLinks.forEach(link => {
+            if (link.dataset.boundThemeFilter === '1') {
+                return;
+            }
+            link.dataset.boundThemeFilter = '1';
+
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const topicId =
+                    this.dataset.topicId ||
+                    this.dataset.themeName ||
+                    this.dataset.themeId ||
+                    new URL(this.href, window.location.origin).searchParams.get('theme');
+                filterByTopic(topicId, this.closest('.topic-item'));
+            });
         });
-    });
+    }
 
     // Фильтрация задач
     const topicFilter = document.getElementById('topic-filter');
@@ -83,13 +114,14 @@ function initializeEventHandlers() {
 
 
 async function markTaskAsCompleted(taskId, checkbox, taskItem) {
-    const wasChecked = checkbox.checked; // состояние до запроса
+    const checkedNow = checkbox.checked;
+    const previousChecked = !checkedNow;
 
     try {
         showLoading(checkbox);
 
         // Выбираем endpoint в зависимости от того, становится ли задача выполненной или нет
-        const endpoint = wasChecked ? `/tasks/${taskId}/complete` : `/tasks/${taskId}/incomplete`;
+        const endpoint = checkedNow ? `/tasks/${taskId}/complete` : `/tasks/${taskId}/incomplete`;
 
         const response = await fetch(endpoint, {
             method: 'PATCH',
@@ -120,14 +152,14 @@ async function markTaskAsCompleted(taskId, checkbox, taskItem) {
                 if (taskTitle) taskTitle.classList.add('completed');
                 showNotification('Задача выполнена!', 'success');
                 // Уменьшаем счётчик активных задач
-                activeTasksCount--;
+                activeTasksCount = Math.max(0, activeTasksCount - 1);
             } else {
                 taskItem.classList.remove('completed');
                 const taskTitle = taskItem.querySelector('.task-title');
                 if (taskTitle) taskTitle.classList.remove('completed');
                 showNotification('Задача возвращена в активные', 'info');
                 // Увеличиваем счётчик активных задач
-                activeTasksCount++;
+                activeTasksCount += 1;
             }
 
             // Синхронизируем чекбокс (на случай, если сервер вернул иное)
@@ -141,12 +173,12 @@ async function markTaskAsCompleted(taskId, checkbox, taskItem) {
             if (typeof updateStats === 'function') updateStats();
         } else {
             // Ошибка сервера – откатываем чекбокс
-            checkbox.checked = wasChecked;
+            checkbox.checked = previousChecked;
             showNotification(data.error || 'Ошибка при обновлении задачи', 'error');
         }
     } catch (error) {
         console.error('Error toggling task:', error);
-        checkbox.checked = wasChecked;
+        checkbox.checked = previousChecked;
         showNotification('Ошибка соединения с сервером', 'error');
     } finally {
         hideLoading(checkbox);
@@ -155,6 +187,11 @@ async function markTaskAsCompleted(taskId, checkbox, taskItem) {
 
 async function markHabitAsCompleted(habitId, button) {
     const habitCard = button.closest('.habit-card');
+    if (!habitCard || !habitId) {
+        showNotification('Модуль привычек пока в разработке', 'info');
+        return;
+    }
+
     const streakElement = habitCard.querySelector('.habit-streak');
     const currentStreak = streakElement ? parseInt(streakElement.textContent) || 0 : 0;
 
@@ -369,13 +406,20 @@ function getCsrfToken() {
 }
 
 function filterByTopic(topicId, clickedElement) {
+    const container = document.getElementById('tasks-list-container');
+    if (!container) {
+        return;
+    }
+
     // Сбрасываем активное состояние у всех тем
     document.querySelectorAll('.topic-item').forEach(item => {
         item.classList.remove('active');
     });
 
     // Устанавливаем активное состояние выбранной теме
-    clickedElement.classList.add('active');
+    if (clickedElement) {
+        clickedElement.classList.add('active');
+    }
 
     // Обновляем URL
     const url = new URL(window.location);
@@ -432,19 +476,14 @@ function filterTasksByTopic(topicId) {
 
 
 function initializeEditDeleteHandlers() {
-    // Обработчики для кнопок редактирования
-    const editButtons = document.querySelectorAll('.btn-task-edit, .btn-habit-edit');
-    editButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const id = this.dataset.taskId || this.dataset.habitId;
-            const type = this.classList.contains('btn-task-edit') ? 'task' : 'habit';
-            editItem(type, id);
-        });
-    });
-
-    // Обработчики для кнопок удаления (теперь используется глобальная функция deleteTask)
+    // Обработчики для кнопок удаления (редактирование остаётся на обычных ссылках)
     const deleteButtons = document.querySelectorAll('.btn-task-delete');
     deleteButtons.forEach(button => {
+        if (button.dataset.boundDeleteTask === '1') {
+            return;
+        }
+        button.dataset.boundDeleteTask = '1';
+
         // Удаляем старый обработчик onclick, если он есть
         button.removeAttribute('onclick');
 
@@ -461,11 +500,21 @@ function updateStats() {
 }
 
 window.addEventListener('popstate', () => {
+    const container = document.getElementById('tasks-list-container');
+    if (!container) {
+        return;
+    }
+
     const params = new URLSearchParams(window.location.search);
     const themeId = params.get('theme');
     // Находим элемент темы, соответствующий themeId, и делаем его активным
     document.querySelectorAll('.topic-item').forEach(item => {
-        const id = item.dataset.topicId;
+        const link = item.querySelector('.theme-filter-link');
+        const id =
+            item.dataset.topicId ||
+            link?.dataset.topicId ||
+            link?.dataset.themeName ||
+            (link ? new URL(link.href, window.location.origin).searchParams.get('theme') : null);
         if (id === themeId) {
             item.classList.add('active');
         } else {
@@ -570,46 +619,6 @@ function addNotificationStyles() {
                 transform: translateX(0);
                 opacity: 1;
             }
-        }
-
-        /* Обновленные стили для чекбокса */
-        .task-checkbox {
-            position: relative;
-            width: 20px;
-            height: 20px;
-            flex-shrink: 0;
-        }
-
-        .task-checkbox input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            border: 2px solid #95a5a6;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            appearance: none;
-            -webkit-appearance: none;
-            position: relative;
-            margin: 0;
-        }
-
-        .task-checkbox input[type="checkbox"]:checked {
-            background-color: #2ecc71;
-            border-color: #2ecc71;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M10.28 2.28L4.5 8.06 1.72 5.28a.75.75 0 00-1.06 1.06l3.25 3.25a.75.75 0 001.06 0l6.25-6.25a.75.75 0 00-1.06-1.06z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: 12px;
-        }
-
-        /* Стили для выполненных задач */
-        .task-item.completed {
-            opacity: 0.7;
-        }
-
-        .task-item.completed .task-title {
-            text-decoration: line-through;
-            color: #95a5a6;
         }
     `;
     document.head.appendChild(style);

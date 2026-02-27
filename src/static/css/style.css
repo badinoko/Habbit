@@ -307,6 +307,12 @@ body {
     background-color: #27ae60;
 }
 
+.btn-habit-complete:disabled {
+    background-color: var(--gray-light);
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
 .quick-actions {
     display: flex;
     gap: 1rem;
@@ -1569,7 +1575,7 @@ body {
 
 .priority-radio-input:checked + .priority-radio-label {
     border-color: var(--priority-color, var(--primary));
-    background: linear-gradient(135deg, var(--priority-color, var(--primary))10, white);
+    background: linear-gradient(135deg, var(--light), white);
     box-shadow: 0 4px 15px rgba(0,0,0,0.15);
     color: var(--dark);
 }
@@ -1988,7 +1994,7 @@ body {
 }
 
 /* Стили для пустого состояния на дашборде */
-.empty-state {
+.dashboard .empty-state {
     text-align: center;
     padding: 2.5rem 1.5rem;
     border-radius: 12px;
@@ -1997,20 +2003,20 @@ body {
     transition: all 0.3s ease;
 }
 
-.empty-state:hover {
+.dashboard .empty-state:hover {
     border-color: var(--primary);
     transform: translateY(-2px);
     box-shadow: 0 8px 25px rgba(0,0,0,0.1);
 }
 
-.empty-state p {
+.dashboard .empty-state p {
     color: var(--gray);
     font-size: 1.1rem;
     margin-bottom: 1.5rem;
     font-weight: 500;
 }
 
-.empty-state i {
+.dashboard .empty-state i {
     color: var(--gray);
     font-size: 2rem;
     margin-bottom: 1rem;
@@ -2110,11 +2116,11 @@ body {
 
 /* Адаптивность для пустых состояний */
 @media (max-width: 768px) {
-    .empty-state {
+    .dashboard .empty-state {
         padding: 2rem 1rem;
     }
 
-    .empty-state p {
+    .dashboard .empty-state p {
         font-size: 1rem;
     }
 
@@ -2131,7 +2137,7 @@ body {
 }
 
 @media (max-width: 480px) {
-    .empty-state {
+    .dashboard .empty-state {
         padding: 1.5rem 1rem;
     }
 

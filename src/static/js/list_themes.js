@@ -5,13 +5,13 @@ function editTheme(themeName) {
 }
 
 // Функция для удаления темы
-async function deleteTheme(themeId) {
+async function deleteTheme(themeName) {
     if (!confirm('Вы уверены, что хотите удалить эту тему? Все задачи с этой темой будут перемещены в "Без темы".')) {
         return;
     }
 
     try {
-        const response = await fetch(`/themes/${themeId}`, {
+        const response = await fetch(`/themes/${encodeURIComponent(themeName)}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -23,13 +23,13 @@ async function deleteTheme(themeId) {
             showNotification('Тема удалена', 'success');
 
             // Удаляем элемент из DOM
-            const themeElement = document.querySelector(`[data-theme-id="${themeId}"]`);
+            const themeElement = findThemeCardByName(themeName);
             if (themeElement) {
                 themeElement.remove();
             }
 
             // Обновляем список тем в сайдбаре если есть
-            updateSidebarThemes(themeId);
+            updateSidebarThemes(themeName);
 
             // Обновляем статистику если есть
             if (typeof updateStats === 'function') {
@@ -51,9 +51,20 @@ async function deleteTheme(themeId) {
 }
 
 // Функция для обновления списка тем в сайдбаре после удаления
-function updateSidebarThemes(deletedThemeId) {
-    const sidebarTheme = document.querySelector(`.topic-item[data-topic-id="${deletedThemeId}"]`);
-    if (sidebarTheme) {
-        sidebarTheme.remove();
-    }
+function updateSidebarThemes(deletedThemeName) {
+    const sidebarLinks = document.querySelectorAll('.theme-filter-link');
+    sidebarLinks.forEach(link => {
+        const themeParam = new URL(link.href, window.location.origin).searchParams.get('theme');
+        if (themeParam === deletedThemeName) {
+            const sidebarItem = link.closest('.topic-item');
+            if (sidebarItem) {
+                sidebarItem.remove();
+            }
+        }
+    });
+}
+
+function findThemeCardByName(themeName) {
+    const cards = document.querySelectorAll('.theme-card[data-theme-name]');
+    return Array.from(cards).find(card => card.dataset.themeName === themeName) || null;
 }

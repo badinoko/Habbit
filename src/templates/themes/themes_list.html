@@ -13,7 +13,7 @@
 <div class="themes-grid">
     {% for theme in themes_list %}
         {% if theme.name != 'Все темы' %}
-        <div class="theme-card" data-theme-id="{{ theme.id }}">
+        <div class="theme-card" data-theme-id="{{ theme.id }}" data-theme-name="{{ theme.name }}">
             <div class="theme-header">
                 <div class="theme-color" style="background-color: {{ theme.color }};"></div>
                 <h3>{{ theme.name }}</h3>
@@ -22,10 +22,10 @@
                 <span class="stat">{{ theme.task_count }} {{ plural.pluralize(theme.task_count, 'задача', 'задачи', 'задач') }}</span>
             </div>
             <div class="theme-actions">
-                <button class="btn btn-outline btn-sm" onclick="editTheme('{{ theme.name }}')">
+                <button class="btn btn-outline btn-sm" onclick='editTheme({{ theme.name|tojson }})'>
                     <i class="fas fa-edit"></i> Изменить
                 </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteTheme('{{ theme.name }}')">
+                <button class="btn btn-danger btn-sm" onclick='deleteTheme({{ theme.name|tojson }})'>
                     <i class="fas fa-trash"></i> Удалить
                 </button>
             </div>

@@ -152,6 +152,13 @@ async def test_task_update_page(client, session):
     assert NAME in response.text
 
 
+@pytest.mark.asyncio
+async def test_task_update_page_returns_404_when_task_missing(client):
+    response = await client.get(f"/tasks/{uuid4()}")
+    assert response.status_code == 404
+    assert "Задача не найдена" in response.text
+
+
 async def create_task_and_return_id(session):
     task_repo = TaskRepository(session=session)
     theme_repo = ThemeRepository(session=session)

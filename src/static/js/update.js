@@ -2,27 +2,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const forms = document.querySelectorAll('.item-form');
 
     forms.forEach(form => {
+        const method = (form.dataset.method || form.getAttribute('method') || 'post').toLowerCase();
+        if (method !== 'put') {
+            return;
+        }
+
         form.addEventListener('submit', function(e) {
             e.preventDefault();
+
+            if (typeof validateForm === 'function' && !validateForm(form)) {
+                if (typeof showFormError === 'function') {
+                    showFormError('Пожалуйста, заполните все обязательные поля правильно.');
+                }
+                return;
+            }
 
             // Собираем данные формы
             const formData = new FormData(form);
             const data = Object.fromEntries(formData.entries());
 
             // Убеждаемся, что выбранный цвет включен в данные
-            const selectedColor = document.querySelector('input[name="color"]:checked');
+            const selectedColor = form.querySelector('input[name="color"]:checked');
             if (!data.color && selectedColor) {
                 data.color = selectedColor.value;
             }
 
-            const method = form.dataset.method || form.getAttribute('method') || 'post';
             const action = form.getAttribute('action');
-
-            if (method.toLowerCase() === 'put') {
-                updateFormData(form, data, action);
-            } else {
-                form.submit();
-            }
+            updateFormData(form, data, action);
         });
     });
 });

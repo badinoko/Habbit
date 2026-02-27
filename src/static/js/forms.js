@@ -34,6 +34,12 @@ function initializeFormHandlers() {
     // Валидация формы при отправке
     const forms = document.querySelectorAll('.item-form');
     forms.forEach(form => {
+        // PUT-формы обрабатываются в update.js, чтобы избежать двойного submit flow
+        const method = (form.dataset.method || form.getAttribute('method') || 'post').toLowerCase();
+        if (method === 'put') {
+            return;
+        }
+
         form.addEventListener('submit', function(e) {
             if (!validateForm(this)) {
                 e.preventDefault();
