@@ -1,6 +1,10 @@
 # HabitFlow
 
-HabitFlow — веб-приложение для управления задачами и привычками. Позволяет создавать темы (themes), задачи (tasks), назначать приоритеты и отслеживать выполнение.
+HabitFlow — веб-приложение для управления задачами и привычками. Позволяет создавать темы (`themes`), задачи (`tasks`), назначать приоритеты и отслеживать выполнение.
+
+Проект развивается в режиме **web-first**:
+- основной интерфейс: серверные веб-роуты (`HTML + Redirect + AJAX JSON`);
+- отдельный JSON API под `/api/*` — дополнительный (опциональный) трек.
 
 <div align="center">
   <img src="assets/main_page.png"
@@ -54,6 +58,12 @@ HabitFlow — веб-приложение для управления задач
 ├── .env.example               # Пример переменных окружения
 ├── .pre-commit-config.yaml    # Настройки pre-commit хуков
 ├── .gitignore                 # Игнорируемые файлы
+├── docs/                      # Проектная документация
+│   ├── overview.md            # Цели, границы, правила работы
+│   ├── backend_roadmap.md     # План реализации по итерациям
+│   ├── api_contract.md        # Web-first HTTP-контракт и N1/N2/N3
+│   ├── testing_strategy.md    # Тестовая матрица и quality gates
+│   └── engineering_journal.md # Инженерные заметки и trade-off
 ├── src/                       # Исходный код приложения
 │   ├── main.py                # Точка входа FastAPI
 │   ├── config.py              # Настройки через Pydantic Settings
@@ -73,9 +83,20 @@ HabitFlow — веб-приложение для управления задач
 │   └── utils.py               # Вспомогательные функции
 ├── tests/                     # Тесты
 │   ├── conftest.py            # Фикстуры pytest
-│   └── integration/           # Интеграционные тесты
+│   ├── unit/                  # Unit-тесты сервисов
+│   ├── api_unit/              # Контрактные тесты роутеров
+│   └── integration/           # Интеграционные тесты с БД
+├── conftest.py                # Bootstrap PYTHONPATH для pytest
 └── README.md                  # Этот файл
 ```
+
+## Документация проекта
+
+- `docs/overview.md` — главный документ (цели, границы, инженерные принципы).
+- `docs/backend_roadmap.md` — план работ и итерации.
+- `docs/api_contract.md` — web-first контракт текущих роутов и нормализации `N1..N3`.
+- `docs/testing_strategy.md` — стратегия тестирования и матрица покрытия.
+- `docs/engineering_journal.md` — журнал решений, рисков и выводов.
 
 ## Требования
 
@@ -90,7 +111,7 @@ HabitFlow — веб-приложение для управления задач
 
 ```bash
 git clone https://github.com/Qwertyil/HabitFlow.git
-cd habitflow
+cd HabitFlow
 ```
 
 ### 2. Настройка переменных окружения
@@ -115,7 +136,7 @@ cp .env.example .env.docker
 ```bash
 make restart
 # или вручную:
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 Примените миграции:
@@ -176,6 +197,13 @@ make test
 poetry run pytest -v
 ```
 
+Основные уровни тестов:
+- `tests/unit` — unit-тесты бизнес-логики;
+- `tests/api_unit` — контрактные тесты роутеров;
+- `tests/integration` — интеграционные тесты с БД.
+
+Подробные правила покрытия и критерии завершения задач: `docs/testing_strategy.md`.
+
 ## Pre-commit хуки
 
 Pre-commit автоматически запускает проверки перед каждым коммитом. Чтобы установить хуки локально:
@@ -225,5 +253,5 @@ alembic upgrade head
 | SESSION_MAX_AGE      | Время жизни сессии (сек.)         | 1209600               |
 | SESSION_SAME_SITE    | SameSite для cookie               | lax                   |
 | SESSION_HTTPS_ONLY   | Secure-флаг cookie (HTTPS only)   | False                 |
-| API_KEY              | Ключ API (опционально)            | (пусто)               |
+| API_KEY              | Технический ключ приложения (в текущем `Settings` обязателен) | your_api_key_here     |
 | DEBUG                | Режим отладки (True/False)        | True                  |
