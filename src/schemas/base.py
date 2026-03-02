@@ -13,6 +13,7 @@ class Response(BaseModel):
 
 
 class Stats(BaseModel):
+    total_tasks: int
     active_tasks: int
     total_habits: int
     success_rate: int

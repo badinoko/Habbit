@@ -40,9 +40,9 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('tasks',
-    sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('name', sa.String(length=46), nullable=False),
     sa.Column('theme_id', sa.UUID(), nullable=True),
-    sa.Column('description', sa.String(length=1000), nullable=True),
+    sa.Column('description', sa.String(length=200), nullable=True),
     sa.Column('completed_at', sa.DateTime(), nullable=True),
     sa.Column('priority_id', sa.UUID(), nullable=False),
     sa.Column('id', sa.UUID(), nullable=False),

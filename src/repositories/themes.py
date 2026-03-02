@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import desc, func, select
 
 from src.database.models import Task, Theme
 from src.schemas import ThemeCreate, ThemeInDB, ThemeUpdate
@@ -36,10 +36,10 @@ class ThemeRepository(
         return self._convert_model_to_read(theme) if theme else None
 
     async def get_existing_colors_list(
-        self, skip: int = 0, limit: int = 100, **filters: object
+        self, skip: int = 0, limit: int = 100
     ) -> set[str]:
         """Получить список существующих цветов"""
-        themes = await self.list(skip=skip, limit=limit, **filters)
+        themes = await self.list(skip=skip, limit=limit)
         return {theme.color for theme in themes}
 
     async def list_with_task_counts(
@@ -49,6 +49,7 @@ class ThemeRepository(
             select(Theme, func.count(Task.id).label("task_count"))
             .outerjoin(Task, Theme.id == Task.theme_id)
             .group_by(Theme.id)
+            .order_by(desc(Theme.created_at), desc(Theme.id))
             .offset(skip)
             .limit(limit)
         )
@@ -56,3 +57,7 @@ class ThemeRepository(
         rows = result.unique().all()
         # возвращаем список кортежей (Theme, task_count)
         return [(row[0], row[1]) for row in rows]
+
+    async def count_themes(self) -> int:
+        total = await self._session.scalar(select(func.count(Theme.id)))
+        return int(total or 0)

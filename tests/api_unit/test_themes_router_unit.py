@@ -8,7 +8,8 @@ from fastapi.testclient import TestClient
 
 from src.dependencies import get_theme_service
 from src.main import app
-from src.schemas.themes import ThemeInDB, ThemeUpdate
+from src.schemas.themes import ThemeCreate, ThemeInDB, ThemeUpdate
+from src.utils import get_template_context
 
 
 def _mk_theme(name: str, color: str) -> ThemeInDB:
@@ -23,8 +24,35 @@ def _mk_theme(name: str, color: str) -> ThemeInDB:
 
 
 class _FakeThemeService:
-    def __init__(self, *, exists: bool):
+    def __init__(
+        self,
+        *,
+        exists: bool = True,
+        create_error: Exception | None = None,
+        create_returns_none: bool = False,
+        update_returns_none: bool = False,
+        themes_count: int = 0,
+    ):
         self.exists = exists
+        self.create_error = create_error
+        self.create_returns_none = create_returns_none
+        self.update_returns_none = update_returns_none
+        self.themes_count = themes_count
+
+    async def list_themes_with_task_counts(
+        self, page: int = 1, per_page: int = 20
+    ) -> tuple[list[ThemeInDB], int]:
+        return ([], self.themes_count)
+
+    async def get_existing_colors(self) -> set[str]:
+        return set()
+
+    async def create_theme(self, theme_data: ThemeCreate):
+        if self.create_error:
+            raise self.create_error
+        if self.create_returns_none:
+            return None
+        return _mk_theme(theme_data.name, theme_data.color or "#FF00FF")
 
     async def get_theme_by_name(self, name: str):
         if not self.exists:
@@ -32,6 +60,8 @@ class _FakeThemeService:
         return _mk_theme(name, "#FF00FF")
 
     async def update_theme(self, old_theme: ThemeInDB, theme_data: ThemeUpdate):
+        if self.update_returns_none:
+            return None
         dump = theme_data.model_dump(exclude_unset=True)
         return old_theme.model_copy(update=dump)
 
@@ -41,6 +71,13 @@ class _FakeThemeService:
 
 @pytest.fixture
 def client():
+    async def fake_template_context():
+        return {
+            "themes": [],
+            "stats": {"active_tasks": 0, "total_habits": 0, "success_rate": 0},
+        }
+
+    app.dependency_overrides[get_template_context] = fake_template_context
     c = TestClient(app)
     yield c
     app.dependency_overrides.clear()
@@ -52,13 +89,90 @@ def test_update_theme_returns_404_when_missing(client):
     )
     res = client.put("/themes/Nope", json={"name": "X"})
     assert res.status_code == 404
+    assert res.headers["content-type"].startswith("application/json")
 
 
 def test_update_theme_returns_success_payload(client):
     app.dependency_overrides[get_theme_service] = lambda: _FakeThemeService(exists=True)
     res = client.put("/themes/Hobby", json={"color": "#FFFFFF"})
     assert res.status_code == 200
+    assert res.headers["content-type"].startswith("application/json")
     data = res.json()
     assert data["status"] == "success"
     assert data["theme"]["name"] == "Hobby"
     assert data["theme"]["color"] == "#FFFFFF"
+
+
+def test_create_theme_returns_redirect_on_success(client):
+    app.dependency_overrides[get_theme_service] = lambda: _FakeThemeService()
+    res = client.post("/themes/", data={"name": "Hobby"}, follow_redirects=False)
+    assert res.status_code == 303
+    assert res.headers["location"] == "/themes"
+
+
+def test_create_theme_returns_400_on_value_error(client):
+    app.dependency_overrides[get_theme_service] = lambda: _FakeThemeService(
+        create_error=ValueError("duplicate")
+    )
+    res = client.post("/themes/", data={"name": "Hobby"})
+    assert res.status_code == 400
+    assert res.headers["content-type"].startswith("text/html")
+    assert "duplicate" in res.text
+
+
+def test_create_theme_returns_500_on_runtime_error(client):
+    app.dependency_overrides[get_theme_service] = lambda: _FakeThemeService(
+        create_error=RuntimeError("unexpected")
+    )
+    res = client.post("/themes/", data={"name": "Hobby"})
+    assert res.status_code == 500
+    assert res.headers["content-type"].startswith("text/html")
+    assert "unexpected" in res.text
+
+
+def test_create_theme_returns_500_when_service_returns_none(client):
+    app.dependency_overrides[get_theme_service] = lambda: _FakeThemeService(
+        create_returns_none=True
+    )
+    res = client.post("/themes/", data={"name": "Hobby"})
+    assert res.status_code == 500
+    assert res.headers["content-type"].startswith("text/html")
+    assert "Тема не создана" in res.text
+
+
+def test_get_theme_page_returns_404_when_missing(client):
+    app.dependency_overrides[get_theme_service] = lambda: _FakeThemeService(
+        exists=False
+    )
+    res = client.get("/themes/Missing")
+    assert res.status_code == 404
+    assert res.headers["content-type"].startswith("application/json")
+    assert "not found" in res.json()["detail"]
+
+
+def test_update_theme_returns_500_when_service_returns_none(client):
+    app.dependency_overrides[get_theme_service] = lambda: _FakeThemeService(
+        update_returns_none=True
+    )
+    res = client.put("/themes/Hobby", json={"color": "#FFFFFF"})
+    assert res.status_code == 500
+    assert res.headers["content-type"].startswith("application/json")
+    assert res.json()["detail"] == "Internal server error"
+
+
+def test_get_themes_redirects_to_first_page_when_no_items(client):
+    app.dependency_overrides[get_theme_service] = lambda: _FakeThemeService(
+        themes_count=0
+    )
+    res = client.get("/themes/?page=3&per_page=5", follow_redirects=False)
+    assert res.status_code == 302
+    assert res.headers["location"] == "/themes/?per_page=5"
+
+
+def test_get_themes_redirects_to_last_page_when_page_is_too_high(client):
+    app.dependency_overrides[get_theme_service] = lambda: _FakeThemeService(
+        themes_count=3
+    )
+    res = client.get("/themes/?page=9&per_page=2", follow_redirects=False)
+    assert res.status_code == 302
+    assert res.headers["location"] == "/themes/?page=2&per_page=2"

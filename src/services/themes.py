@@ -94,7 +94,9 @@ class ThemeService:
         if theme_obj:
             await self.theme_repo.delete(theme_obj.id)
 
-    async def list_themes(self, skip: int = 0, limit: int = 100) -> list[ThemeResponse]:
+    async def list_themes(
+        self, skip: int = 0, limit: int | None = 100
+    ) -> list[ThemeResponse]:
         """Получить список тем в формате словарей для контекста"""
         themes = await self.theme_repo.list(skip=skip, limit=limit)
         return [self._to_response(theme) for theme in themes]
@@ -117,20 +119,23 @@ class ThemeService:
         return color
 
     async def list_themes_with_task_counts(
-        self, skip: int = 0, limit: int = 100
-    ) -> list[ThemeWithCountResponse]:
+        self, page: int = 1, per_page: int = 30
+    ) -> tuple[list[ThemeWithCountResponse], int]:
         """
         Возвращает список тем с количеством задач в каждой.
         """
+        skip = (page - 1) * per_page
+        total = await self.theme_repo.count_themes()
         themes_with_counts = await self.theme_repo.list_with_task_counts(
-            skip=skip, limit=limit
+            skip=skip, limit=per_page
         )
-        return [
+        items = [
             ThemeWithCountResponse(
                 id=theme.id, name=theme.name, color=theme.color, task_count=count
             )
             for theme, count in themes_with_counts
         ]
+        return items, total
 
 
 def _hsl_to_hex(hue: int, saturation: int, lightness: int) -> str:

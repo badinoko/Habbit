@@ -31,11 +31,6 @@ async function deleteTheme(themeName) {
             // Обновляем список тем в сайдбаре если есть
             updateSidebarThemes(themeName);
 
-            // Обновляем статистику если есть
-            if (typeof updateStats === 'function') {
-                updateStats();
-            }
-
             // Перезагружаем страницу через 1 секунду
             setTimeout(() => {
                 window.location.reload();

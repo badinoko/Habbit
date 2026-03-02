@@ -1212,6 +1212,43 @@ body {
     gap: 1rem;
 }
 
+.tasks-pagination {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tasks-pagination-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.tasks-page-btn {
+    min-width: 42px;
+}
+
+.tasks-page-btn.active {
+    background-color: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+    pointer-events: none;
+}
+
+.tasks-page-btn.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.tasks-pagination-info {
+    font-size: 0.85rem;
+    color: var(--gray);
+}
+
 .task-item {
     display: flex;
     justify-content: space-between;

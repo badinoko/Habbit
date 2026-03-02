@@ -1,7 +1,7 @@
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from src.dependencies import get_task_service
@@ -10,11 +10,10 @@ from src.schemas import Response
 from src.schemas.tasks import (
     TaskCreateAPI,
     TaskMarkCompleted,
-    TaskResponse,
     TaskUpdateAPI,
 )
 from src.services import TaskService
-from src.utils import get_list_tasks, get_template_context, templates
+from src.utils import get_template_context, templates
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -28,9 +27,24 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 async def tasks_page(
     request: Request,
     context: dict[str, Any] = Depends(get_template_context),
-    tasks: list[TaskResponse] = Depends(get_list_tasks),
+    task_service: TaskService = Depends(get_task_service),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    status: Literal["active", "completed", "all"] = "active",
+    sort: Literal["created_at", "updated_at", "name", "priority"] = Query("created_at"),
+    order: Literal["asc", "desc"] = Query("desc"),
 ):
-    context.update({"tasks": tasks, "current_page": "tasks"})
+    tasks, tasks_count = await task_service.list_tasks(
+        page=page,
+        per_page=per_page,
+        theme_name=request.session.get("selected_theme"),
+        status=status,
+        sort=sort,
+        order=order,
+    )
+    context.update(
+        {"tasks": tasks, "tasks_count": tasks_count, "current_page": "tasks"}
+    )
     return templates.TemplateResponse(request, "tasks/tasks_list.html", context)
 
 

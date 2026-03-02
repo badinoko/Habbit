@@ -6,7 +6,7 @@ from fastapi import Depends, Request
 from fastapi.templating import Jinja2Templates
 
 from src.dependencies import get_task_service, get_theme_service
-from src.schemas import Stats, TaskResponse, ThemeResponse
+from src.schemas import Stats, ThemeResponse
 from src.services.tasks import TaskService
 from src.services.themes import ThemeService
 
@@ -17,7 +17,12 @@ templates = Jinja2Templates(directory=templates_dir)
 
 async def get_stats(task_service: TaskService = Depends(get_task_service)) -> Stats:
     task_statistics = await task_service.get_task_statistics()
-    return Stats(active_tasks=task_statistics.pending, total_habits=0, success_rate=0)
+    return Stats(
+        total_tasks=task_statistics.total,
+        active_tasks=task_statistics.pending,
+        total_habits=0,
+        success_rate=0,
+    )
 
 
 async def get_template_context(
@@ -25,16 +30,18 @@ async def get_template_context(
     theme_service: ThemeService = Depends(get_theme_service),
     statistics: Stats = Depends(get_stats),
 ) -> dict[str, Any]:
+    themes = await theme_service.list_themes(limit=None)
+
     params = request.query_params
-    themes = await theme_service.list_themes()
-
-    # Проверяем параметры запроса
     if params.get("theme"):
-        # Если есть параметр, сохраняем в сессию
-        request.session["selected_theme"] = params.get("theme")
-
-    # Получаем тему из сессии или параметров
-    selected_theme = params.get("theme") or request.session.get("selected_theme")
+        if params["theme"] == "Все темы":
+            request.session["selected_theme"] = None
+            selected_theme = None
+        else:
+            request.session["selected_theme"] = params["theme"]
+            selected_theme = params["theme"]
+    else:
+        selected_theme = request.session.get("selected_theme")
 
     # Добавляем опцию "Все темы"
     NoTheme = ThemeResponse(
@@ -53,20 +60,3 @@ async def get_template_context(
                 break
 
     return {"request": request, "themes": themes, "stats": statistics}
-
-
-async def get_list_tasks(
-    request: Request, task_service: TaskService = Depends(get_task_service)
-) -> list[TaskResponse]:
-    params = request.query_params
-    if request.url.path == "/":
-        limit = 5
-        completed = False
-    else:
-        limit = 999
-        completed = True
-    if params.get("theme"):
-        request.session["selected_theme"] = params.get("theme")
-    selected_theme = params.get("theme") or request.session.get("selected_theme")
-    tasks = await task_service.list_tasks(selected_theme, completed, limit)
-    return tasks

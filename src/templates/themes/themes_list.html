@@ -41,5 +41,61 @@
     </div>
     {% endif %}
 </div>
+{% if themes_has_prev or themes_has_next %}
+<div class="tasks-pagination">
+    <div class="tasks-pagination-controls">
+        {% if themes_has_prev %}
+        <a
+            class="btn btn-outline btn-sm tasks-page-btn"
+            href="?page={{ themes_page - 1 }}&per_page={{ themes_per_page }}"
+        >
+            Назад
+        </a>
+        {% else %}
+        <span class="btn btn-outline btn-sm tasks-page-btn disabled" aria-disabled="true">
+            Назад
+        </span>
+        {% endif %}
+
+        {% if themes_has_prev %}
+        <a
+            class="btn btn-outline btn-sm tasks-page-btn"
+            href="?page={{ themes_page - 1 }}&per_page={{ themes_per_page }}"
+        >
+            {{ themes_page - 1 }}
+        </a>
+        {% endif %}
+
+        <span class="btn btn-outline btn-sm tasks-page-btn active" aria-current="page">
+            {{ themes_page }}
+        </span>
+
+        {% if themes_has_next %}
+        <a
+            class="btn btn-outline btn-sm tasks-page-btn"
+            href="?page={{ themes_page + 1 }}&per_page={{ themes_per_page }}"
+        >
+            {{ themes_page + 1 }}
+        </a>
+        {% endif %}
+
+        {% if themes_has_next %}
+        <a
+            class="btn btn-outline btn-sm tasks-page-btn"
+            href="?page={{ themes_page + 1 }}&per_page={{ themes_per_page }}"
+        >
+            Вперёд
+        </a>
+        {% else %}
+        <span class="btn btn-outline btn-sm tasks-page-btn disabled" aria-disabled="true">
+            Вперёд
+        </span>
+        {% endif %}
+    </div>
+    <div class="tasks-pagination-info">
+        Страница {{ themes_page }} из {{ themes_total_pages }}
+    </div>
+</div>
+{% endif %}
 <script src="{{ url_for('static', path='/js/list_themes.js') }}"></script>
 {% endblock %}

@@ -18,14 +18,23 @@ class DummyThemeRepo:
     def __init__(self) -> None:
         self.get_by_name_result: ThemeInDB | None = None
         self.get_by_color_result: ThemeInDB | None = None
+        self.get_by_color_sequence: list[ThemeInDB | None] | None = None
         self.add_return: ThemeInDB | None = None
         self.update_return: ThemeInDB | None = None
         self.update_called: bool = False
+        self.delete_called_with = None
+        self.list_result: list[ThemeInDB] = []
+        self.list_with_task_counts_result: list[tuple[ThemeInDB, int]] = []
+        self.count_themes_result: int = 0
 
     async def get_by_name(self, name: str) -> ThemeInDB | None:
         return self.get_by_name_result
 
     async def get_by_color(self, color: str) -> ThemeInDB | None:
+        if self.get_by_color_sequence is not None:
+            if self.get_by_color_sequence:
+                return self.get_by_color_sequence.pop(0)
+            return None
         return self.get_by_color_result
 
     async def add(self, data: ThemeCreate) -> ThemeInDB:
@@ -39,7 +48,7 @@ class DummyThemeRepo:
             updated_at=_dt(2026, 1, 1),
         )
 
-    async def update(self, theme_id, data: ThemeUpdate) -> ThemeInDB | None:  # type: ignore[no-untyped-def]
+    async def update(self, theme_id, data: ThemeUpdate) -> ThemeInDB | None:
         self.update_called = True
         if self.update_return is not None:
             return self.update_return
@@ -50,16 +59,17 @@ class DummyThemeRepo:
         dump = data.model_dump(exclude_unset=True)
         return base.model_copy(update=dump)
 
-    async def delete(self, theme_id):  # type: ignore[no-untyped-def]
+    async def delete(self, theme_id):
+        self.delete_called_with = theme_id
         return None
 
     async def list(self, *args: object, **kwargs: object) -> list[ThemeInDB]:
-        return []
+        return list(self.list_result)
 
     async def list_with_task_counts(
         self, *args: object, **kwargs: object
     ) -> list[tuple[ThemeInDB, int]]:
-        return []
+        return list(self.list_with_task_counts_result)
 
     async def get_existing_colors_list(
         self, *args: object, **kwargs: object
@@ -67,6 +77,9 @@ class DummyThemeRepo:
         if self.get_by_color_result is None:
             return set()
         return {self.get_by_color_result.color}
+
+    async def count_themes(self) -> int:
+        return self.count_themes_result
 
 
 def _dt(y: int, m: int, d: int):
@@ -141,7 +154,7 @@ async def test_generate_color_falls_back_to_random_on_collision(monkeypatch):
             )
         return None
 
-    repo.get_by_color = fake_get_by_color  # type: ignore[assignment]
+    repo.get_by_color = fake_get_by_color
 
     monkeypatch.setattr("src.services.themes.generate_random_hex", lambda: "#123456")
 
@@ -190,3 +203,127 @@ async def test_update_theme_rejects_name_conflict():
 
     with pytest.raises(ValueError, match="name already exists"):
         await service.update_theme(old, ThemeUpdate(name="Work"))
+
+
+@pytest.mark.asyncio
+async def test_update_theme_rejects_all_themes_name():
+    old = ThemeInDB(
+        id=uuid4(),
+        name="Hobby",
+        color="#FF00FF",
+        created_at=_dt(2026, 1, 1),
+        updated_at=_dt(2026, 1, 1),
+    )
+    repo = DummyThemeRepo()
+    service = ThemeService(theme_repo=repo)
+
+    with pytest.raises(ValueError, match="Invalid theme title"):
+        await service.update_theme(old, ThemeUpdate(name="Все темы"))
+
+
+@pytest.mark.asyncio
+async def test_update_theme_rejects_color_conflict():
+    old = ThemeInDB(
+        id=uuid4(),
+        name="Hobby",
+        color="#FF00FF",
+        created_at=_dt(2026, 1, 1),
+        updated_at=_dt(2026, 1, 1),
+    )
+    repo = DummyThemeRepo()
+    repo.get_by_color_result = ThemeInDB(
+        id=uuid4(),
+        name="Work",
+        color="#00FF00",
+        created_at=_dt(2026, 1, 1),
+        updated_at=_dt(2026, 1, 1),
+    )
+    service = ThemeService(theme_repo=repo)
+
+    with pytest.raises(ValueError, match="color already exists"):
+        await service.update_theme(old, ThemeUpdate(color="#00FF00"))
+
+
+@pytest.mark.asyncio
+async def test_update_theme_generates_color_when_random_requested(monkeypatch):
+    old = ThemeInDB(
+        id=uuid4(),
+        name="Hobby",
+        color="#FF00FF",
+        created_at=_dt(2026, 1, 1),
+        updated_at=_dt(2026, 1, 1),
+    )
+    repo = DummyThemeRepo()
+    repo.get_by_name_result = old
+    service = ThemeService(theme_repo=repo)
+
+    called = {"title": None}
+
+    async def fake_generate_color(title: str) -> str:
+        called["title"] = title
+        return "#112233"
+
+    monkeypatch.setattr(service, "generate_color", fake_generate_color)
+
+    res = await service.update_theme(old, ThemeUpdate(color="randoms"))
+    assert res is not None
+    assert res.color == "#112233"
+    assert called["title"] == "Hobby"
+
+
+@pytest.mark.asyncio
+async def test_generate_color_raises_after_too_many_collisions(monkeypatch):
+    existing = ThemeInDB(
+        id=uuid4(),
+        name="Existing",
+        color="#FFFFFF",
+        created_at=_dt(2026, 1, 1),
+        updated_at=_dt(2026, 1, 1),
+    )
+    repo = DummyThemeRepo()
+    # 1 collision for deterministic color + 10 collisions for random attempts.
+    repo.get_by_color_sequence = [existing] * 11
+    service = ThemeService(theme_repo=repo)
+
+    monkeypatch.setattr("src.services.themes.generate_random_hex", lambda: "#123456")
+
+    with pytest.raises(RuntimeError, match="Failed to generate a unique theme color"):
+        await service.generate_color("Work")
+
+
+@pytest.mark.asyncio
+async def test_delete_theme_deletes_when_theme_exists():
+    old = ThemeInDB(
+        id=uuid4(),
+        name="Hobby",
+        color="#FF00FF",
+        created_at=_dt(2026, 1, 1),
+        updated_at=_dt(2026, 1, 1),
+    )
+    repo = DummyThemeRepo()
+    repo.get_by_name_result = old
+    service = ThemeService(theme_repo=repo)
+
+    await service.delete_theme("Hobby")
+    assert repo.delete_called_with == old.id
+
+
+@pytest.mark.asyncio
+async def test_list_themes_with_task_counts_returns_items_and_total():
+    theme = ThemeInDB(
+        id=uuid4(),
+        name="Hobby",
+        color="#FF00FF",
+        created_at=_dt(2026, 1, 1),
+        updated_at=_dt(2026, 1, 1),
+    )
+    repo = DummyThemeRepo()
+    repo.count_themes_result = 1
+    repo.list_with_task_counts_result = [(theme, 3)]
+    service = ThemeService(theme_repo=repo)
+
+    items, total = await service.list_themes_with_task_counts(page=1, per_page=30)
+    assert total == 1
+    assert len(items) == 1
+    assert items[0].name == "Hobby"
+    assert items[0].task_count == 3

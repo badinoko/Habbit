@@ -6,10 +6,11 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.config import settings
+from src.dependencies import get_task_service
 from src.routers.tasks import router as tasks_router
 from src.routers.themes import router as themes_router
-from src.schemas.tasks import TaskResponse
-from src.utils import get_list_tasks, get_template_context, templates
+from src.services.tasks import TaskService
+from src.utils import get_template_context, templates
 
 app = FastAPI(title="HabitFlow", description="Трекер привычек и задач", version="1.0.0")
 
@@ -33,8 +34,11 @@ app.add_middleware(
 async def root(
     request: Request,
     context: dict[str, Any] = Depends(get_template_context),
-    tasks: list[TaskResponse] = Depends(get_list_tasks),
+    task_service: TaskService = Depends(get_task_service),
 ):
+    tasks, _ = await task_service.list_tasks(
+        per_page=5, theme_name=request.session.get("selected_theme")
+    )
     context.update({"tasks": tasks, "habits": [], "current_page": "home"})
 
     return templates.TemplateResponse(request, "index.html", context)

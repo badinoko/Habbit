@@ -18,7 +18,8 @@
     <div class="filter-group">
         <label for="sort-tasks"><i class="fas fa-sort"></i> Сортировка:</label>
         <select id="sort-tasks" class="form-control">
-            <option value="created">По дате создания</option>
+            <option value="created_at">По дате создания</option>
+            <option value="updated_at">По дате обновления</option>
             <option value="name">По названию</option>
             <option value="priority">По приоритету</option>
         </select>
@@ -130,6 +131,11 @@
             </a>
         </div>
     {% endif %}
-<script src="{{ url_for('static', path='/js/list_tasks.js') }}"></script>
 </div>
+<div
+    id="tasks-pagination"
+    class="tasks-pagination"
+    data-tasks-count="{{ tasks_count|default(0) }}"
+></div>
+<script src="{{ url_for('static', path='/js/list_tasks.js') }}"></script>
 {% endblock %}

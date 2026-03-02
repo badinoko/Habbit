@@ -4,7 +4,7 @@ from typing import TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel
-from sqlalchemy import and_, delete as sa_delete, select
+from sqlalchemy import ColumnElement, and_, delete as sa_delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.base import ExecutableOption
@@ -114,7 +114,8 @@ class GenericSqlRepository[CreateType, ReadType, UpdateType, ModelType, IdType]:
     async def list(
         self,
         skip: int = 0,
-        limit: int = 100,
+        limit: int | None = None,
+        extra_conditions: list[ColumnElement] | None = None,
         *options: ExecutableOption,
         **filters: object,
     ) -> list[ReadType]:
@@ -127,7 +128,12 @@ class GenericSqlRepository[CreateType, ReadType, UpdateType, ModelType, IdType]:
         :param filters: Фильтры в виде равенств по колонкам.
         """
         stmt = self._construct_list_stmt(*options, **filters)
+        if extra_conditions:
+            for condition in extra_conditions:
+                stmt = stmt.where(condition)
         stmt = stmt.offset(skip).limit(limit)
+        if limit:
+            stmt = stmt.limit(limit)
         result = await self._session.execute(stmt)
         records = (
             result.scalars().unique().all()

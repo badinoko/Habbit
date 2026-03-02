@@ -78,36 +78,6 @@ function initializeEventHandlers() {
         });
     });
 
-    // Выбор темы (AJAX-режим включается только при наличии выделенного контейнера)
-    const tasksContainer = document.getElementById('tasks-list-container');
-    if (tasksContainer) {
-        const themeFilterLinks = document.querySelectorAll('.theme-filter-link');
-        themeFilterLinks.forEach(link => {
-            if (link.dataset.boundThemeFilter === '1') {
-                return;
-            }
-            link.dataset.boundThemeFilter = '1';
-
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const topicId =
-                    this.dataset.topicId ||
-                    this.dataset.themeName ||
-                    this.dataset.themeId ||
-                    new URL(this.href, window.location.origin).searchParams.get('theme');
-                filterByTopic(topicId, this.closest('.topic-item'));
-            });
-        });
-    }
-
-    // Фильтрация задач
-    const topicFilter = document.getElementById('topic-filter');
-    if (topicFilter) {
-        topicFilter.addEventListener('change', function() {
-            filterTasksByTopic(this.value);
-        });
-    }
-
     // Редактирование и удаление
     initializeEditDeleteHandlers();
 }
@@ -169,8 +139,6 @@ async function markTaskAsCompleted(taskId, checkbox, taskItem) {
             const activeEl = document.getElementById('stat-active-tasks');
             if (activeEl) activeEl.textContent = activeTasksCount;
 
-            // Если есть другие обновления статистики (например, для привычек), можно вызвать
-            if (typeof updateStats === 'function') updateStats();
         } else {
             // Ошибка сервера – откатываем чекбокс
             checkbox.checked = previousChecked;
@@ -236,9 +204,6 @@ async function markHabitAsCompleted(habitId, button) {
                 button.title = 'Уже выполнено сегодня';
             }, 1000);
 
-            if (typeof updateStats === 'function') {
-                setTimeout(updateStats, 500);
-            }
         } else {
             // Возвращаем исходное состояние
             button.innerHTML = originalText;
@@ -294,8 +259,6 @@ async function deleteTask(taskId) {
                 }
             }
 
-            // Обновляем статистику если есть
-            if (typeof updateStats === 'function') updateStats();
         } else {
             showNotification('Ошибка при удалении задачи', 'error');
             if (taskItem) {
@@ -405,76 +368,6 @@ function getCsrfToken() {
     return '';
 }
 
-function filterByTopic(topicId, clickedElement) {
-    const container = document.getElementById('tasks-list-container');
-    if (!container) {
-        return;
-    }
-
-    // Сбрасываем активное состояние у всех тем
-    document.querySelectorAll('.topic-item').forEach(item => {
-        item.classList.remove('active');
-    });
-
-    // Устанавливаем активное состояние выбранной теме
-    if (clickedElement) {
-        clickedElement.classList.add('active');
-    }
-
-    // Обновляем URL
-    const url = new URL(window.location);
-    if (topicId && topicId !== 'all') {
-        url.searchParams.set('theme', topicId);
-    } else {
-        url.searchParams.delete('theme');
-    }
-    window.history.pushState({}, '', url);
-
-    // Загружаем задачи через AJAX (если нужно)
-    loadTasksByTheme(topicId);
-}
-
-async function loadTasksByTheme(themeId) {
-    const container = document.getElementById('tasks-list-container');
-    if (!container) return;
-
-    container.innerHTML = '<div class="loading">Загрузка...</div>';
-
-    const url = themeId && themeId !== 'all' ? `/tasks/?theme=${themeId}` : '/tasks/';
-    try {
-        const response = await fetch(url, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        });
-        if (!response.ok) throw new Error('Network error');
-        const html = await response.text();
-        container.innerHTML = html;
-
-        // Переинициализируем состояние чекбоксов и обработчики из main.js
-        initializeTaskStates();
-        initializeEventHandlers();
-
-        // Восстанавливаем сортировку и фильтрацию
-        if (window.sortTasks) window.sortTasks();
-        if (window.applyStatusFilter) window.applyStatusFilter();
-
-    } catch (error) {
-        console.error('Error loading tasks:', error);
-        container.innerHTML = '<div class="error">Ошибка загрузки задач</div>';
-    }
-}
-
-function filterTasksByTopic(topicId) {
-    const tasks = document.querySelectorAll('.task-item');
-    tasks.forEach(task => {
-        if (topicId === 'all' || task.dataset.topicId === topicId) {
-            task.style.display = 'flex';
-        } else {
-            task.style.display = 'none';
-        }
-    });
-}
-
-
 function initializeEditDeleteHandlers() {
     // Обработчики для кнопок удаления (редактирование остаётся на обычных ссылках)
     const deleteButtons = document.querySelectorAll('.btn-task-delete');
@@ -495,34 +388,6 @@ function initializeEditDeleteHandlers() {
         });
     });
 }
-
-function updateStats() {
-}
-
-window.addEventListener('popstate', () => {
-    const container = document.getElementById('tasks-list-container');
-    if (!container) {
-        return;
-    }
-
-    const params = new URLSearchParams(window.location.search);
-    const themeId = params.get('theme');
-    // Находим элемент темы, соответствующий themeId, и делаем его активным
-    document.querySelectorAll('.topic-item').forEach(item => {
-        const link = item.querySelector('.theme-filter-link');
-        const id =
-            item.dataset.topicId ||
-            link?.dataset.topicId ||
-            link?.dataset.themeName ||
-            (link ? new URL(link.href, window.location.origin).searchParams.get('theme') : null);
-        if (id === themeId) {
-            item.classList.add('active');
-        } else {
-            item.classList.remove('active');
-        }
-    });
-    loadTasksByTheme(themeId);
-});
 
 function addNotificationStyles() {
     const style = document.createElement('style');

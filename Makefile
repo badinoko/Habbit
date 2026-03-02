@@ -5,14 +5,14 @@ run:
 	poetry run uvicorn src.main:app --port 8001 --reload
 
 test:
-	PYTHONPATH=. poetry run pytest -x tests -v
+	PYTHONPATH=. poetry run pytest -x tests -v --cov=src --cov-branch --cov-fail-under=75
 
 lint:
-	poetry run ruff check src tests
+	poetry run ruff check . --force-exclude
 
 format:
-	poetry run ruff format .
-	poetry run ruff check --fix .
+	poetry run ruff format . --force-exclude
+	poetry run ruff check --fix . --force-exclude
 
 typecheck:
 	poetry run mypy src --explicit-package-bases

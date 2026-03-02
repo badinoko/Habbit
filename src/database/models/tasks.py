@@ -27,7 +27,7 @@ class Task(BaseModel):
 
     name = Column(String(46), nullable=False)
     theme_id = Column(UUID, ForeignKey("themes.id", ondelete="SET NULL"), nullable=True)
-    description = Column(String(1000), nullable=True)
+    description = Column(String(200), nullable=True)
     completed_at = Column(DateTime, nullable=True, default=None)
     priority_id = Column(UUID, ForeignKey("priorities.id"), nullable=False)
 

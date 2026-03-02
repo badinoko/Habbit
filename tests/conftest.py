@@ -15,24 +15,24 @@ from pydantic_settings import BaseSettings
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-# Defaults for app settings so importing src.main during tests does not depend on local .env
-os.environ.setdefault("POSTGRES_HOST", "localhost")
-os.environ.setdefault("POSTGRES_PORT", "5432")
-os.environ.setdefault("POSTGRES_USER", "postgres")
-os.environ.setdefault("POSTGRES_PASSWORD", "postgres")
-os.environ.setdefault("POSTGRES_DB", "postgres")
-os.environ.setdefault("REDIS_HOST", "localhost")
-os.environ.setdefault("REDIS_PORT", "6379")
-os.environ.setdefault("REDIS_PASSWORD", "")
-os.environ.setdefault("REDIS_DB", "0")
-os.environ.setdefault("APP_PORT", "8000")
-os.environ.setdefault("SECRET_KEY", "test-secret-key")
-os.environ.setdefault("SESSION_COOKIE_NAME", "habitflow_session")
-os.environ.setdefault("SESSION_MAX_AGE", "1209600")
-os.environ.setdefault("SESSION_SAME_SITE", "lax")
-os.environ.setdefault("SESSION_HTTPS_ONLY", "false")
-os.environ.setdefault("API_KEY", "test-api-key")
-os.environ.setdefault("DEBUG", "true")
+# Deterministic app settings for tests regardless of local shell/IDE env.
+os.environ["POSTGRES_HOST"] = "localhost"
+os.environ["POSTGRES_PORT"] = "5432"
+os.environ["POSTGRES_USER"] = "postgres"
+os.environ["POSTGRES_PASSWORD"] = "postgres"
+os.environ["POSTGRES_DB"] = "postgres"
+os.environ["REDIS_HOST"] = "localhost"
+os.environ["REDIS_PORT"] = "6379"
+os.environ["REDIS_PASSWORD"] = ""
+os.environ["REDIS_DB"] = "0"
+os.environ["APP_PORT"] = "8000"
+os.environ["SECRET_KEY"] = "test-secret-key"
+os.environ["SESSION_COOKIE_NAME"] = "habitflow_session"
+os.environ["SESSION_MAX_AGE"] = "1209600"
+os.environ["SESSION_SAME_SITE"] = "lax"
+os.environ["SESSION_HTTPS_ONLY"] = "false"
+os.environ["API_KEY"] = "test-api-key"
+os.environ["DEBUG"] = "true"
 
 
 class DatabaseConfig(BaseSettings):
@@ -96,7 +96,11 @@ def get_db_connection(dbname=None) -> pg_connection:
 @pytest.fixture(scope="session")
 def postgres_container():
     container_name = f"test_postgres_{uuid4().hex[:8]}"
-    client = docker.from_env()
+    try:
+        client = docker.from_env()
+        client.ping()
+    except Exception as exc:
+        pytest.skip(f"Docker is required for integration tests: {exc}")
 
     try:
         client.containers.run(

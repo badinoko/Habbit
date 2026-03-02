@@ -1,133 +1,214 @@
-// В самом начале файла объявим глобальные переменные для состояния
-window.currentSort = 'created';
-window.currentOrder = 'desc';
-
 document.addEventListener('DOMContentLoaded', () => {
-    const tasksList = document.querySelector('.tasks-list');
     const statusFilter = document.getElementById('status-filter');
     const sortSelect = document.getElementById('sort-tasks');
     const sortAscBtn = document.getElementById('sort-asc');
     const sortDescBtn = document.getElementById('sort-desc');
+    const paginationContainer = document.getElementById('tasks-pagination');
 
-    // Сохраним ссылку на контейнер в глобальной переменной, если нужно
-    window.tasksListContainer = tasksList;
-
-    // Устанавливаем начальное активное состояние кнопок
-    if (sortDescBtn) sortDescBtn.classList.add('active');
-    if (sortAscBtn) sortAscBtn.classList.remove('active');
-
-    // Функция получения всех элементов задач (используем глобальную ссылку на контейнер)
-    function getAllTaskItems() {
-        const container = window.tasksListContainer || document.querySelector('.tasks-list');
-        return Array.from(container.querySelectorAll('.task-item'));
+    if (!statusFilter || !sortSelect || !sortAscBtn || !sortDescBtn) {
+        return;
     }
 
-    // Функция сравнения (без изменений)
-    function compareTasks(a, b) {
-        let valA, valB;
+    const allowedStatuses = new Set(['active', 'completed', 'all']);
+    const allowedSorts = new Set(['created_at', 'updated_at', 'name', 'priority']);
+    const allowedOrders = new Set(['asc', 'desc']);
 
-        switch (currentSort) {
-            case 'name':
-                valA = a.querySelector('.task-title').textContent.trim().toLowerCase();
-                valB = b.querySelector('.task-title').textContent.trim().toLowerCase();
-                return valA.localeCompare(valB);
+    function normalizeSortValue(value) {
+        if (value === 'created') return 'created_at';
+        if (value === 'updated') return 'updated_at';
+        return value;
+    }
 
-            case 'priority':
-                // Ищем элемент с классом task-priority и получаем значение из data-priority-value
-                const priorityElementA = a.querySelector('.task-priority');
-                const priorityElementB = b.querySelector('.task-priority');
+    const currentParams = new URLSearchParams(window.location.search);
+    const parsedStatus = currentParams.get('status');
+    const parsedSort = normalizeSortValue(currentParams.get('sort'));
+    const parsedOrder = currentParams.get('order');
 
-                valA = priorityElementA ? parseInt(priorityElementA.dataset.priorityValue || '0', 10) : 0;
-                valB = priorityElementB ? parseInt(priorityElementB.dataset.priorityValue || '0', 10) : 0;
+    const initialStatus = allowedStatuses.has(parsedStatus) ? parsedStatus : 'active';
+    const initialSort = allowedSorts.has(parsedSort) ? parsedSort : 'created_at';
+    let currentOrder = allowedOrders.has(parsedOrder) ? parsedOrder : 'desc';
 
-                // Для сортировки по убыванию (высокий приоритет сверху)
-                return valB - valA;   // 3(high) > 2(medium) > 1(low)
+    statusFilter.value = initialStatus;
+    sortSelect.value = initialSort;
 
-            case 'updated':
-                valA = a.dataset.updated || '0000-00-00T00:00:00';
-                valB = b.dataset.updated || '0000-00-00T00:00:00';
-                return valA.localeCompare(valB);
+    function setOrderButtons(order) {
+        sortAscBtn.classList.toggle('active', order === 'asc');
+        sortDescBtn.classList.toggle('active', order === 'desc');
+    }
 
-            case 'created':
-            default:
-                valA = a.dataset.created || '0000-00-00T00:00:00';
-                valB = b.dataset.created || '0000-00-00T00:00:00';
-                return valA.localeCompare(valB);
+    function buildTasksUrl() {
+        const nextParams = new URLSearchParams(window.location.search);
+        nextParams.set('status', statusFilter.value);
+        nextParams.set('sort', sortSelect.value);
+        nextParams.set('order', currentOrder);
+        nextParams.delete('page');
+        const query = nextParams.toString();
+        return query ? `${window.location.pathname}?${query}` : window.location.pathname;
+    }
+
+    function submitFilters() {
+        const nextUrl = buildTasksUrl();
+        const currentUrl = `${window.location.pathname}${window.location.search}`;
+        if (nextUrl !== currentUrl) {
+            window.location.assign(nextUrl);
         }
     }
 
-    // Основная функция сортировки
-    function sortTasks() {
-        const tasks = getAllTaskItems();
-        if (tasks.length === 0) return;
+    function syncThemeLinks() {
+        const filterParams = new URLSearchParams(window.location.search);
+        const keysToKeep = ['status', 'sort', 'order', 'per_page'];
+        const themeLinks = document.querySelectorAll('.theme-filter-link');
 
-        tasks.sort((a, b) => {
-            const comparison = compareTasks(a, b);
-            return window.currentOrder === 'asc' ? comparison : -comparison;
-        });
-
-        const container = window.tasksListContainer || document.querySelector('.tasks-list');
-        while (container.firstChild) container.removeChild(container.firstChild);
-        tasks.forEach(task => container.appendChild(task));
-    }
-
-    // Функция фильтрации по статусу
-    function applyStatusFilter() {
-        const status = statusFilter ? statusFilter.value : 'active';
-        const tasks = getAllTaskItems();
-        if (tasks.length === 0) return;
-
-        tasks.forEach(task => {
-            const completedAt = task.dataset.completed;
-            const isCompleted = completedAt && completedAt !== 'None' && completedAt !== '' && completedAt !== 'null';
-            let shouldShow = true;
-            if (status === 'active') shouldShow = !isCompleted;
-            else if (status === 'completed') shouldShow = isCompleted;
-            task.style.display = shouldShow ? '' : 'none';
+        themeLinks.forEach((link) => {
+            const linkUrl = new URL(link.getAttribute('href'), window.location.href);
+            keysToKeep.forEach((key) => {
+                if (filterParams.has(key)) {
+                    linkUrl.searchParams.set(key, filterParams.get(key));
+                }
+            });
+            linkUrl.searchParams.delete('page');
+            const nextHref = `${linkUrl.pathname}?${linkUrl.searchParams.toString()}`;
+            link.setAttribute('href', nextHref);
         });
     }
 
-    // Делаем функции глобальными
-    window.sortTasks = sortTasks;
-    window.applyStatusFilter = applyStatusFilter;
-
-    // Обработчики изменения сортировки
-    if (sortSelect) {
-        sortSelect.addEventListener('change', () => {
-            window.currentSort = sortSelect.value;
-            sortTasks();
-            applyStatusFilter(); // после сортировки фильтр применяется автоматически
-        });
+    function parsePositiveInt(value, fallback) {
+        const parsed = Number.parseInt(value, 10);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
     }
 
-    if (sortAscBtn) {
-        sortAscBtn.addEventListener('click', () => {
-            window.currentOrder = 'asc';
-            sortAscBtn.classList.add('active');
-            if (sortDescBtn) sortDescBtn.classList.remove('active');
-            sortTasks();
-            applyStatusFilter();
-        });
+    function buildUrlWithPage(page) {
+        const params = new URLSearchParams(window.location.search);
+        if (page <= 1) {
+            params.delete('page');
+        } else {
+            params.set('page', String(page));
+        }
+        const query = params.toString();
+        return query ? `${window.location.pathname}?${query}` : window.location.pathname;
     }
 
-    if (sortDescBtn) {
-        sortDescBtn.addEventListener('click', () => {
-            window.currentOrder = 'desc';
-            sortDescBtn.classList.add('active');
-            if (sortAscBtn) sortAscBtn.classList.remove('active');
-            sortTasks();
-            applyStatusFilter();
-        });
+    function createPageControl({ label, href, disabled = false, active = false }) {
+        const element = document.createElement(disabled || active ? 'span' : 'a');
+        element.className = 'btn btn-outline btn-sm tasks-page-btn';
+        element.textContent = label;
+
+        if (active) {
+            element.classList.add('active');
+            element.setAttribute('aria-current', 'page');
+        }
+
+        if (disabled) {
+            element.classList.add('disabled');
+            element.setAttribute('aria-disabled', 'true');
+        }
+
+        if (!disabled && !active && href) {
+            element.href = href;
+        }
+
+        return element;
     }
 
-    // Обработчик изменения фильтра статуса
-    if (statusFilter) {
-        statusFilter.addEventListener('change', () => {
-            applyStatusFilter();
-        });
+    function renderPagination() {
+        if (!paginationContainer) {
+            return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const currentPage = parsePositiveInt(params.get('page'), 1);
+        const perPage = parsePositiveInt(params.get('per_page'), 20);
+        const filteredTotal = parsePositiveInt(
+            paginationContainer.dataset.tasksCount,
+            0
+        );
+
+        const totalPages =
+            filteredTotal > 0 ? Math.ceil(filteredTotal / perPage) : 0;
+
+        const hasPrev = currentPage > 1;
+        const hasNext = totalPages > 0 && currentPage < totalPages;
+
+        if (!hasPrev && !hasNext) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        paginationContainer.innerHTML = '';
+
+        const controls = document.createElement('div');
+        controls.className = 'tasks-pagination-controls';
+
+        controls.appendChild(
+            createPageControl({
+                label: 'Назад',
+                href: buildUrlWithPage(currentPage - 1),
+                disabled: !hasPrev,
+            })
+        );
+
+        if (hasPrev) {
+            controls.appendChild(
+                createPageControl({
+                    label: String(currentPage - 1),
+                    href: buildUrlWithPage(currentPage - 1),
+                })
+            );
+        }
+
+        controls.appendChild(
+            createPageControl({
+                label: String(currentPage),
+                active: true,
+            })
+        );
+
+        if (hasNext) {
+            controls.appendChild(
+                createPageControl({
+                    label: String(currentPage + 1),
+                    href: buildUrlWithPage(currentPage + 1),
+                })
+            );
+        }
+
+        controls.appendChild(
+            createPageControl({
+                label: 'Вперёд',
+                href: buildUrlWithPage(currentPage + 1),
+                disabled: !hasNext,
+            })
+        );
+
+        const info = document.createElement('div');
+        info.className = 'tasks-pagination-info';
+        info.textContent =
+            totalPages > 0
+                ? `Страница ${currentPage} из ${totalPages}`
+                : `Страница ${currentPage}`;
+
+        paginationContainer.appendChild(controls);
+        paginationContainer.appendChild(info);
     }
 
-    // Первоначальное применение сортировки и фильтра
-    sortTasks();
-    applyStatusFilter();
+    setOrderButtons(currentOrder);
+    syncThemeLinks();
+    renderPagination();
+
+    statusFilter.addEventListener('change', submitFilters);
+    sortSelect.addEventListener('change', submitFilters);
+
+    sortAscBtn.addEventListener('click', () => {
+        if (currentOrder === 'asc') return;
+        currentOrder = 'asc';
+        setOrderButtons(currentOrder);
+        submitFilters();
+    });
+
+    sortDescBtn.addEventListener('click', () => {
+        if (currentOrder === 'desc') return;
+        currentOrder = 'desc';
+        setOrderButtons(currentOrder);
+        submitFilters();
+    });
 });

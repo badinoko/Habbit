@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from src.exceptions import TaskNotFound
@@ -27,6 +28,11 @@ PRIORITIES = {
     "medium": {"name": "средний", "weight": 2, "color": "#EAB308"},
     "high": {"name": "высокий", "weight": 3, "color": "#EF4444"},
 }
+
+
+Status = Literal["active", "completed", "all"]
+Sort = Literal["created_at", "updated_at", "name", "priority"]
+Order = Literal["asc", "desc"]
 
 
 class TaskService:
@@ -118,12 +124,30 @@ class TaskService:
         return await self.task_repo.update(task_id, update_data)
 
     async def list_tasks(
-        self, theme_name: str | None, completed: bool, limit: int
-    ) -> list[TaskResponse]:
-        if theme_name == "Все темы":
-            theme_name = None
-        return await self.task_repo.get_recent_for_dashboard(
-            theme_name, completed, limit
+        self,
+        page: int = 1,
+        per_page: int = 20,
+        theme_name: str | None = None,
+        status: Status = "active",
+        sort: Sort = "created_at",
+        order: Order = "desc",
+    ) -> tuple[list[TaskResponse], int]:
+        skip = (page - 1) * per_page
+
+        theme_id = None
+        if theme_name:
+            theme = await self.theme_repo.get_by_name(theme_name)
+            if not theme:
+                return ([], 0)
+            theme_id = theme.id
+
+        return await self.task_repo.list_tasks(
+            skip=skip,
+            limit=per_page,
+            theme_id=theme_id,
+            status=status,
+            sort=sort,
+            order=order,
         )
 
     async def get_task_statistics(self) -> TaskStats:

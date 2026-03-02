@@ -1,6 +1,6 @@
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from src.dependencies import get_theme_service
@@ -22,11 +22,34 @@ async def get_themes(
     request: Request,
     context: dict[str, Any] = Depends(get_template_context),
     themes_service: ThemeService = Depends(get_theme_service),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
 ):
+    themes_list, themes_count = await themes_service.list_themes_with_task_counts(
+        page=page, per_page=per_page
+    )
+    total_pages = (themes_count + per_page - 1) // per_page if themes_count else 0
+    if themes_count == 0 and page != 1:
+        return RedirectResponse(
+            url=f"{request.url.path}?per_page={per_page}",
+            status_code=status.HTTP_302_FOUND,
+        )
+    if total_pages > 0 and page > total_pages:
+        return RedirectResponse(
+            url=f"{request.url.path}?page={total_pages}&per_page={per_page}",
+            status_code=status.HTTP_302_FOUND,
+        )
+
     context.update(
         {
             "current_page": "None",
-            "themes_list": await themes_service.list_themes_with_task_counts(),
+            "themes_list": themes_list,
+            "themes_count": themes_count,
+            "themes_page": page,
+            "themes_per_page": per_page,
+            "themes_total_pages": total_pages,
+            "themes_has_prev": page > 1,
+            "themes_has_next": total_pages > 0 and page < total_pages,
         }
     )
     return templates.TemplateResponse(request, "themes/themes_list.html", context)

@@ -59,6 +59,16 @@ async def test_update_theme(client):
         client=client, id=NAME, name="Новое название", color="#FFFFFF"
     )
     assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/json")
+    data = response.json()
+    assert data["status"] == "success"
+    assert data["theme"]["name"] == "Новое название"
+    assert data["theme"]["color"] == "#FFFFFF"
+
+    response = await client.get("/themes/")
+    assert response.status_code == 200
+    assert "Новое название" in response.text
+    assert NAME not in response.text
 
 
 @pytest.mark.asyncio
@@ -86,3 +96,21 @@ async def test_get_update_theme_page(client):
     response = await client.get(f"/themes/{NAME}")
     assert response.status_code == 200
     assert NAME in response.text
+
+
+@pytest.mark.asyncio
+async def test_themes_page_redirects_to_first_page_when_empty(client):
+    response = await client.get("/themes/?page=3&per_page=5", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["location"] == "/themes/?per_page=5"
+
+
+@pytest.mark.asyncio
+async def test_themes_page_redirects_to_last_page_when_page_is_too_high(client):
+    await create_theme(client=client, name="Темы-1")
+    await create_theme(client=client, name="Темы-2")
+    await create_theme(client=client, name="Темы-3")
+
+    response = await client.get("/themes/?page=9&per_page=2", follow_redirects=False)
+    assert response.status_code == 302
+    assert response.headers["location"] == "/themes/?page=2&per_page=2"
