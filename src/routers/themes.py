@@ -139,9 +139,18 @@ async def get_theme(
 ):
     theme = await service.get_theme_by_name(name)
     if not theme:
-        raise HTTPException(
+        context.update(
+            {
+                "message_type": "error",
+                "title": "Ошибка",
+                "message": "Тема не найдена",
+            }
+        )
+        return templates.TemplateResponse(
+            request,
+            "message.html",
+            context,
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Theme with name {name} not found",
         )
     existing_colors = await service.get_existing_colors()
     colors = list(THEME_COLORS - existing_colors)
@@ -191,4 +200,10 @@ async def delete_theme(
     name: str,
     service: ThemeService = Depends(get_theme_service),
 ):
-    await service.delete_theme(name)
+    try:
+        await service.delete_theme(name)
+    except RuntimeError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
+        ) from None

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Literal
 from uuid import UUID
 
@@ -111,7 +111,7 @@ class TaskService:
         if not task:
             raise TaskNotFound
 
-        update_data = TaskUpdate(completed_at=datetime.now())
+        update_data = TaskUpdate(completed_at=datetime.now(UTC))
         return await self.task_repo.update(task_id, update_data)
 
     async def incomplete_task(self, task_id: UUID) -> TaskInDB | None:

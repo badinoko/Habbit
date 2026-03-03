@@ -146,8 +146,7 @@ def test_get_theme_page_returns_404_when_missing(client):
     )
     res = client.get("/themes/Missing")
     assert res.status_code == 404
-    assert res.headers["content-type"].startswith("application/json")
-    assert "not found" in res.json()["detail"]
+    assert res.headers["content-type"].startswith("text/html")
 
 
 def test_update_theme_returns_500_when_service_returns_none(client):

@@ -15,25 +15,6 @@ from pydantic_settings import BaseSettings
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-# Deterministic app settings for tests regardless of local shell/IDE env.
-os.environ["POSTGRES_HOST"] = "localhost"
-os.environ["POSTGRES_PORT"] = "5432"
-os.environ["POSTGRES_USER"] = "postgres"
-os.environ["POSTGRES_PASSWORD"] = "postgres"
-os.environ["POSTGRES_DB"] = "postgres"
-os.environ["REDIS_HOST"] = "localhost"
-os.environ["REDIS_PORT"] = "6379"
-os.environ["REDIS_PASSWORD"] = ""
-os.environ["REDIS_DB"] = "0"
-os.environ["APP_PORT"] = "8000"
-os.environ["SECRET_KEY"] = "test-secret-key"
-os.environ["SESSION_COOKIE_NAME"] = "habitflow_session"
-os.environ["SESSION_MAX_AGE"] = "1209600"
-os.environ["SESSION_SAME_SITE"] = "lax"
-os.environ["SESSION_HTTPS_ONLY"] = "false"
-os.environ["API_KEY"] = "test-api-key"
-os.environ["DEBUG"] = "true"
-
 
 class DatabaseConfig(BaseSettings):
     user: str = Field(alias="DATABASE_USERNAME")

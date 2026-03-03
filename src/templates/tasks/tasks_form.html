@@ -5,7 +5,7 @@
 {% block form_icon %}<i class="fas fa-tag"></i>{% endblock %}
 {% block form_heading %}{% if task.name %}Обновление{% else %}Создание{% endif %} задачи{% endblock %}
 {% block form_description %}{% if task.name %}Обновите{% else %}Создайте новую{% endif %} задачу{% endblock %}
-{% block form_action %}/tasks{% if task.name %}/{{ task.id }}/edit{% endif %}{% endblock %}
+{% block form_action %}/tasks{% if task.name %}/{{ task.id }}{% endif %}{% endblock %}
 {% block form_method %}{% if task.name %}put{% else %}post{% endif %}{% endblock %}
 
 {% block basic_fields %}

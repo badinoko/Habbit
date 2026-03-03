@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import pytest
@@ -74,7 +74,7 @@ class _FakeTaskService:
             raise self.complete_error
         if not self.exists:
             raise TaskNotFound
-        return _mk_task(task_id).model_copy(update={"completed_at": datetime.now()})
+        return _mk_task(task_id).model_copy(update={"completed_at": datetime.now(UTC)})
 
     async def incomplete_task(self, task_id: UUID) -> TaskInDB:
         if self.incomplete_error:
@@ -199,7 +199,7 @@ def test_create_task_returns_500_when_service_returns_none(client):
 
 def test_update_task_returns_success_payload(client):
     app.dependency_overrides[get_task_service] = lambda: _FakeTaskService()
-    res = client.put(f"/tasks/{uuid4()}/edit", json={"name": "Updated"})
+    res = client.put(f"/tasks/{uuid4()}", json={"name": "Updated"})
     assert res.status_code == 200
     assert res.headers["content-type"].startswith("application/json")
     assert res.json() == {"message": "success"}
@@ -209,30 +209,48 @@ def test_update_task_returns_400_on_value_error(client):
     app.dependency_overrides[get_task_service] = lambda: _FakeTaskService(
         update_error=ValueError("bad update")
     )
-    res = client.put(f"/tasks/{uuid4()}/edit", json={"name": "Updated"})
+    res = client.put(f"/tasks/{uuid4()}", json={"name": "Updated"})
     assert res.status_code == 400
-    assert res.headers["content-type"].startswith("text/html")
-    assert "bad update" in res.text
+    assert res.headers["content-type"].startswith("application/json")
+    assert res.json() == {
+        "error": {"code": "bad_request", "message": "bad update"}
+    }
+
+
+def test_update_task_returns_404_on_task_not_found(client):
+    app.dependency_overrides[get_task_service] = lambda: _FakeTaskService(
+        update_error=TaskNotFound()
+    )
+    res = client.put(f"/tasks/{uuid4()}", json={"name": "Updated"})
+    assert res.status_code == 404
+    assert res.headers["content-type"].startswith("application/json")
+    assert res.json() == {
+        "error": {"code": "not_found", "message": "Задача не найдена"}
+    }
 
 
 def test_update_task_returns_500_on_runtime_error(client):
     app.dependency_overrides[get_task_service] = lambda: _FakeTaskService(
         update_error=RuntimeError("failed update")
     )
-    res = client.put(f"/tasks/{uuid4()}/edit", json={"name": "Updated"})
+    res = client.put(f"/tasks/{uuid4()}", json={"name": "Updated"})
     assert res.status_code == 500
-    assert res.headers["content-type"].startswith("text/html")
-    assert "failed update" in res.text
+    assert res.headers["content-type"].startswith("application/json")
+    assert res.json() == {
+        "error": {"code": "internal_error", "message": "Internal server error"}
+    }
 
 
 def test_update_task_returns_500_when_service_returns_none(client):
     app.dependency_overrides[get_task_service] = lambda: _FakeTaskService(
         update_returns_none=True
     )
-    res = client.put(f"/tasks/{uuid4()}/edit", json={"name": "Updated"})
+    res = client.put(f"/tasks/{uuid4()}", json={"name": "Updated"})
     assert res.status_code == 500
-    assert res.headers["content-type"].startswith("text/html")
-    assert "Задача не обновлена" in res.text
+    assert res.headers["content-type"].startswith("application/json")
+    assert res.json() == {
+        "error": {"code": "internal_error", "message": "Задача не обновлена"}
+    }
 
 
 def test_delete_task_returns_204_when_success(client):

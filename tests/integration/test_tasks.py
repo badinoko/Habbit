@@ -27,7 +27,7 @@ async def delete_task(client, id):
 
 
 async def update_task(client, id, data):
-    return await client.put(f"/tasks/{id}/edit", json=data)
+    return await client.put(f"/tasks/{id}", json=data)
 
 
 @pytest.mark.asyncio

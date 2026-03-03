@@ -2,7 +2,7 @@ from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from src.dependencies import get_task_service
 from src.exceptions import TaskNotFound
@@ -70,18 +70,18 @@ async def create_task_page(
 
 
 @router.get(
-    "/{task_id}",
+    "/{id}",
     response_class=HTMLResponse,
     status_code=status.HTTP_200_OK,
     summary="Returns task edition page",
 )
 async def task_page(
     request: Request,
-    task_id: UUID,
+    id: UUID,
     context: dict[str, Any] = Depends(get_template_context),
     service: TaskService = Depends(get_task_service),
 ):
-    task = await service.get_task(task_id)
+    task = await service.get_task(id)
     if not task:
         context = error_context_updater(context, "Задача не найдена")
         return templates.TemplateResponse(
@@ -96,7 +96,7 @@ async def task_page(
             "current_page": "tasks",
             "priorities": await service.get_task_priorities(),
             "task": {
-                "id": task_id,
+                "id": id,
                 "name": task.name,
                 "description": task.description,
                 "theme_id": task.theme_id,
@@ -204,43 +204,50 @@ async def incomplete_task(id: UUID, service: TaskService = Depends(get_task_serv
 
 
 @router.put(
-    "/{id}/edit",
+    "/{id}",
     response_model=Response,
     summary="Updates task",
     responses={
+        500: {"description": "Internal server error"},
+        400: {"description": "Bad request - validation error"},
         404: {"description": "Task not found"},
     },
 )
 async def update_task(
-    request: Request,
     id: UUID,
     task_data: TaskUpdateAPI,
-    context: dict[str, Any] = Depends(get_template_context),
     service: TaskService = Depends(get_task_service),
 ):
     try:
         res = await service.update_task(id, task_data)
         if not res:
-            context = error_context_updater(context, "Задача не обновлена")
-            return templates.TemplateResponse(
-                request,
-                "message.html",
-                context,
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "error": {
+                        "code": "internal_error",
+                        "message": "Задача не обновлена",
+                    }
+                },
             )
         return Response(message="success")
+
     except ValueError as e:
-        context = error_context_updater(context, str(e))
-        return templates.TemplateResponse(
-            request, "message.html", context, status_code=status.HTTP_400_BAD_REQUEST
+        return JSONResponse(
+            status_code=400,
+            content={"error": {"code": "bad_request", "message": str(e)}},
         )
-    except RuntimeError as e:
-        context = error_context_updater(context, str(e))
-        return templates.TemplateResponse(
-            request,
-            "message.html",
-            context,
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    except TaskNotFound:
+        return JSONResponse(
+            status_code=404,
+            content={"error": {"code": "not_found", "message": "Задача не найдена"}},
+        )
+    except RuntimeError:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": {"code": "internal_error", "message": "Internal server error"}
+            },
         )
 
 
