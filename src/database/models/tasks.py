@@ -30,6 +30,10 @@ class Task(BaseModel):
     description = Column(String(200), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True, default=None)
     priority_id = Column(UUID, ForeignKey("priorities.id"), nullable=False)
+    owner_id = Column(
+        UUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
 
     theme = relationship("Theme", back_populates="tasks")
     priority = relationship("Priority")
+    owner = relationship("User", back_populates="tasks")

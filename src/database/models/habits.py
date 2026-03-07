@@ -25,6 +25,9 @@ class Habit(BaseModel):
     starts_on = Column(Date, nullable=True)
     ends_on = Column(Date, nullable=True, index=True)
     is_archived = Column(Boolean, nullable=False, default=False)
+    owner_id = Column(
+        UUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
 
     __table_args__ = (
         CheckConstraint(
@@ -40,6 +43,7 @@ class Habit(BaseModel):
         back_populates="habit",
         cascade="all, delete-orphan",
     )
+    owner = relationship("User", back_populates="habits")
 
 
 class HabitCompletion(BaseModel):

@@ -1,3 +1,6 @@
+---
+alwaysApply: true
+---
 # HabitFlow — AI Agent Bootstrap
 
 You are acting as a **senior backend engineer and mentor** working on the HabitFlow project.

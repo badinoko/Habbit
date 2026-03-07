@@ -1,0 +1,167 @@
+---
+alwaysApply: false
+---
+
+# Auth v1 PR Backlog
+
+## 1. Назначение документа
+`auth_v1_pr_backlog.mdc` фиксирует рабочий план внедрения авторизации в HabitFlow.
+
+Цель:
+- иметь один опорный документ с поэтапным внедрением `Auth v1`;
+- идти небольшими PR без смешивания DB, auth-flow и security-задач;
+- контролировать прогресс по статусам и качественным критериям.
+
+## 2. Scope Auth v1
+- локальная регистрация/логин/логаут;
+- OAuth-вход (первый провайдер: Google);
+- сессии пользователя;
+- защита state-changing роутов (`POST/PUT/PATCH/DELETE`);
+- user ownership для `themes/tasks/habits`.
+
+## 3. Общие правила выполнения PR
+1. Один PR = одна четкая цель.
+2. Каждый PR завершается тестами и локальными проверками.
+3. Контракты и документация обновляются, если меняется поведение.
+4. Перед merge фиксируется короткий code review (риски/пробелы/долг).
+
+Минимальные команды проверки:
+1. `poetry run pytest -x tests -v`
+2. `poetry run ruff check src tests`
+3. `poetry run mypy src --explicit-package-bases`
+
+## 4. PR-план (8 этапов)
+
+### PR-01: Auth schema + ownership fields
+Статус: `done`
+
+Цель:
+- подготовить БД к авторизации и владению данными.
+
+Состав:
+- добавить `users` и `oauth_accounts`;
+- добавить `owner_id` в `themes/tasks/habits` (`nullable=True` на этом шаге);
+- добавить индексы и foreign keys.
+
+DoD:
+- миграции применяются (`alembic upgrade head`);
+- приложение стартует без изменений текущих роутов;
+- регрессий по текущим тестам нет.
+
+### PR-02: Auth domain (repositories/services/schemas)
+Статус: `planned`
+
+Цель:
+- реализовать бизнес-ядро локальной аутентификации.
+
+Состав:
+- `UserRepository` и операции поиска/создания пользователя;
+- `AuthService`: `register`, `authenticate`, `logout`;
+- hash пароля (argon2/bcrypt), проверка пароля;
+- схемы запросов/ответов для auth-flow.
+
+DoD:
+- unit-тесты для hash/verify и auth-сценариев;
+- ошибки валидации и дубликатов обрабатываются предсказуемо.
+
+### PR-03: Session auth dependencies
+Статус: `planned`
+
+Цель:
+- централизовать получение текущего пользователя из сессии.
+
+Состав:
+- зависимости: `get_current_user`, `require_auth`, `optional_user`;
+- единая логика `401` (JSON) и redirect на login (HTML);
+- хранение в сессии минимального набора auth-данных.
+
+DoD:
+- API-unit тесты на unauthorized/authorized ветки;
+- повторяемое поведение для всех роутов.
+
+### PR-04: Local auth routes + templates
+Статус: `planned`
+
+Цель:
+- включить web-first локальный auth flow.
+
+Состав:
+- роуты: `/auth/register`, `/auth/login`, `/auth/logout`;
+- шаблоны login/register;
+- обновление navbar (гость/авторизованный пользователь).
+
+DoD:
+- happy-path регистрации/логина/логаута работает;
+- корректные сообщения об ошибках в HTML-flow.
+
+### PR-05: Authorization + ownership enforcement
+Статус: `planned`
+
+Цель:
+- ограничить доступ и закрыть cross-user доступ к данным.
+
+Состав:
+- защита всех state-changing роутов через `require_auth`;
+- фильтрация данных в сервисах/репозиториях по `owner_id`;
+- контроль доступа к чтению/обновлению/удалению чужих сущностей.
+
+DoD:
+- интеграционные тесты: пользователь не видит/не меняет чужие данные;
+- сценарии IDOR закрыты.
+
+### PR-06: OAuth (Google)
+Статус: `planned`
+
+Цель:
+- добавить OAuth-вход как альтернативу локальному логину.
+
+Состав:
+- роуты: `/auth/google/start`, `/auth/google/callback`;
+- проверка `state` и безопасный callback flow;
+- создание/поиск пользователя и линковка `oauth_accounts`;
+- установка локальной сессии после OAuth-логина.
+
+DoD:
+- unit/API-unit тесты callback-логики (с моками провайдера);
+- корректная обработка конфликтов/ошибок провайдера.
+
+### PR-07: CSRF protection
+Статус: `planned`
+
+Цель:
+- защитить cookie-based сессии для изменяющих операций.
+
+Состав:
+- генерация CSRF token и хранение в сессии;
+- проверка CSRF для `POST/PUT/PATCH/DELETE`;
+- передача токена из HTML-форм и AJAX-запросов.
+
+DoD:
+- негативные тесты на missing/invalid CSRF -> `403`;
+- позитивные сценарии проходят без регрессий.
+
+### PR-08: Hardening + docs + final DB tighten
+Статус: `planned`
+
+Цель:
+- довести `Auth v1` до финального состояния.
+
+Состав:
+- backfill и перевод `owner_id` в `NOT NULL`;
+- обновление `README`, `api_contract`, `backend_roadmap`, `testing_strategy`;
+- финальный прогон quality gates.
+
+DoD:
+- полный check-пайплайн зеленый;
+- документация согласована с фактическим поведением;
+- `Auth v1` закрыт end-to-end.
+
+## 5. Прогресс
+- [+] PR-01
+- [ ] PR-02
+- [ ] PR-03
+- [ ] PR-04
+- [ ] PR-05
+- [ ] PR-06
+- [ ] PR-07
+- [ ] PR-08
