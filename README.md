@@ -1,6 +1,6 @@
 # HabitFlow
 
-HabitFlow — веб-приложение для управления задачами и темами. Блок привычек пока в разработке (есть UI-заготовки, backend не реализован end-to-end).
+HabitFlow — веб-приложение для управления задачами и привычками.
 
 Проект развивается в режиме **web-first**:
 - основной интерфейс: серверные веб-роуты (`HTML + Redirect + AJAX JSON`);
@@ -27,14 +27,24 @@ HabitFlow — веб-приложение для управления задач
   <p><em>Страница со списком задач</em></p>
 </div>
 <div align="center">
-  <img src="assets/task_create.png"
-       alt="Интерфейс создания задачи"
+  <img src="assets/habits_list.png"
+       alt="Список привычек"
        width="800"
        loading="lazy"
        style="border-radius: 12px;
               box-shadow: 0 6px 12px rgba(0,0,0,0.15);
               border: 1px solid #eaeef2;">
-  <p><em>Форма создания новой задачи с выбором темы и приоритета</em></p>
+  <p><em>Страница со списком привычек</em></p>
+</div>
+<div align="center">
+  <img src="assets/themes_list.png"
+       alt="Список тем"
+       width="800"
+       loading="lazy"
+       style="border-radius: 12px;
+              box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+              border: 1px solid #eaeef2;">
+  <p><em>Страница с темами</em></p>
 </div>
 
 ## Стек технологий
@@ -62,8 +72,7 @@ HabitFlow — веб-приложение для управления задач
 │   ├── overview.md            # Цели, границы, правила работы
 │   ├── backend_roadmap.md     # План реализации по итерациям
 │   ├── api_contract.md        # Web-first HTTP-контракт текущих роутов
-│   ├── testing_strategy.md    # Тестовая матрица и quality gates
-│   └── engineering_journal.md # Инженерные заметки и trade-off
+│   └── testing_strategy.md    # Тестовая матрица и quality gates
 ├── src/                       # Исходный код приложения
 │   ├── main.py                # Точка входа FastAPI
 │   ├── config.py              # Настройки через Pydantic Settings
@@ -96,7 +105,6 @@ HabitFlow — веб-приложение для управления задач
 - `docs/backend_roadmap.md` — план работ и итерации.
 - `docs/api_contract.md` — web-first контракт текущих роутов.
 - `docs/testing_strategy.md` — стратегия тестирования и матрица покрытия.
-- `docs/engineering_journal.md` — журнал решений, рисков и выводов.
 
 ## Требования
 

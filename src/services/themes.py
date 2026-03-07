@@ -118,22 +118,26 @@ class ThemeService:
                 raise RuntimeError("Failed to generate a unique theme color")
         return color
 
-    async def list_themes_with_task_counts(
+    async def list_themes_with_counts(
         self, page: int = 1, per_page: int = 30
     ) -> tuple[list[ThemeWithCountResponse], int]:
         """
-        Возвращает список тем с количеством задач в каждой.
+        Возвращает список тем с количеством задач и привычек в каждой.
         """
         skip = (page - 1) * per_page
         total = await self.theme_repo.count_themes()
-        themes_with_counts = await self.theme_repo.list_with_task_counts(
+        themes_with_counts = await self.theme_repo.list_with_counts(
             skip=skip, limit=per_page
         )
         items = [
             ThemeWithCountResponse(
-                id=theme.id, name=theme.name, color=theme.color, task_count=count
+                id=theme.id,
+                name=theme.name,
+                color=theme.color,
+                tasks_count=tasks_count,
+                habits_count=habits_count,
             )
-            for theme, count in themes_with_counts
+            for theme, tasks_count, habits_count in themes_with_counts
         ]
         return items, total
 

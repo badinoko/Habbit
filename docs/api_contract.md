@@ -11,7 +11,8 @@
 Этот контракт:
 - не превращает проект в API-first;
 - не требует обязательной реализации полного REST API для дипломного минимума;
-- описывает только фактические текущие роуты и их поведение.
+- фиксирует фактические текущие роуты и утвержденные доменные контракты iteration 1
+  (для новых модулей со статусом `planned` до реализации).
 
 ## 3. Общие соглашения
 - Все даты/время в JSON-ответах: ISO 8601 в UTC.
@@ -20,7 +21,7 @@
 - Идемпотентные удаления допустимы (`204` даже если ресурс уже отсутствует), если это явно зафиксировано в контракте.
 - Ошибки валидации FastAPI/Pydantic (path/query/body) возвращаются как `422` до выполнения бизнес-логики.
 
-## 4. Основной контракт: текущие веб-роуты (обязательная часть)
+## 4. Основной контракт: web-роуты и утвержденные контракты iteration 1
 
 ### 4.1 Базовые страницы
 | Метод | Путь | Назначение | Успех | Формат |
@@ -64,7 +65,7 @@
 Параметры `GET /tasks/`:
 - `page`: `int >= 1`, по умолчанию `1`.
 - `per_page`: `int` в диапазоне `1..100`, по умолчанию `20`.
-- `status`: `active | completed | all`, по умолчанию `active`.
+- `status`: `active | completed`, по умолчанию `active`.
 - `sort`: `created_at | updated_at | name | priority`, по умолчанию `created_at`.
 - `order`: `asc | desc`, по умолчанию `desc`.
 - `theme`: опциональный фильтр по теме через общий template-context; при `theme=Все темы` фильтр сбрасывается, иначе значение сохраняется в session (`selected_theme`) и применяется к последующим запросам списка.
@@ -86,47 +87,82 @@
 - `DELETE /tasks/{id}`: `422` при невалидном UUID; идемпотентный `204`; `500` в JSON при внутренней ошибке.
 
 
-### 4.4 Tasks
+### 4.4 Habits
 | Метод | Путь | Назначение | Успех | Формат |
 |---|---|---|---|---|
-| `GET` | `/tasks/` | Список задач | `200` | `text/html` |
-| `GET` | `/tasks/new` | Форма создания задачи | `200` | `text/html` |
-| `GET` | `/tasks/{id}` | Страница редактирования задачи | `200` | `text/html` |
-| `POST` | `/tasks/` | Создание задачи (форма) | `303` -> `/tasks` | redirect |
-| `PUT` | `/tasks/{id}` | Обновление задачи (AJAX) | `200` | `application/json` |
-| `PATCH` | `/tasks/{id}/complete` | Отметить выполненной | `200` | `application/json` |
-| `PATCH` | `/tasks/{id}/incomplete` | Снять выполнение | `200` | `application/json` |
-| `DELETE` | `/tasks/{id}` | Удаление задачи (AJAX) | `204` | empty |
+| `GET` | `/habits/` | Список привычек | `200` | `text/html` |
+| `GET` | `/habits/new` | Форма создания привычки | `200` | `text/html` |
+| `GET` | `/habits/{id}` | Страница редактирования привычки | `200` | `text/html` |
+| `POST` | `/habits/` | Создание привычки (dual-mode: form/json) | `303` -> `/habits` (form) / `201` (json) | redirect / `application/json` |
+| `PUT` | `/habits/{id}` | Обновление привычки (AJAX) | `200` | `application/json` |
+| `PATCH` | `/habits/{id}/complete` | Отметить выполнение привычки за дату | `200` | `application/json` |
+| `PATCH` | `/habits/{id}/incomplete` | Снять выполнение привычки за дату | `200` | `application/json` |
+| `DELETE` | `/habits/{id}` | Удаление привычки (AJAX) | `204` | empty |
 
-Параметры `GET /tasks/`:
+Параметры `GET /habits/`:
 - `page`: `int >= 1`, по умолчанию `1`.
 - `per_page`: `int` в диапазоне `1..100`, по умолчанию `20`.
-- `status`: `active | completed | all`, по умолчанию `active`.
-- `sort`: `created_at | updated_at | name | priority`, по умолчанию `created_at`.
+- `status`: `todays| completed | active | archived`, по умолчанию `todays`.
+- `schedule_type`: `daily | interval_cycle | weekly_days | monthly_day | yearly_date | all`, по умолчанию `all`.
+- `sort`: `created_at | updated_at | name | streak`, по умолчанию `created_at`.
 - `order`: `asc | desc`, по умолчанию `desc`.
 - `theme`: опциональный фильтр по теме через общий template-context; при `theme=Все темы` фильтр сбрасывается, иначе значение сохраняется в session (`selected_theme`) и применяется к последующим запросам списка.
 
-Ошибки и детали:
-- `POST /tasks/`: `422` (валидация формы FastAPI), `400/500` (HTML-ошибка).
-- `GET /tasks/`: `422` при невалидных `page/per_page/status/sort/order`.
-- `GET /tasks/{id}`: `422` при невалидном UUID; при отсутствии задачи `404` (HTML).
-- `PUT /tasks/{id}`: `422/400/404/500` в JSON с форматом:
+Поля `POST /habits/` и `PUT /habits/{id}`:
+- `name`: `str`, обязательное, `max_length=46`.
+- `description`: `str | null`, необязательное, `max_length=200`.
+- `theme_id`: `UUID | null`, в форме допускается `NoTheme`.
+- `schedule_type`: `daily | interval_cycle | weekly_days | monthly_day | yearly_date`.
+- `schedule_config`: объект, структура зависит от `schedule_type`:
+  - `daily`: `{}`.
+  - `interval_cycle`: `{"active_days": 2, "break_days": 2}`.
+  - `weekly_days`: `{"days": ["mon", "wed", "fri"]}`.
+  - `monthly_day`: `{"day": 15}`.
+  - `yearly_date`: `{"month": 12, "day": 31}`.
+
+Режимы `POST /habits/`:
+- `Content-Type: application/json` -> API-режим (используется JS-формой habits):
+  - success: `201` + `{"ok": true}`;
+  - validation/business error: `400` + `{"error": {"code": "bad_request", "message": "..."}}`.
+- Любой другой `Content-Type` (обычный form submit):
+  - success: `303` redirect на `/habits`;
+  - validation/business error: `400` + HTML формы (`habits_form.html`) с текстом ошибки.
+
+
+Пример успешного JSON-ответа (`PATCH /habits/{id}/complete`):
 ```json
 {
-  "error": {
-    "code": "bad_request|not_found|internal_error",
-    "message": "Описание ошибки"
-  }
+  "success": true,
+  "completed": true,
+  "date": "2026-03-04",
+  "new_streak": 7,
+  "changed": true
 }
 ```
-- `PATCH /tasks/{id}/complete|incomplete`: `422/404/500` в JSON.
-- `DELETE /tasks/{id}`: `422` при невалидном UUID; идемпотентный `204`; `500` в JSON при внутренней ошибке.
 
+Ошибки и детали:
+- `POST /habits/`: `400` при ошибках валидации/бизнес-правилах (JSON или HTML в зависимости от режима запроса).
+- `GET /habits/`: `422` при невалидных query-параметрах (`page/per_page/status/schedule_type/sort/order`).
+- `GET /habits/{id}`: `422` при невалидном UUID; `404` если привычка не найдена.
+- `PUT /habits/{id}`: `422/400/404/500` в JSON.
+- `PATCH /habits/{id}/complete|incomplete`: `422/400/404/500` в JSON.
+- `DELETE /habits/{id}`: `422` при невалидном UUID; идемпотентный `204`; `500` в JSON при внутренней ошибке.
+- `400` для бизнес-ошибок расписания:
+  - несовпадение `schedule_type` и структуры `schedule_config`;
+  - пустой список `days` для `weekly_days`;
+  - некорректный `day` для `monthly_day` или `yearly_date`;
+  - попытка отметки выполнения на будущую дату.
+
+Time policy (habit completion/streak):
+- учет выполнения — по календарной дате UTC (`DATE`, без времени).
+- недельные правила считаются по ISO-неделе (`Monday..Sunday`, UTC).
+- для `monthly_day` при отсутствии дня в месяце (например, 31 в феврале) используется последний день месяца.
+- для `yearly_date` с `02-29` в невисокосный год используется `02-28`.
 
 
 ## 5. Статус JSON API `/api/*`
 - На текущем этапе в приложении нет зарегистрированных роутов под префиксом `/api/*`.
-- Этот документ не фиксирует будущие/планируемые контракты, только текущие реализованные.
+- `/api/habits/*` рассматривается как optional-слой и не входит в обязательный web-first минимум.
 
 ## 6. Матрица доступа (фактическое состояние)
 - Роуты `tasks/themes` доступны без обязательной авторизации.

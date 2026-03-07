@@ -19,7 +19,8 @@
                 <h3>{{ theme.name }}</h3>
             </div>
             <div class="theme-stats">
-                <span class="stat">{{ theme.task_count }} {{ plural.pluralize(theme.task_count, 'задача', 'задачи', 'задач') }}</span>
+                <span class="stat">{{ theme.tasks_count }} {{ plural.pluralize(theme.tasks_count, 'задача', 'задачи', 'задач') }}</span>
+                <span class="stat">{{ theme.habits_count }} {{ plural.pluralize(theme.habits_count, 'привычка', 'привычки', 'привычек') }}</span>
             </div>
             <div class="theme-actions">
                 <button class="btn btn-outline btn-sm" onclick='editTheme({{ theme.name|tojson }})'>

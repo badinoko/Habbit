@@ -30,7 +30,7 @@ PRIORITIES = {
 }
 
 
-Status = Literal["active", "completed", "all"]
+Status = Literal["active", "completed"]
 Sort = Literal["created_at", "updated_at", "name", "priority"]
 Order = Literal["asc", "desc"]
 

@@ -1,8 +1,8 @@
 from uuid import UUID
 
-from sqlalchemy import desc, func, select
+from sqlalchemy import desc, distinct, func, select
 
-from src.database.models import Task, Theme
+from src.database.models import Habit, Task, Theme
 from src.schemas import ThemeCreate, ThemeInDB, ThemeUpdate
 
 from .base import GenericSqlRepository
@@ -42,21 +42,27 @@ class ThemeRepository(
         themes = await self.list(skip=skip, limit=limit)
         return {theme.color for theme in themes}
 
-    async def list_with_task_counts(
+    async def list_with_counts(
         self, skip: int = 0, limit: int = 100
-    ) -> list[tuple[ThemeInDB, int]]:
+    ) -> list[tuple[ThemeInDB, int, int]]:
         query = (
-            select(Theme, func.count(Task.id).label("task_count"))
+            select(
+                Theme,
+                func.count(distinct(Task.id)).label("task_count"),
+                func.count(distinct(Habit.id)).label("habit_count"),
+            )
             .outerjoin(Task, Theme.id == Task.theme_id)
+            .outerjoin(Habit, Theme.id == Habit.theme_id)
             .group_by(Theme.id)
             .order_by(desc(Theme.created_at), desc(Theme.id))
             .offset(skip)
             .limit(limit)
         )
+
         result = await self._session.execute(query)
-        rows = result.unique().all()
-        # возвращаем список кортежей (Theme, task_count)
-        return [(row[0], row[1]) for row in rows]
+        rows = result.all()
+        # возвращаем список кортежей (Theme, task_count, habit_count)
+        return [(row[0], row[1], row[2]) for row in rows]
 
     async def count_themes(self) -> int:
         total = await self._session.scalar(select(func.count(Theme.id)))

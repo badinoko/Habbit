@@ -4,6 +4,7 @@ from uuid import uuid4
 
 import pytest
 
+from src.schemas import ThemeWithCountResponse
 from src.schemas.themes import ThemeCreate, ThemeInDB, ThemeUpdate
 from src.services.themes import ThemeService, string_to_hex
 
@@ -24,7 +25,7 @@ class DummyThemeRepo:
         self.update_called: bool = False
         self.delete_called_with = None
         self.list_result: list[ThemeInDB] = []
-        self.list_with_task_counts_result: list[tuple[ThemeInDB, int]] = []
+        self.list_with_counts_result: list[tuple[ThemeInDB, int, int]] = []
         self.count_themes_result: int = 0
 
     async def get_by_name(self, name: str) -> ThemeInDB | None:
@@ -66,10 +67,10 @@ class DummyThemeRepo:
     async def list(self, *args: object, **kwargs: object) -> list[ThemeInDB]:
         return list(self.list_result)
 
-    async def list_with_task_counts(
+    async def list_with_counts(
         self, *args: object, **kwargs: object
-    ) -> list[tuple[ThemeInDB, int]]:
-        return list(self.list_with_task_counts_result)
+    ) -> list[tuple[ThemeInDB, int, int]]:
+        return list(self.list_with_counts_result)
 
     async def get_existing_colors_list(
         self, *args: object, **kwargs: object
@@ -309,21 +310,22 @@ async def test_delete_theme_deletes_when_theme_exists():
 
 
 @pytest.mark.asyncio
-async def test_list_themes_with_task_counts_returns_items_and_total():
-    theme = ThemeInDB(
+async def test_list_themes_with_counts_returns_items_and_total():
+    theme = ThemeWithCountResponse(
         id=uuid4(),
         name="Hobby",
         color="#FF00FF",
-        created_at=_dt(2026, 1, 1),
-        updated_at=_dt(2026, 1, 1),
+        tasks_count=1,
+        habits_count=2,
     )
     repo = DummyThemeRepo()
     repo.count_themes_result = 1
-    repo.list_with_task_counts_result = [(theme, 3)]
+    repo.list_with_counts_result = [(theme, 1, 2)]
     service = ThemeService(theme_repo=repo)
 
-    items, total = await service.list_themes_with_task_counts(page=1, per_page=30)
+    items, total = await service.list_themes_with_counts(page=1, per_page=30)
     assert total == 1
     assert len(items) == 1
     assert items[0].name == "Hobby"
-    assert items[0].task_count == 3
+    assert items[0].tasks_count == 1
+    assert items[0].habits_count == 2

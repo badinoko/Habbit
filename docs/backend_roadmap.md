@@ -181,10 +181,9 @@
    - архитектурные риски;
    - пробелы в тестах;
    - что улучшить в следующей итерации.
-7. Фиксируем выводы в `engineering_journal.md` (и при необходимости кратко в `CHANGELOG.md`).
 
 ## 9. Checklist готовности к финалу
-- [ ] `Habits v1` реализован end-to-end.
+- [+] `Habits v1` реализован end-to-end.
 - [ ] `Statistics v1` реализован end-to-end.
 - [ ] `Auth v1` реализован end-to-end.
 - [ ] Type checking и тесты стабильны.

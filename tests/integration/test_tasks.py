@@ -12,6 +12,7 @@ NAME = "Читать книги"
 THEME_NAME = "Хобби"
 DESCRIPTION = "30 минут в день"
 PRIORITY = "low"
+PARTIAL_UPDATE_FIELD_NAMES = ("name", "description", "theme_id", "priority")
 
 
 async def mark_task_as_completed(client, id):
@@ -28,6 +29,24 @@ async def delete_task(client, id):
 
 async def update_task(client, id, data):
     return await client.put(f"/tasks/{id}", json=data)
+
+
+def _build_partial_update_payloads() -> list[object]:
+    updates = {
+        "name": "Новое имя (partial)",
+        "description": "Новое описание (partial)",
+        "theme_id": "UPDATED_THEME_ID",
+        "priority": "high",
+    }
+
+    payloads = []
+    for size in range(1, len(PARTIAL_UPDATE_FIELD_NAMES)):
+        for fields in itertools.combinations(PARTIAL_UPDATE_FIELD_NAMES, size):
+            payload = {field: updates[field] for field in fields}
+            payloads.append(
+                pytest.param(payload, id=f"update_{'_'.join(fields)}"),
+            )
+    return payloads
 
 
 @pytest.mark.asyncio
@@ -115,38 +134,59 @@ async def test_delete_task(client, session):
 
 
 @pytest.mark.asyncio
-async def test_update_task(client, session):
-    id = await create_task_and_return_id(session)
-
-    def all_subsets_dict(data: dict):
-        keys = list(data.keys())
-        result = []
-        # перебираем длину подмножества
-        for r in range(1, len(keys) + 1):
-            # все комбинации ключей длины r
-            for comb in itertools.combinations(keys, r):
-                subset = {
-                    k: (str(data[k]) if isinstance(data[k], UUID) else data[k])
-                    for k in comb
-                }
-                result.append(subset)
-        return result
-
+@pytest.mark.parametrize("payload", _build_partial_update_payloads())
+async def test_update_task_partial_updates_persist_changed_and_keep_unchanged_fields(
+    client, session, payload
+):
     theme_repo = ThemeRepository(session=session)
-    theme = await theme_repo.add(ThemeCreate(name=THEME_NAME, color="#FF5733"))
+    initial_theme = await theme_repo.add(
+        ThemeCreate(name="Начальная тема partial", color="#FF5733")
+    )
+    updated_theme = await theme_repo.add(
+        ThemeCreate(name="Новая тема partial", color="#123ABC")
+    )
     await session.commit()
 
-    fields_that_can_be_updated = {
-        "name": NAME,
-        "description": DESCRIPTION,
-        "theme_id": theme.id,
-        "priority": PRIORITY,
-    }
-    result = all_subsets_dict(fields_that_can_be_updated)
+    initial_name = "Исходное имя"
+    initial_description = "Исходное описание"
+    initial_priority = "medium"
 
-    for data in result:
-        response = await update_task(client, id, data)
-        assert response.status_code == 200
+    task_id = await create_task_and_return_id(
+        session,
+        name=initial_name,
+        description=initial_description,
+        theme_id=initial_theme.id,
+        priority=initial_priority,
+    )
+
+    request_payload = dict(payload)
+    if "theme_id" in request_payload:
+        request_payload["theme_id"] = str(updated_theme.id)
+
+    response = await update_task(client, task_id, request_payload)
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("application/json")
+    assert response.json() == {"message": "success"}
+
+    task = await TaskRepository(session=session).get_by_id(task_id)
+    assert task is not None
+
+    assert task.name == (
+        "Новое имя (partial)" if "name" in request_payload else initial_name
+    )
+    assert task.description == (
+        "Новое описание (partial)"
+        if "description" in request_payload
+        else initial_description
+    )
+    assert task.theme_id == (
+        updated_theme.id if "theme_id" in request_payload else initial_theme.id
+    )
+    assert task.priority_id == (
+        PRIORITY_IDS["high"]
+        if "priority" in request_payload
+        else PRIORITY_IDS[initial_priority]
+    )
 
 
 @pytest.mark.asyncio
@@ -237,14 +277,14 @@ async def test_tasks_list_sort_by_name_and_order(client, session):
     await create_task_and_return_id(session, name="sort-A")
     await create_task_and_return_id(session, name="sort-B")
 
-    asc_response = await client.get("/tasks/?status=all&sort=name&order=asc")
+    asc_response = await client.get("/tasks/?status=active&sort=name&order=asc")
     assert asc_response.status_code == 200
     asc_text = asc_response.text
     assert (
         asc_text.index("sort-A") < asc_text.index("sort-B") < asc_text.index("sort-C")
     )
 
-    desc_response = await client.get("/tasks/?status=all&sort=name&order=desc")
+    desc_response = await client.get("/tasks/?status=active&sort=name&order=desc")
     assert desc_response.status_code == 200
     desc_text = desc_response.text
     assert (
@@ -261,7 +301,7 @@ async def test_tasks_list_pagination(client, session):
     await create_task_and_return_id(session, name="page-C")
 
     page_1 = await client.get(
-        "/tasks/?status=all&sort=name&order=asc&per_page=1&page=1"
+        "/tasks/?status=active&sort=name&order=asc&per_page=1&page=1"
     )
     assert page_1.status_code == 200
     assert "page-A" in page_1.text
@@ -269,7 +309,7 @@ async def test_tasks_list_pagination(client, session):
     assert "page-C" not in page_1.text
 
     page_2 = await client.get(
-        "/tasks/?status=all&sort=name&order=asc&per_page=1&page=2"
+        "/tasks/?status=active&sort=name&order=asc&per_page=1&page=2"
     )
     assert page_2.status_code == 200
     assert "page-A" not in page_2.text
@@ -288,19 +328,19 @@ async def test_tasks_list_theme_filter_is_persisted_in_session(client, session):
     await create_task_and_return_id(session, name="task-work", theme_id=work.id)
 
     # Выбираем тему через query-параметр -> фильтр сохраняется в session.
-    filtered = await client.get("/tasks/?theme=Фильтр Хобби&status=all")
+    filtered = await client.get("/tasks/?theme=Фильтр Хобби&status=active")
     assert filtered.status_code == 200
     assert "task-hobby" in filtered.text
     assert "task-work" not in filtered.text
 
     # Без query-параметра фильтр должен остаться активным.
-    persisted = await client.get("/tasks/?status=all")
+    persisted = await client.get("/tasks/?status=active")
     assert persisted.status_code == 200
     assert "task-hobby" in persisted.text
     assert "task-work" not in persisted.text
 
     # Сбрасываем фильтр и убеждаемся, что снова видны обе задачи.
-    reset = await client.get("/tasks/?theme=Все+темы&status=all")
+    reset = await client.get("/tasks/?theme=Все+темы&status=active")
     assert reset.status_code == 200
     assert "task-hobby" in reset.text
     assert "task-work" in reset.text

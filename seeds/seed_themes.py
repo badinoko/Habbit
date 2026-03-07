@@ -1,9 +1,16 @@
+# ruff: noqa: E402
 import argparse
 import asyncio
 import colorsys
+import sys
+from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.database.connection import AsyncSessionLocal as async_session_maker
 from src.database.models import Theme

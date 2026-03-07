@@ -13,7 +13,7 @@ from src.schemas.tasks import (
     TaskUpdateAPI,
 )
 from src.services import TaskService
-from src.utils import get_template_context, templates
+from src.utils import error_context_updater, get_template_context, templates
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -30,7 +30,7 @@ async def tasks_page(
     task_service: TaskService = Depends(get_task_service),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
-    status: Literal["active", "completed", "all"] = "active",
+    status: Literal["active", "completed"] = "active",
     sort: Literal["created_at", "updated_at", "name", "priority"] = Query("created_at"),
     order: Literal["asc", "desc"] = Query("desc"),
 ):
@@ -249,8 +249,3 @@ async def update_task(
                 "error": {"code": "internal_error", "message": "Internal server error"}
             },
         )
-
-
-def error_context_updater(context: dict[Any, Any], e: str):
-    context.update({"message_type": "error", "title": "Ошибка", "message": str(e)})
-    return context

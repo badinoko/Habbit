@@ -72,4 +72,5 @@ class ThemeResponse(ThemeBase):
 
 
 class ThemeWithCountResponse(ThemeResponse):
-    task_count: int
+    tasks_count: int
+    habits_count: int

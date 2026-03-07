@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 import os
 import time
 from uuid import uuid4
@@ -61,6 +62,53 @@ class TestConfig:
 
 
 config = TestConfig.database
+
+
+SAFE_TEST_ENV = {
+    "DEBUG": "true",
+    "TESTING": "true",
+    "API_KEY": "test-api-key",
+    "APP_PORT": "8000",
+    "POSTGRES_HOST": config.host,
+    "POSTGRES_PORT": str(config.port),
+    "POSTGRES_USER": config.user,
+    "POSTGRES_PASSWORD": config.password,
+    "POSTGRES_DB": config.name,
+    "REDIS_HOST": "localhost",
+    "REDIS_PORT": "6379",
+    "REDIS_PASSWORD": "redis",
+    "REDIS_DB": "0",
+    "DATABASE_HOST": config.host,
+    "DATABASE_PORT": str(config.port),
+    "DATABASE_USERNAME": config.user,
+    "DATABASE_PASSWORD": config.password,
+    "DATABASE_NAME": config.name,
+}
+
+
+def _set_safe_test_env() -> None:
+    for key, value in SAFE_TEST_ENV.items():
+        os.environ[key] = value
+
+
+def _restore_env(snapshot: dict[str, str | None]) -> None:
+    for key, value in snapshot.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+
+
+_ORIGINAL_TEST_ENV = {key: os.environ.get(key) for key in SAFE_TEST_ENV}
+# Применяем env до импорта тестовых модулей: часть тестов импортирует app на этапе коллекции.
+_set_safe_test_env()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def safe_test_env() -> Iterator[None]:
+    _set_safe_test_env()
+    yield
+    _restore_env(_ORIGINAL_TEST_ENV)
 
 
 def get_db_connection(dbname=None) -> pg_connection:

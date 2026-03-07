@@ -61,44 +61,67 @@
         <div class="card">
             <div class="card-header">
                 <h2><i class="fas fa-sync-alt"></i>Привычки</h2>
-                <a href="/soon" class="btn-link">Все привычки</a>
+                <a href="/habits" class="btn-link">Все привычки</a>
             </div>
             <div class="habits-grid">
-                <div class="habit-card">
-                    <div class="habit-header">
-                        <h3>Утренняя зарядка</h3>
-                        <span class="habit-streak">7 дней</span>
-                    </div>
-                    <div class="habit-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 85%"></div>
+                {% if habits %}
+                    {% for habit in habits %}
+                    {% set progress = habit.progress_percent %}
+                    <div class="habit-card {% if habit.completed_today %}is-completed{% else %}is-active{% endif %} {% if not habit.ends_on %}no-progress{% endif %}" data-habit-id="{{ habit.id }}">
+                        <div class="habit-card-top">
+                            <div class="habit-main">
+                                <h3 class="habit-title">{{ habit.name }}</h3>
+                            </div>
+                            <span class="habit-streak">{{ habit.current_streak }} дн.</span>
                         </div>
-                        <span>85%</span>
-                    </div>
-                    <div class="habit-actions">
-                        <button class="btn-habit-complete" disabled title="Модуль привычек в разработке">
-                            <i class="fas fa-check"></i> Отметить
-                        </button>
-                    </div>
-                </div>
 
-                <div class="habit-card">
-                    <div class="habit-header">
-                        <h3>Чтение книги</h3>
-                        <span class="habit-streak">14 дней</span>
-                    </div>
-                    <div class="habit-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: 92%"></div>
+                        <div class="habit-tags">
+                            {% if habit.theme_name %}
+                            <span class="habit-chip habit-chip-theme" style="background-color: {{ habit.theme_color }}20; color: {{ habit.theme_color }}; border: 1px solid {{ habit.theme_color }}40;">
+                                <i class="fas fa-tag"></i>{{ habit.theme_name }}
+                            </span>
+                            {% endif %}
                         </div>
-                        <span>92%</span>
+
+                        {% if habit.ends_on %}
+                        <div class="habit-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ '%.2f'|format(progress) }}%"></div>
+                            </div>
+                            <span class="habit-progress-value">{{ '%.2f'|format(progress) }}%</span>
+                        </div>
+                        {% endif %}
+                        <div class="habit-actions habit-actions-dashboard">
+                            <a href="/habits/{{ habit.id }}" class="btn btn-outline btn-sm btn-habit-edit" title="Редактировать привычку">
+                                <i class="fas fa-pen"></i>
+                                <span>Редактировать</span>
+                            </a>
+                            <button class="btn btn-outline btn-sm btn-habit-complete {% if habit.completed_today or not habit.due_today %}completed{% endif %}"
+                                    data-habit-id="{{ habit.id }}"
+                                    {% if habit.completed_today or not habit.due_today %}disabled{% endif %}
+                                    title="Отметить выполнение">
+                                <i class="fas fa-check"></i>
+                                <span>
+                                    {% if habit.completed_today %}
+                                        Выполнено
+                                    {% elif not habit.due_today %}
+                                        Не на сегодня
+                                    {% else %}
+                                        Выполнить
+                                    {% endif %}
+                                </span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="habit-actions">
-                        <button class="btn-habit-complete" disabled title="Модуль привычек в разработке">
-                            <i class="fas fa-check"></i> Отметить
-                        </button>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty-state">
+                        <p>Нет активных привычек</p>
+                        <a href="/habits/new" class="new-task">
+                            <i class="fas fa-plus"></i> Создать привычку
+                        </a>
                     </div>
-                </div>
+                {% endif %}
             </div>
         </div>
 
@@ -111,7 +134,7 @@
                 <button class="btn-primary" onclick="window.location.href='/tasks/new'">
                     <i class="fas fa-plus"></i> Новая задача
                 </button>
-                <button class="btn-secondary" onclick="window.location.href='/soon'">
+                <button class="btn-secondary" onclick="window.location.href='/habits/new'">
                     <i class="fas fa-sync-alt"></i> Новая привычка
                 </button>
                 <button class="btn-outline" onclick="window.location.href='/soon'">

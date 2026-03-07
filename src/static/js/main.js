@@ -1,4 +1,6 @@
 let activeTasksCount = 0; // глобальная переменная для счётчика
+let dueHabitsTodayCount = 0;
+let completedHabitsTodayCount = 0;
 
 // Базовые функции для взаимодействия
 document.addEventListener('DOMContentLoaded', function() {
@@ -7,11 +9,53 @@ document.addEventListener('DOMContentLoaded', function() {
     if (activeEl) {
         activeTasksCount = parseInt(activeEl.textContent, 10) || 0;
     }
+    initializeHabitStatsState();
 
     initializeTaskStates(); // Инициализируем состояние выполненных задач
     initializeEventHandlers();
     addNotificationStyles();
 });
+
+function parseCounter(value, fallback = 0) {
+    const parsed = Number.parseInt(String(value), 10);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+function initializeHabitStatsState() {
+    const successEl = document.getElementById('stat-success-rate');
+    if (!successEl) {
+        return;
+    }
+
+    dueHabitsTodayCount = parseCounter(
+        successEl.dataset.dueHabitsToday ?? successEl.dataset.activeHabits,
+        0
+    );
+    completedHabitsTodayCount = parseCounter(successEl.dataset.completedHabitsToday, 0);
+    completedHabitsTodayCount = Math.min(completedHabitsTodayCount, dueHabitsTodayCount);
+    renderHabitSuccessRate();
+}
+
+function renderHabitSuccessRate() {
+    const successEl = document.getElementById('stat-success-rate');
+    if (!successEl) {
+        return;
+    }
+
+    dueHabitsTodayCount = Math.max(0, dueHabitsTodayCount);
+    completedHabitsTodayCount = Math.max(
+        0,
+        Math.min(completedHabitsTodayCount, dueHabitsTodayCount)
+    );
+
+    const successRate = dueHabitsTodayCount > 0
+        ? Math.round((completedHabitsTodayCount / dueHabitsTodayCount) * 100)
+        : 0;
+
+    successEl.dataset.dueHabitsToday = String(dueHabitsTodayCount);
+    successEl.dataset.completedHabitsToday = String(completedHabitsTodayCount);
+    successEl.textContent = `${successRate}%`;
+}
 
 function isTaskCompletedValue(completedAt) {
     return Boolean(completedAt && completedAt !== 'None' && completedAt !== '' && completedAt !== 'null');
@@ -162,6 +206,7 @@ async function markHabitAsCompleted(habitId, button) {
 
     const streakElement = habitCard.querySelector('.habit-streak');
     const currentStreak = streakElement ? parseInt(streakElement.textContent) || 0 : 0;
+    const wasCompleted = habitCard.classList.contains('is-completed');
 
     // Сохраняем исходное состояние
     const originalText = button.innerHTML;
@@ -173,7 +218,7 @@ async function markHabitAsCompleted(habitId, button) {
         button.disabled = true;
         button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Обработка...';
 
-        const response = await fetch(`/api/habits/${habitId}/complete`, {
+        const response = await fetch(`/habits/${habitId}/complete`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -184,10 +229,19 @@ async function markHabitAsCompleted(habitId, button) {
         const data = await response.json();
 
         if (data.success) {
+            if (data.changed && !wasCompleted) {
+                completedHabitsTodayCount = Math.min(
+                    dueHabitsTodayCount,
+                    completedHabitsTodayCount + 1
+                );
+                renderHabitSuccessRate();
+            }
+
             // Визуальное подтверждение
             button.innerHTML = '<i class="fas fa-check"></i> Выполнено!';
             button.classList.add('completed');
             button.style.backgroundColor = '#27ae60';
+            habitCard.classList.add('is-completed');
 
             // Обновляем серию если есть элемент
             if (streakElement && data.new_streak) {
@@ -197,6 +251,18 @@ async function markHabitAsCompleted(habitId, button) {
             }
 
             showNotification('Привычка отмечена как выполненная!', 'success');
+
+            const statusFilter = document.getElementById('habit-status-filter');
+            const isActiveHabitsView = window.location.pathname.startsWith('/habits')
+                && statusFilter
+                && statusFilter.value === 'todays';
+
+            if (isActiveHabitsView) {
+                setTimeout(() => {
+                    habitCard.remove();
+                }, 250);
+                return;
+            }
 
             // Через секунду делаем кнопку неактивной
             setTimeout(() => {
@@ -231,7 +297,7 @@ async function deleteTask(taskId) {
     if (!confirm('Вы уверены, что хотите удалить эту задачу?')) return;
 
     const taskItem = document.querySelector(`[data-task-id="${taskId}"]`);
-    const wasActive = taskItem && (!taskItem.dataset.completed || taskItem.dataset.completed === '');
+    const wasActive = taskItem && !isTaskCompletedValue(taskItem.dataset.completed);
 
     try {
         if (taskItem) {
@@ -253,9 +319,12 @@ async function deleteTask(taskId) {
             if (taskItem) {
                 taskItem.remove();
                 if (wasActive) {
-                    activeTasksCount--;
                     const activeEl = document.getElementById('stat-active-tasks');
-                    if (activeEl) activeEl.textContent = activeTasksCount;
+                    if (activeEl) {
+                        activeTasksCount = parseCounter(activeEl.textContent, activeTasksCount);
+                        activeTasksCount = Math.max(0, activeTasksCount - 1);
+                        activeEl.textContent = activeTasksCount;
+                    }
                 }
             }
 

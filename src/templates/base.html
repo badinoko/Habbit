@@ -27,7 +27,7 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/soon" class="nav-link {% if current_page == 'habits' %}active{% endif %}">
+                    <a href="/habits" class="nav-link {% if current_page == 'habits' %}active{% endif %}">
                         <i class="fas fa-sync-alt"></i> Привычки
                     </a>
                 </li>
@@ -68,18 +68,31 @@
             </div>
 
             <div class="sidebar-section">
-                <h3><i class="fas fa-chart-bar"></i> Статистика (скоро)</h3>
+                <h3><i class="fas fa-chart-bar"></i> Статистика</h3>
                 <div class="stats">
                     <div class="stat-item">
                         <span class="stat-value" id="stat-active-tasks">{{ stats.active_tasks }}</span>
                         <span class="stat-label">активных задач</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-value" id="stat-total-habits">{{ stats.total_habits }}</span>
+                        <span class="stat-value" id="stat-total-habits">{{ stats.total_habits|default(0) }}</span>
                         <span class="stat-label">привычек</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-value" id="stat-success-rate">{{ stats.success_rate }}%</span>
+                        <span class="stat-value" id="stat-active-habits">{{ stats.active_habits|default(0) }}</span>
+                        <span class="stat-label">активных привычек</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-value" id="stat-due-habits-today">{{ stats.due_habits_today|default(0) }}</span>
+                        <span class="stat-label">привычек на сегодня</span>
+                    </div>
+                    <div class="stat-item">
+                        <span
+                            class="stat-value"
+                            id="stat-success-rate"
+                            data-due-habits-today="{{ stats.due_habits_today|default(0) }}"
+                            data-completed-habits-today="{{ stats.completed_habits_today|default(0) }}"
+                        >{{ stats.success_rate }}%</span>
                         <span class="stat-label">успех</span>
                     </div>
                 </div>

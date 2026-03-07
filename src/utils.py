@@ -5,8 +5,9 @@ from uuid import UUID
 from fastapi import Depends, Request
 from fastapi.templating import Jinja2Templates
 
-from src.dependencies import get_task_service, get_theme_service
+from src.dependencies import get_habit_service, get_task_service, get_theme_service
 from src.schemas import Stats, ThemeResponse
+from src.services import HabitService
 from src.services.tasks import TaskService
 from src.services.themes import ThemeService
 
@@ -15,13 +16,20 @@ templates_dir = os.path.join(current_dir, "templates")
 templates = Jinja2Templates(directory=templates_dir)
 
 
-async def get_stats(task_service: TaskService = Depends(get_task_service)) -> Stats:
+async def get_stats(
+    task_service: TaskService = Depends(get_task_service),
+    habits_service: HabitService = Depends(get_habit_service),
+) -> Stats:
     task_statistics = await task_service.get_task_statistics()
+    habit_statistics = await habits_service.get_habit_statistics()
     return Stats(
         total_tasks=task_statistics.total,
         active_tasks=task_statistics.pending,
-        total_habits=0,
-        success_rate=0,
+        total_habits=habit_statistics.total,
+        success_rate=habit_statistics.success_rate,
+        active_habits=habit_statistics.active,
+        due_habits_today=habit_statistics.due_today,
+        completed_habits_today=habit_statistics.completed_today,
     )
 
 
@@ -43,6 +51,13 @@ async def get_template_context(
     else:
         selected_theme = request.session.get("selected_theme")
 
+    # Темы заданной в сессии не существует
+    if selected_theme is not None and not any(
+        theme.name == selected_theme for theme in themes
+    ):
+        request.session["selected_theme"] = None
+        selected_theme = None
+
     # Добавляем опцию "Все темы"
     NoTheme = ThemeResponse(
         id=UUID("00000000-0000-0000-0000-000000000001"),
@@ -60,3 +75,8 @@ async def get_template_context(
                 break
 
     return {"request": request, "themes": themes, "stats": statistics}
+
+
+def error_context_updater(context: dict[Any, Any], e: str) -> dict[Any, Any]:
+    context.update({"message_type": "error", "title": "Ошибка", "message": str(e)})
+    return context

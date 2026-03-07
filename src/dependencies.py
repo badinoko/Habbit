@@ -4,8 +4,8 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.connection import get_db
-from src.repositories import TaskRepository, ThemeRepository
-from src.services import TaskService, ThemeService
+from src.repositories import HabitRepository, TaskRepository, ThemeRepository
+from src.services import HabitService, TaskService, ThemeService
 
 
 async def get_theme_repository(
@@ -35,3 +35,18 @@ async def get_task_service(
 ) -> TaskService:
     """Провайдер для сервиса задач"""
     return TaskService(task_repo=task_repo, theme_repo=theme_repo)
+
+
+async def get_habit_repository(
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> HabitRepository:
+    """Провайдер для репозитория привычек"""
+    return HabitRepository(session=db)
+
+
+async def get_habit_service(
+    habit_repo: HabitRepository = Depends(get_habit_repository),
+    theme_repo: ThemeRepository = Depends(get_theme_repository),
+) -> HabitService:
+    """Провайдер для сервиса привычек"""
+    return HabitService(habit_repo=habit_repo, theme_repo=theme_repo)

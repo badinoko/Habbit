@@ -13,3 +13,4 @@ class Theme(BaseModel):
     __table_args__ = (CheckConstraint("LENGTH(color) >= 7", name="min_color_length"),)
 
     tasks = relationship("Task", back_populates="theme")
+    habits = relationship("Habit", back_populates="theme")

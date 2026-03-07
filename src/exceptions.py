@@ -32,3 +32,9 @@ class TaskNotFound(EntityNotFound):
     """Ошибка: задача не найдена"""
 
     pass
+
+
+class HabitNotFound(EntityNotFound):
+    """Ошибка: привычка не найдена"""
+
+    pass

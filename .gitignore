@@ -1,3 +1,4 @@
 .env
 .env.docker
+.coverage
 __pycache__/

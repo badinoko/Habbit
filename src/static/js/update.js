@@ -58,6 +58,8 @@ function updateFormData(form, data, url) {
 
         if (currentPath.startsWith('/tasks')) {
             window.location.href = '/tasks';
+        } else if (currentPath.startsWith('/habits')) {
+            window.location.href = '/habits';
         } else if (currentPath.startsWith('/themes')) {
             window.location.href = '/themes';
         } else {

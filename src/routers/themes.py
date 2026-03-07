@@ -25,7 +25,7 @@ async def get_themes(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
 ):
-    themes_list, themes_count = await themes_service.list_themes_with_task_counts(
+    themes_list, themes_count = await themes_service.list_themes_with_counts(
         page=page, per_page=per_page
     )
     total_pages = (themes_count + per_page - 1) // per_page if themes_count else 0
@@ -165,6 +165,7 @@ async def get_theme(
     response_class=JSONResponse,
     summary="Updates theme",
     responses={
+        400: {"description": "Bad request"},
         404: {"description": "Theme not found"},
     },
 )
@@ -179,7 +180,13 @@ async def update_theme(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Theme with name {name} not found",
         )
-    res = await service.update_theme(theme, theme_data)
+    try:
+        res = await service.update_theme(theme, theme_data)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        ) from None
     if not res:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

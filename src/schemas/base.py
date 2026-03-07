@@ -17,6 +17,9 @@ class Stats(BaseModel):
     active_tasks: int
     total_habits: int
     success_rate: int
+    active_habits: int = 0
+    due_habits_today: int = 0
+    completed_habits_today: int = 0
 
 
 class InDBBase(BaseModel):

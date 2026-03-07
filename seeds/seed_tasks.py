@@ -1,10 +1,17 @@
+# ruff: noqa: E402
 import asyncio
 import random
+import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 from uuid import uuid4
 
 from faker import Faker
 from sqlalchemy import select
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 # импортируй свои сущности и создание сессии
 from src.database.connection import AsyncSessionLocal as async_session_maker
