@@ -1,8 +1,11 @@
+include .env
+export
+
 .PHONY: lint format typecheck pre-commit
 
 
 run:
-	poetry run uvicorn src.main:app --port 8001 --reload
+	poetry run uvicorn src.main:app --port $(APP_PORT) --reload
 
 test:
 	PYTHONPATH=. poetry run pytest -x tests -v --cov=src --cov-branch --cov-fail-under=75
@@ -30,7 +33,7 @@ migration:
 	docker compose exec app alembic upgrade head
 
 psql:
-	docker compose exec postgres psql "dbname=mydatabase user=myuser password=mypassword"
+	docker compose exec postgres psql "dbname=$(POSTGRES_DB) user=$(POSTGRES_USER) password=$(POSTGRES_PASSWORD)"
 
 %:
 	@:

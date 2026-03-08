@@ -47,6 +47,11 @@ class OAuthAccount(BaseModel):
             "provider_user_id",
             name="uq_oauth_provider_user",
         ),
+        UniqueConstraint(
+            "user_id",
+            "provider",
+            name="uq_oauth_user_provider",
+        ),
         Index(
             "idx_oauth_user_provider",
             "user_id",

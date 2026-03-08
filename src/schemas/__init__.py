@@ -1,3 +1,13 @@
+from .auth import (
+    AuthCredentials,
+    AuthLogin,
+    AuthRegister,
+    AuthUser,
+    AuthUserWithPassword,
+    OAuthAccountRead,
+    UserCreate,
+    UserUpdate,
+)
 from .base import CreateResponse, Response, Stats
 from .habits import (
     HabitCompletionPayload,
@@ -34,6 +44,11 @@ from .themes import (
 )
 
 __all__ = [
+    "AuthCredentials",
+    "AuthLogin",
+    "AuthRegister",
+    "AuthUser",
+    "AuthUserWithPassword",
     "CreateResponse",
     "HabitCompletionPayload",
     "HabitCompletionResult",
@@ -49,6 +64,7 @@ __all__ = [
     "HabitStatus",
     "HabitUpdate",
     "HabitUpdateAPI",
+    "OAuthAccountRead",
     "Response",
     "Stats",
     "TaskCreate",
@@ -64,4 +80,6 @@ __all__ = [
     "ThemeResponse",
     "ThemeUpdate",
     "ThemeWithCountResponse",
+    "UserCreate",
+    "UserUpdate",
 ]

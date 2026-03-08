@@ -1,10 +1,10 @@
 # HabitFlow
 
-HabitFlow — веб-приложение для управления задачами и привычками.
+HabitFlow — веб-приложение для управления задачами, привычками и пользовательскими сессиями.
 
-Проект развивается в режиме **web-first**:
-- основной интерфейс: серверные веб-роуты (`HTML + Redirect + AJAX JSON`);
-- отдельный JSON API под `/api/*` — дополнительный (опциональный) трек.
+Проект развивается в формате **web-first**:
+- основной интерфейс — серверные веб-роуты (`HTML + Redirect + AJAX JSON`);
+- JSON API под `/api/*` — дополнительный слой.
 
 <div align="center">
   <img src="assets/main_page.png"
@@ -50,68 +50,36 @@ HabitFlow — веб-приложение для управления задач
 ## Стек технологий
 
 - **Backend**: Python 3.12, FastAPI, SQLAlchemy 2.0, Alembic
-- **База данных**: PostgreSQL (asyncpg), Redis (опционально; адаптер есть, но по умолчанию не используется)
-- **Фронтенд**: Jinja2, HTML, CSS, JavaScript (минимальный)
+- **Хранилища**: PostgreSQL (asyncpg), Redis (хранилище auth-сессий)
+- **Фронтенд**: Jinja2, HTML, CSS, JavaScript
 - **Инфраструктура**: Docker, Docker Compose
 - **Инструменты**: Poetry, pre-commit, Ruff, mypy, pytest
 
 ## Структура проекта
 
-```
+```text
 .
-├── alembic.ini                # Конфигурация Alembic
-├── docker-compose.yml         # Запуск сервисов app + postgres
+├── docker-compose.yml         # Запуск app + postgres + redis
 ├── Dockerfile                 # Сборка образа приложения
-├── Makefile                   # Удобные команды для разработки
-├── pyproject.toml             # Зависимости и настройки инструментов
-├── poetry.lock                # Фиксация версий зависимостей
-├── .env.example               # Пример переменных окружения
-├── .pre-commit-config.yaml    # Настройки pre-commit хуков
-├── .gitignore                 # Игнорируемые файлы
+├── Makefile                   # Команды разработки
+├── .env.example               # Пример переменных для локального запуска
+├── .env.docker.example        # Переопределения env для app-контейнера
 ├── docs/                      # Проектная документация
-│   ├── overview.md            # Цели, границы, правила работы
-│   ├── backend_roadmap.md     # План реализации по итерациям
-│   ├── api_contract.md        # Web-first HTTP-контракт текущих роутов
-│   └── testing_strategy.md    # Тестовая матрица и quality gates
+│   ├── overview.mdc
+│   ├── backend_roadmap.mdc
+│   ├── api_contract.mdc
+│   ├── session_contract.mdc
+│   └── testing_strategy.mdc
 ├── src/                       # Исходный код приложения
-│   ├── main.py                # Точка входа FastAPI
-│   ├── config.py              # Настройки через Pydantic Settings
-│   ├── database/              # Работа с БД
-│   │   ├── connection.py      # Подключение и сессии
-│   │   ├── models/            # SQLAlchemy модели
-│   │   └── migrations/        # Миграции Alembic
-│   ├── repositories/          # Репозитории (паттерн Repository)
-│   ├── services/              # Бизнес-логика
-│   ├── routers/               # Эндпоинты (роутеры FastAPI)
-│   ├── schemas/               # Pydantic модели (схемы)
-│   ├── templates/             # HTML шаблоны Jinja2
-│   ├── static/                # Статические файлы (CSS, JS)
-│   ├── redis.py               # Адаптер для работы с Redis
-│   ├── dependencies.py        # Зависимости FastAPI
-│   ├── exceptions.py          # Кастомные исключения
-│   └── utils.py               # Вспомогательные функции
-├── tests/                     # Тесты
-│   ├── conftest.py            # Фикстуры pytest
-│   ├── unit/                  # Unit-тесты сервисов
-│   ├── api_unit/              # Контрактные тесты роутеров
-│   └── integration/           # Интеграционные тесты с БД
-├── conftest.py                # Bootstrap PYTHONPATH для pytest
-└── README.md                  # Этот файл
+└── tests/                     # Тесты
 ```
-
-## Документация проекта
-
-- `docs/overview.md` — главный документ (цели, границы, инженерные принципы).
-- `docs/backend_roadmap.md` — план работ и итерации.
-- `docs/api_contract.md` — web-first контракт текущих роутов.
-- `docs/testing_strategy.md` — стратегия тестирования и матрица покрытия.
 
 ## Требования
 
 - **Python** 3.12+
-- **Poetry** (для управления зависимостями)
-- **Docker** и **Docker Compose** (для запуска через контейнеры)
-- **Make** (опционально, для удобных команд)
+- **Poetry**
+- **Docker** и **Docker Compose**
+- **Make** (опционально)
 
 ## Быстрый старт
 
@@ -122,144 +90,131 @@ git clone https://github.com/Qwertyil/HabitFlow.git
 cd HabitFlow
 ```
 
-### 2. Настройка переменных окружения
-
-Скопируйте `.env.example` в `.env` и отредактируйте при необходимости:
+### 2. Подготовка переменных окружения
 
 ```bash
 cp .env.example .env
-cp .env.example .env.docker
+cp .env.docker.example .env.docker
 ```
 
-Основные переменные:
-- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` — данные для PostgreSQL.
-- `SECRET_KEY` — секрет для подписи сессий (обязателен для стабильных сессий).
-- `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD` — для Redis (опционально; не запускается в compose по умолчанию).
-- `APP_PORT` — порт приложения внутри контейнера.
+- `.env` используется локальным запуском (например, `POSTGRES_HOST=localhost`, `REDIS_HOST=localhost`).
+- `.env.docker` подмешивается в `app`-контейнер и переопределяет хосты для сети compose (`postgres`, `redis`).
 
 ### 3. Запуск через Docker (рекомендуется)
 
-Соберите и запустите контейнеры (по умолчанию `app` + `postgres`):
-
 ```bash
 make restart
-# или вручную:
+# или вручную
 docker compose up -d --build
 ```
 
-Примените миграции:
+Поднимутся сервисы: `app`, `postgres`, `redis`.
+
+### 4. Миграции
 
 ```bash
 make migration
-# или вручную:
+# или вручную
 docker compose exec app alembic upgrade head
 ```
 
-Приложение будет доступно по адресу `http://localhost:8000` (порт из переменной `APP_PORT`).
+### 5. Проверка
 
-### 4. Локальный запуск приложения
+Приложение доступно на `http://localhost:8000` (порт задаётся `CONTAINER_APP_PORT`, по умолчанию `8000`).
 
-Установите зависимости:
+## Локальный запуск (без app-контейнера)
+
+1. Установить зависимости:
 
 ```bash
 poetry install
 ```
 
+2. Поднять только инфраструктуру:
 
-Запустите сервер:
+```bash
+docker compose up -d postgres redis
+```
+
+3. Применить миграции локально:
+
+```bash
+poetry run alembic upgrade head
+```
+
+4. Запустить приложение:
 
 ```bash
 make run
-# или вручную:
+# или вручную
 poetry run uvicorn src.main:app --reload --port 8001
 ```
 
-Приложение будет доступно по адресу `http://localhost:8001`.
-
-В данном случае предполагается что контейнер с БД уже запущен, а миграции применены (например, после выполнения п.3.)
+Приложение будет доступно на `http://localhost:8001` (порт из `APP_PORT`).
 
 ## Команды Makefile
 
-- `make run` — запустить локальный сервер разработки (uvicorn с перезагрузкой).
-- `make test` — запустить тесты (с выводом подробностей).
-- `make lint` — проверить код линтером Ruff.
-- `make format` — отформатировать код (Ruff format + fix).
-- `make typecheck` — проверить типы mypy.
-- `make pre-commit` — запустить все хуки pre-commit вручную.
-- `make check` — выполнить форматирование, линтинг, проверку типов и тесты (последовательно).
-- `make restart` —запустить Docker-контейнеры.
-- `make migration` — применить миграции внутри контейнера.
-- `make psql` — подключиться к PostgreSQL внутри контейнера. при изменении данных для входа в `.env` отредактируйте данную команду.
+- `make run` — локальный запуск FastAPI (uvicorn + reload).
+- `make test` — запуск тестов.
+- `make lint` — проверка Ruff.
+- `make format` — форматирование Ruff + autofix.
+- `make typecheck` — проверка mypy.
+- `make pre-commit` — запуск pre-commit.
+- `make check` — format + lint + typecheck + test.
+- `make restart` — пересобрать и поднять контейнеры.
+- `make migration` — применить миграции в app-контейнере.
+- `make psql` — подключиться к PostgreSQL в контейнере.
 
 ## Тестирование
-
-Проект использует **pytest**. Тесты находятся в `tests/`. Для запуска:
 
 ```bash
 make test
 ```
 
-или с детализацией:
+или:
 
 ```bash
 poetry run pytest -v
 ```
 
-Основные уровни тестов:
-- `tests/unit` — unit-тесты бизнес-логики;
-- `tests/api_unit` — контрактные тесты роутеров;
-- `tests/integration` — интеграционные тесты с БД.
+Основные группы тестов:
+- `tests/unit`
+- `tests/api_unit`
+- `tests/integration`
 
-Подробные правила покрытия и критерии завершения задач: `docs/testing_strategy.md`.
+## Документация
 
-## Pre-commit хуки
-
-Pre-commit автоматически запускает проверки перед каждым коммитом. Чтобы установить хуки локально:
-
-```bash
-poetry run pre-commit install
-```
-
-При коммите будут выполняться:
-- удаление лишних пробелов,
-- проверка YAML/TOML,
-- форматирование Ruff,
-- проверка типов mypy.
-
-## Миграции базы данных
-
-Создание новой миграции (после изменения моделей):
-
-```bash
-alembic revision --autogenerate -m "description"
-```
-
-Применение миграций:
-
-```bash
-alembic upgrade head
-```
-
-В Docker используйте `make migration`.
+- `docs/overview.mdc` — контекст проекта и принципы.
+- `docs/backend_roadmap.mdc` — план итераций.
+- `docs/api_contract.mdc` — web/API-контракты.
+- `docs/session_contract.mdc` — контракт auth/session.
+- `docs/testing_strategy.mdc` — стратегия тестирования.
 
 ## Переменные окружения
 
-| Переменная           | Описание                          | Значение по умолчанию |
-|----------------------|-----------------------------------|-----------------------|
-| POSTGRES_DB          | Имя базы данных PostgreSQL        | mydatabase            |
-| POSTGRES_USER        | Пользователь PostgreSQL           | myuser                |
-| POSTGRES_PASSWORD    | Пароль PostgreSQL                 | mypassword            |
-| POSTGRES_HOST        | Хост PostgreSQL (локально)        | localhost             |
-| POSTGRES_PORT        | Порт PostgreSQL                   | 5432                  |
-| REDIS_HOST           | Хост Redis                        | localhost             |
-| REDIS_PORT           | Порт Redis                        | 6379                  |
-| REDIS_PASSWORD       | Пароль Redis                      | (пусто)               |
-| REDIS_DB             | Номер базы Redis                  | 0                     |
-| APP_PORT             | Порт приложения в контейнере      | 8000                  |
-| SECRET_KEY           | Секрет подписи cookie-сессий      | (сгенерируйте сами)   |
-| SESSION_COOKIE_NAME  | Имя cookie сессии                 | habitflow_session     |
-| SESSION_MAX_AGE      | Время жизни сессии (сек.)         | 1209600               |
-| SESSION_SAME_SITE    | SameSite для cookie               | lax                   |
-| SESSION_HTTPS_ONLY   | Secure-флаг cookie (HTTPS only)   | False                 |
-| API_KEY              | Технический ключ приложения (в текущем `Settings` обязателен) | your_api_key_here     |
-| DEBUG                | Режим отладки (True/False)        | True                  |
+| Переменная | Описание | Значение по умолчанию |
+|---|---|---|
+| POSTGRES_DB | Имя БД PostgreSQL | mydatabase |
+| POSTGRES_USER | Пользователь PostgreSQL | myuser |
+| POSTGRES_PASSWORD | Пароль PostgreSQL | mypassword |
+| POSTGRES_HOST | Хост PostgreSQL | localhost |
+| POSTGRES_PORT | Порт PostgreSQL | 5432 |
+| REDIS_HOST | Хост Redis | localhost |
+| REDIS_PORT | Порт Redis | 6379 |
+| REDIS_PASSWORD | Пароль Redis | your_redis_password_here |
+| REDIS_DB | База Redis | 0 |
+| CONTAINER_APP_PORT | Порт app в Docker | 8000 |
+| APP_PORT | Порт локального uvicorn | 8001 |
+| UI_SESSION_SECRET_KEY | Секрет UI-сессий | change_me_to_a_long_random_string |
+| UI_SESSION_COOKIE_NAME | Имя cookie UI-сессии | habitflow_session |
+| UI_SESSION_MAX_AGE | TTL UI-сессии (сек.) | 1209600 |
+| UI_SESSION_SAME_SITE | SameSite UI-cookie | lax |
+| UI_SESSION_HTTPS_ONLY | `Secure` для UI-cookie | False |
+| AUTH_SESSION_COOKIE_NAME | Имя cookie auth-сессии | auth_session |
+| AUTH_SESSION_MAX_AGE | TTL auth-сессии (сек.) | 1209600 |
+| AUTH_SESSION_SAME_SITE | SameSite auth-cookie | lax |
+| AUTH_SESSION_HTTPS_ONLY | `Secure` для auth-cookie | False |
+| API_KEY | Технический ключ приложения | your_api_key_here |
+| DEBUG | Режим отладки | True |
+
+> Если `DEBUG=False`, `UI_SESSION_SECRET_KEY` должен быть задан явно.

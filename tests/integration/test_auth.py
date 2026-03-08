@@ -1,0 +1,111 @@
+from collections.abc import AsyncGenerator
+from uuid import uuid4
+
+import pytest
+from fastapi import Depends, FastAPI
+from httpx import ASGITransport, AsyncClient
+from redis.asyncio import Redis
+
+from src.config import settings
+from src.database.connection import get_db
+from src.dependencies import get_redis_adapter, require_auth
+from src.repositories import AuthRepository, RedisSessionStore
+from src.schemas.auth import AuthLogin, AuthRegister, AuthUser
+from src.services.auth import AuthService
+
+pytestmark = pytest.mark.asyncio
+
+
+@pytest.fixture
+async def protected_client(session_factory_async) -> AsyncGenerator[AsyncClient, None]:
+    app = FastAPI()
+
+    async def override_get_db():
+        async with session_factory_async() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    @app.get("/protected")
+    async def protected_route(
+        current_user: AuthUser = Depends(require_auth),
+    ) -> dict[str, str]:
+        return {"user_id": str(current_user.id)}
+
+    transport = ASGITransport(app=app)
+    try:
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            yield client
+    finally:
+        app.dependency_overrides.clear()
+
+
+@pytest.fixture
+async def redis_db_cleanup(redis_container) -> AsyncGenerator[None, None]:
+    redis_client = Redis.from_url(settings.redis_dsn, decode_responses=True)
+    await redis_client.flushdb()
+    try:
+        yield
+    finally:
+        await redis_client.flushdb()
+        await redis_client.aclose()
+        cached_adapter = get_redis_adapter()
+        await cached_adapter.close()
+        get_redis_adapter.cache_clear()
+
+
+async def test_auth_full_flow_login_resolve_logout_then_unauthorized(
+    session,
+    protected_client: AsyncClient,
+    redis_db_cleanup,
+) -> None:
+    auth_repo = AuthRepository(session=session)
+    session_store = RedisSessionStore(redis_adapter=get_redis_adapter())
+    auth_service = AuthService(auth_repo=auth_repo, session_store=session_store)
+
+    email = f"full-flow-{uuid4().hex[:12]}@example.com"
+    password = "strong-pass-123"
+
+    created_user = await auth_service.register(
+        AuthRegister(email=email, password=password)
+    )
+    await session.commit()
+
+    authenticated_user = await auth_service.authenticate(
+        AuthLogin(email=email, password=password)
+    )
+    assert authenticated_user is not None
+    assert authenticated_user.id == created_user.id
+
+    session_id = await auth_service.login_create_session(user_id=authenticated_user.id)
+
+    resolved_user = await auth_service.resolve_user(session_id=session_id)
+    assert resolved_user is not None
+    assert resolved_user.id == authenticated_user.id
+
+    authorized_response = await protected_client.get(
+        "/protected",
+        headers={"Cookie": f"{settings.AUTH_SESSION_COOKIE_NAME}={session_id}"},
+    )
+    assert authorized_response.status_code == 200
+    assert authorized_response.headers["content-type"].startswith("application/json")
+    assert authorized_response.json()["user_id"] == str(authenticated_user.id)
+
+    await auth_service.logout(session_id=session_id, user_id=authenticated_user.id)
+    assert await auth_service.resolve_user(session_id=session_id) is None
+
+    unauthorized_response = await protected_client.get(
+        "/protected",
+        headers={
+            "Accept": "application/json",
+            "Cookie": f"{settings.AUTH_SESSION_COOKIE_NAME}={session_id}",
+        },
+    )
+    assert unauthorized_response.status_code == 401
+    assert unauthorized_response.headers["content-type"].startswith("application/json")
+    assert unauthorized_response.json()["detail"] == "Authentication required"

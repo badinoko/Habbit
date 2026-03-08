@@ -26,10 +26,10 @@ app.include_router(habits_router)
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.session_secret_key,
-    session_cookie=settings.SESSION_COOKIE_NAME,
-    max_age=settings.SESSION_MAX_AGE,
-    same_site=settings.SESSION_SAME_SITE,
-    https_only=settings.SESSION_HTTPS_ONLY,
+    session_cookie=settings.UI_SESSION_COOKIE_NAME,
+    max_age=settings.UI_SESSION_MAX_AGE,
+    same_site=settings.UI_SESSION_SAME_SITE,
+    https_only=settings.UI_SESSION_HTTPS_ONLY,
 )
 
 

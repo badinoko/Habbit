@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 import os
+import socket
 import time
 from uuid import uuid4
 
@@ -13,6 +14,7 @@ from httpx import ASGITransport
 from psycopg2.extensions import connection as pg_connection
 from pydantic import Field, PostgresDsn
 from pydantic_settings import BaseSettings
+from redis import Redis as SyncRedis
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -64,10 +66,20 @@ class TestConfig:
 config = TestConfig.database
 
 
+def _find_free_tcp_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
+
+
+REDIS_TEST_PORT = _find_free_tcp_port()
+
+
 SAFE_TEST_ENV = {
     "DEBUG": "true",
     "TESTING": "true",
     "API_KEY": "test-api-key",
+    "CONTAINER_APP_PORT": "8000",
     "APP_PORT": "8000",
     "POSTGRES_HOST": config.host,
     "POSTGRES_PORT": str(config.port),
@@ -75,7 +87,7 @@ SAFE_TEST_ENV = {
     "POSTGRES_PASSWORD": config.password,
     "POSTGRES_DB": config.name,
     "REDIS_HOST": "localhost",
-    "REDIS_PORT": "6379",
+    "REDIS_PORT": str(REDIS_TEST_PORT),
     "REDIS_PASSWORD": "redis",
     "REDIS_DB": "0",
     "DATABASE_HOST": config.host,
@@ -158,6 +170,61 @@ def postgres_container():
         yield container_name
 
     finally:
+        try:
+            cont = client.containers.get(container_name)
+            cont.stop(timeout=1)
+        except docker.errors.NotFound:
+            pass
+
+
+@pytest.fixture(scope="session")
+def redis_container():
+    container_name = f"test_redis_{uuid4().hex[:8]}"
+    redis_client: SyncRedis | None = None
+    try:
+        client = docker.from_env()
+        client.ping()
+    except Exception as exc:
+        pytest.skip(f"Docker is required for integration tests: {exc}")
+
+    try:
+        client.containers.run(
+            image="redis:7-alpine",
+            name=container_name,
+            command=[
+                "redis-server",
+                "--appendonly",
+                "no",
+                "--requirepass",
+                SAFE_TEST_ENV["REDIS_PASSWORD"],
+            ],
+            ports={"6379/tcp": int(SAFE_TEST_ENV["REDIS_PORT"])},
+            detach=True,
+            remove=True,
+        )
+
+        redis_client = SyncRedis(
+            host=SAFE_TEST_ENV["REDIS_HOST"],
+            port=int(SAFE_TEST_ENV["REDIS_PORT"]),
+            password=SAFE_TEST_ENV["REDIS_PASSWORD"],
+            db=int(SAFE_TEST_ENV["REDIS_DB"]),
+            decode_responses=True,
+            socket_connect_timeout=1,
+        )
+        for _ in range(30):  # 30 попыток по 0.5 сек = 15 сек
+            try:
+                if redis_client.ping():
+                    break
+            except Exception:
+                time.sleep(0.5)
+        else:
+            raise Exception("Redis container failed to start")
+
+        yield container_name
+
+    finally:
+        if redis_client is not None:
+            redis_client.close()
         try:
             cont = client.containers.get(container_name)
             cont.stop(timeout=1)

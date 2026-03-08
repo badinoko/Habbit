@@ -17,13 +17,19 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: str
     REDIS_DB: int
 
+    CONTAINER_APP_PORT: int
     APP_PORT: int
 
-    SECRET_KEY: str | None = None
-    SESSION_COOKIE_NAME: str = "habitflow_session"
-    SESSION_MAX_AGE: int = 60 * 60 * 24 * 14  # 14 days
-    SESSION_SAME_SITE: Literal["lax", "strict", "none"] = "lax"
-    SESSION_HTTPS_ONLY: bool = False
+    UI_SESSION_SECRET_KEY: str | None = None
+    UI_SESSION_COOKIE_NAME: str = "habitflow_session"
+    UI_SESSION_MAX_AGE: int = 60 * 60 * 24 * 14  # 14 days
+    UI_SESSION_SAME_SITE: Literal["lax", "strict", "none"] = "lax"
+    UI_SESSION_HTTPS_ONLY: bool = False
+
+    AUTH_SESSION_COOKIE_NAME: str = "auth_session"
+    AUTH_SESSION_MAX_AGE: int = 60 * 60 * 24 * 14  # 14 days
+    AUTH_SESSION_SAME_SITE: Literal["lax", "strict", "none"] = "lax"
+    AUTH_SESSION_HTTPS_ONLY: bool = False
 
     API_KEY: str
     DEBUG: bool
@@ -43,13 +49,13 @@ class Settings(BaseSettings):
 
     @cached_property
     def session_secret_key(self) -> str:
-        if self.SECRET_KEY:
-            return self.SECRET_KEY
+        if self.UI_SESSION_SECRET_KEY:
+            return self.UI_SESSION_SECRET_KEY
         if not self.DEBUG:
             raise ValueError("SECRET_KEY must be set when DEBUG=False")
         return secrets.token_urlsafe(32)
 
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 
 settings = Settings()

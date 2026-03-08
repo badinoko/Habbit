@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import asyncio
+import builtins
 import logging
 from types import TracebackType
 from typing import Any, Self, cast
@@ -74,6 +77,29 @@ class RedisAdapter:
     async def remove(self, key: int | str) -> None:
         await self._execute_with_retry("delete", str(key))
 
+    async def sadd(self, key: int | str, *values: str) -> int:
+        if not values:
+            return 0
+        result = await self._execute_with_retry(
+            "sadd", str(key), *(str(value) for value in values)
+        )
+        return int(result)
+
+    async def srem(self, key: int | str, *values: str) -> int:
+        if not values:
+            return 0
+        result = await self._execute_with_retry(
+            "srem", str(key), *(str(value) for value in values)
+        )
+        return int(result)
+
+    async def smembers(self, key: int | str) -> builtins.set[str]:
+        result = await self._execute_with_retry("smembers", str(key))
+        return cast(builtins.set[str], result)
+
+    async def expire(self, key: int | str, seconds: int) -> bool:
+        return bool(await self._execute_with_retry("expire", str(key), seconds))
+
     async def exists(self, key: int | str) -> bool:
         return bool(await self._execute_with_retry("exists", str(key)))
 
@@ -89,6 +115,22 @@ class RedisAdapter:
                 logger.warning(f"Error closing Redis connection: {e!s}")
             finally:
                 self._redis = None
+
+    async def create_session_atomically(
+        self,
+        *,
+        session_key: str,
+        serialized_payload: str,
+        user_sessions_key: str,
+        session_id: str,
+        ttl_seconds: int,
+    ) -> None:
+        redis = await self._get_connection()
+        async with redis.pipeline(transaction=True) as pipe:
+            pipe.set(session_key, serialized_payload, ex=ttl_seconds)
+            pipe.sadd(user_sessions_key, session_id)
+            pipe.expire(user_sessions_key, ttl_seconds)
+            await pipe.execute()
 
     async def __aenter__(self) -> Self:
         await self._get_connection()

@@ -41,7 +41,8 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('provider', 'provider_user_id', name='uq_oauth_provider_user')
+    sa.UniqueConstraint('provider', 'provider_user_id', name='uq_oauth_provider_user'),
+    sa.UniqueConstraint('user_id', 'provider', name='uq_oauth_user_provider')
     )
     op.create_index('idx_oauth_user_provider', 'oauth_accounts', ['user_id', 'provider'], unique=False)
     op.add_column('habits', sa.Column('owner_id', sa.UUID(), nullable=True))
