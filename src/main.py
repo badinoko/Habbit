@@ -7,6 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from src.config import settings
 from src.dependencies import get_habit_service, get_task_service
+from src.routers.auth import router as auth_router
 from src.routers.habits import router as habits_router
 from src.routers.tasks import router as tasks_router
 from src.routers.themes import router as themes_router
@@ -19,6 +20,7 @@ app = FastAPI(title="HabitFlow", description="Трекер привычек и �
 app.mount("/static", StaticFiles(directory="src/static"), name="static")
 
 
+app.include_router(auth_router)
 app.include_router(themes_router)
 app.include_router(tasks_router)
 app.include_router(habits_router)

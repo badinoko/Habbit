@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Вход - HabitFlow{% endblock %}
+
+{% block content %}
+<div class="auth-shell">
+    <div class="auth-card">
+        <div class="auth-card-header">
+            <span class="auth-eyebrow">Безопасный вход</span>
+            <h1>Войти в HabitFlow</h1>
+            <p>Используйте email и пароль. Сессия хранится только в защищенной cookie.</p>
+        </div>
+
+        {% if error_message %}
+        <div class="alert alert-error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error_message }}</span>
+        </div>
+        {% endif %}
+
+        <form method="post" action="/auth/login" class="auth-form" autocomplete="on" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="next" value="{{ next_url }}">
+
+            <label class="auth-field" for="email">
+                <span>Email</span>
+                <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    inputmode="email"
+                    autocomplete="email"
+                    autocapitalize="none"
+                    spellcheck="false"
+                    value="{{ form_data.email|default('') }}"
+                    placeholder="you@example.com"
+                    required
+                >
+            </label>
+
+            <label class="auth-field" for="password">
+                <span>Пароль</span>
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    placeholder="Введите пароль"
+                    required
+                >
+            </label>
+
+            <button type="submit" class="btn auth-submit">
+                <i class="fas fa-sign-in-alt"></i>
+                Войти
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            <p>Нет аккаунта? <a href="/auth/register{% if next_url != '/' %}?next={{ next_url|urlencode }}{% endif %}">Создать</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

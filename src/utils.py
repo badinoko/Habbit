@@ -1,12 +1,20 @@
 import os
-from typing import Any
+import re
+import secrets
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import Depends, Request
 from fastapi.templating import Jinja2Templates
 
-from src.dependencies import get_habit_service, get_task_service, get_theme_service
+from src.dependencies import (
+    get_current_user,
+    get_habit_service,
+    get_task_service,
+    get_theme_service,
+)
 from src.schemas import Stats, ThemeResponse
+from src.schemas.auth import AuthUser
 from src.services import HabitService
 from src.services.tasks import TaskService
 from src.services.themes import ThemeService
@@ -14,6 +22,30 @@ from src.services.themes import ThemeService
 current_dir = os.path.dirname(os.path.abspath(__file__))
 templates_dir = os.path.join(current_dir, "templates")
 templates = Jinja2Templates(directory=templates_dir)
+
+
+def get_user_display_name(user: AuthUser | None) -> str | None:
+    if user is None:
+        return None
+
+    local_part = user.email.split("@", 1)[0].strip()
+    if not local_part:
+        return user.email
+
+    chunks = [chunk for chunk in re.split(r"[._-]+", local_part) if chunk]
+    if not chunks:
+        return local_part
+    return " ".join(chunk.capitalize() for chunk in chunks[:2])
+
+
+def ensure_csrf_token(request: Request) -> str:
+    token = request.session.get("csrf_token")
+    if isinstance(token, str) and token:
+        return token
+
+    token = secrets.token_urlsafe(32)
+    request.session["csrf_token"] = token
+    return token
 
 
 async def get_stats(
@@ -37,6 +69,7 @@ async def get_template_context(
     request: Request,
     theme_service: ThemeService = Depends(get_theme_service),
     statistics: Stats = Depends(get_stats),
+    current_user: Annotated[AuthUser | None, Depends(get_current_user)] = None,
 ) -> dict[str, Any]:
     themes = await theme_service.list_themes(limit=None)
 
@@ -59,13 +92,13 @@ async def get_template_context(
         selected_theme = None
 
     # Добавляем опцию "Все темы"
-    NoTheme = ThemeResponse(
+    no_theme = ThemeResponse(
         id=UUID("00000000-0000-0000-0000-000000000001"),
         name="Все темы",
         color="#000000",
         is_active=selected_theme is None,
     )
-    themes.insert(0, NoTheme)
+    themes.insert(0, no_theme)
 
     # Подсвечиваем выбранную тему
     if selected_theme is not None:
@@ -74,7 +107,14 @@ async def get_template_context(
                 theme.is_active = True
                 break
 
-    return {"request": request, "themes": themes, "stats": statistics}
+    return {
+        "request": request,
+        "themes": themes,
+        "stats": statistics,
+        "current_user": current_user,
+        "current_user_display_name": get_user_display_name(current_user),
+        "csrf_token": ensure_csrf_token(request),
+    }
 
 
 def error_context_updater(context: dict[Any, Any], e: str) -> dict[Any, Any]:

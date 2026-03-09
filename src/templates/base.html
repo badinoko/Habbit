@@ -11,10 +11,14 @@
     <!-- Верхняя навигационная панель -->
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-brand">
+            {% set next_target = request.url.path %}
+            {% if request.url.query %}
+                {% set next_target = request.url.path ~ '?' ~ request.url.query %}
+            {% endif %}
+            <a href="/" class="nav-brand">
                 <i class="fas fa-chart-line"></i>
                 HabitFlow
-            </div>
+            </a>
             <ul class="nav-menu">
                 <li class="nav-item">
                     <a href="/" class="nav-link {% if current_page == 'home' %}active{% endif %}">
@@ -36,18 +40,38 @@
                         <i class="fas fa-chart-pie"></i> Статистика
                     </a>
                 </li>
+                {% if current_user %}
                 <li class="nav-item">
-                    <a href="/soon" class="nav-link {% if current_page == 'login' %}active{% endif %}">
+                    <details class="nav-user-menu">
+                        <summary class="nav-link nav-user-trigger" title="{{ current_user.email }}">
+                            <i class="fas fa-user-circle"></i> {{ current_user_display_name or current_user.email }}
+                        </summary>
+                        <div class="nav-user-dropdown">
+                            <form method="post" action="/auth/logout" class="nav-logout-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="next" value="/">
+                                <button type="submit" class="nav-dropdown-action">
+                                    <i class="fas fa-sign-out-alt"></i> Выход
+                                </button>
+                            </form>
+                        </div>
+                    </details>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a href="/auth/login?next={{ next_target|urlencode }}" class="nav-link {% if current_page == 'login' %}active{% endif %}">
                         <i class="fas fa-sign-in-alt"></i> Вход
                     </a>
                 </li>
+                {% endif %}
             </ul>
         </div>
     </nav>
 
     <!-- Основной контент -->
-    <main class="main-container">
+    <main class="main-container {% if hide_sidebar %}main-container-full{% endif %}">
         <!-- Левая боковая панель -->
+        {% if not hide_sidebar %}
         <aside class="sidebar">
             {% block sidebar %}
             <div class="sidebar-section">
@@ -99,6 +123,7 @@
             </div>
             {% endblock %}
         </aside>
+        {% endif %}
 
         <!-- Правая основная часть -->
         <section class="content">
