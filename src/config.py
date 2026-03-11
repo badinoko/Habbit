@@ -34,6 +34,19 @@ class Settings(BaseSettings):
     API_KEY: str
     DEBUG: bool
 
+    GOOGLE_OAUTH_CLIENT_ID: str | None = None
+    GOOGLE_OAUTH_CLIENT_SECRET: str | None = None
+    GOOGLE_OAUTH_REDIRECT_URI: str | None = None
+    GOOGLE_OAUTH_STATE_TTL: int = 10 * 60  # 10 minutes
+
+    @property
+    def google_oauth_enabled(self) -> bool:
+        return bool(
+            self.GOOGLE_OAUTH_CLIENT_ID
+            and self.GOOGLE_OAUTH_CLIENT_SECRET
+            and self.GOOGLE_OAUTH_REDIRECT_URI
+        )
+
     @property
     def DATABASE_URL_asyncpg(self) -> str:
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"

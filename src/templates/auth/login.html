@@ -8,7 +8,7 @@
         <div class="auth-card-header">
             <span class="auth-eyebrow">Безопасный вход</span>
             <h1>Войти в HabitFlow</h1>
-            <p>Используйте email и пароль. Сессия хранится только в защищенной cookie.</p>
+            <p>Используйте email и пароль.</p>
         </div>
 
         {% if error_message %}
@@ -55,10 +55,21 @@
                 Войти
             </button>
         </form>
-
         <div class="auth-footer">
             <p>Нет аккаунта? <a href="/auth/register{% if next_url != '/' %}?next={{ next_url|urlencode }}{% endif %}">Создать</a></p>
         </div>
+        {% if google_oauth_enabled %}
+        {% set google_oauth_href = "/auth/google/start?next=" ~ (next_url|urlencode) %}
+        <div class="auth-oauth auth-oauth-after-form">
+            <p class="auth-oauth-hint">Или войдите с помощью</p>
+            <a href="{{ google_oauth_href }}" class="btn auth-oauth-btn">
+                <span class="auth-oauth-badge">
+                    <i class="fab fa-google"></i>
+                </span>
+                <span>Google</span>
+            </a>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

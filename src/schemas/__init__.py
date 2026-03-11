@@ -9,6 +9,7 @@ from .auth import (
     UserUpdate,
 )
 from .base import CreateResponse, Response, Stats
+from .google import GoogleOauthToken, GoogleOauthUser
 from .habits import (
     HabitCompletionPayload,
     HabitCompletionResult,
@@ -50,6 +51,8 @@ __all__ = [
     "AuthUser",
     "AuthUserWithPassword",
     "CreateResponse",
+    "GoogleOauthToken",
+    "GoogleOauthUser",
     "HabitCompletionPayload",
     "HabitCompletionResult",
     "HabitCreate",

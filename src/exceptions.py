@@ -69,3 +69,43 @@ class ProviderAccountAlreadyLinkedError(AppException):
     "User already has a different linked account for provider"
 
     pass
+
+
+class OAuthConfigurationError(AppException):
+    """OAuth provider is not configured."""
+
+    pass
+
+
+class OAuthStateInvalidError(AppException):
+    """OAuth state is missing, invalid, or expired."""
+
+    pass
+
+
+class OAuthProviderRejectedError(AppException):
+    """OAuth provider rejected the authorization request."""
+
+    pass
+
+
+class OAuthAuthorizationCodeMissingError(AppException):
+    """OAuth callback did not include an authorization code."""
+
+    pass
+
+
+class OAuthProviderUnavailableError(AppException):
+    """OAuth provider could not complete the callback exchange."""
+
+    pass
+
+
+class OAuthEmailNotVerifiedError(AppException):
+    """OAuth provider returned an unverified email."""
+
+    pass
+
+
+class GoogleOauthError(RuntimeError):
+    pass

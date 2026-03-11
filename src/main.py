@@ -1,5 +1,7 @@
+from contextlib import asynccontextmanager
 from typing import Any
 
+import httpx
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -15,7 +17,20 @@ from src.services.habits import HabitService
 from src.services.tasks import TaskService
 from src.utils import get_template_context, templates
 
-app = FastAPI(title="HabitFlow", description="Трекер привычек и задач", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    async with httpx.AsyncClient() as http_client:
+        app.state.http_client = http_client
+        yield
+
+
+app = FastAPI(
+    title="HabitFlow",
+    description="Трекер привычек и задач",
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
 app.mount("/static", StaticFiles(directory="src/static"), name="static")
 

@@ -2,6 +2,7 @@ from functools import lru_cache
 from typing import Annotated
 from urllib.parse import quote
 
+import httpx
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -63,12 +64,22 @@ async def get_session_store(
     return RedisSessionStore(redis_adapter=redis_adapter)
 
 
+async def get_http_client(request: Request) -> httpx.AsyncClient | None:
+    http_client = getattr(request.app.state, "http_client", None)
+    return http_client if isinstance(http_client, httpx.AsyncClient) else None
+
+
 async def get_auth_service(
     auth_repo: AuthRepository = Depends(get_auth_repository),
     session_store: RedisSessionStore = Depends(get_session_store),
+    http_client: httpx.AsyncClient | None = Depends(get_http_client),
 ) -> AuthService:
     """Провайдер для auth-сервиса."""
-    return AuthService(auth_repo=auth_repo, session_store=session_store)
+    return AuthService(
+        auth_repo=auth_repo,
+        session_store=session_store,
+        http_client=http_client,
+    )
 
 
 async def get_current_user(

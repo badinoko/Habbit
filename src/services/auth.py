@@ -1,8 +1,11 @@
+import secrets
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Final
 from uuid import UUID, uuid4
 
+import httpx
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 from sqlalchemy.exc import IntegrityError
@@ -10,7 +13,14 @@ from sqlalchemy.exc import IntegrityError
 from src.config import settings
 from src.exceptions import (
     EmailAlreadyExistsError,
+    GoogleOauthError,
+    OAuthAuthorizationCodeMissingError,
+    OAuthConfigurationError,
+    OAuthEmailNotVerifiedError,
     OAuthIdentityAlreadyLinkedToAnotherUserError,
+    OAuthProviderRejectedError,
+    OAuthProviderUnavailableError,
+    OAuthStateInvalidError,
     ProviderAccountAlreadyLinkedError,
     UserIsInactiveError,
 )
@@ -22,6 +32,20 @@ from src.schemas.auth import (
     AuthUser,
     OAuthAccountRead,
 )
+from src.services.google_oauth import GoogleOauth
+
+
+@dataclass(frozen=True)
+class GoogleOauthStartFlow:
+    authorization_url: str
+    session_payload: dict[str, str]
+
+
+@dataclass(frozen=True)
+class GoogleOauthLoginResult:
+    next_url: str
+    session_id: str
+    user: AuthUser
 
 
 class AuthService:
@@ -37,12 +61,22 @@ class AuthService:
         auth_repo: AuthRepository,
         session_store: RedisSessionStore | None = None,
         session_ttl_seconds: int = settings.AUTH_SESSION_MAX_AGE,
+        google_oauth_state_ttl_seconds: int = settings.GOOGLE_OAUTH_STATE_TTL,
+        http_client: httpx.AsyncClient | None = None,
+        google_oauth_client_factory: Callable[[], GoogleOauth] | None = None,
+        state_token_provider: Callable[[], str] | None = None,
         now_provider: Callable[[], datetime] | None = None,
     ):
         """Инициализировать сервис с репозиторием авторизации."""
         self.auth_repo = auth_repo
         self._session_store = session_store
         self._session_ttl_seconds = session_ttl_seconds
+        self._google_oauth_state_ttl_seconds = google_oauth_state_ttl_seconds
+        self._http_client = http_client
+        self._google_oauth_client_factory = google_oauth_client_factory
+        self._state_token_provider = state_token_provider or (
+            lambda: secrets.token_urlsafe(32)
+        )
         self._now_provider = now_provider or (lambda: datetime.now(UTC))
 
     @staticmethod
@@ -71,10 +105,117 @@ class AuthService:
             return parsed.replace(tzinfo=UTC)
         return parsed.astimezone(UTC)
 
+    @staticmethod
+    def _normalize_next(next_value: object) -> str:
+        if not isinstance(next_value, str) or not next_value:
+            return "/"
+
+        from urllib.parse import urlsplit
+
+        parsed = urlsplit(next_value)
+        if parsed.scheme or parsed.netloc:
+            return "/"
+        if not next_value.startswith("/") or next_value.startswith("//"):
+            return "/"
+        return next_value
+
     def _require_session_store(self) -> RedisSessionStore:
         if self._session_store is None:
             raise RuntimeError(self._SESSION_STORE_NOT_CONFIGURED)
         return self._session_store
+
+    def _build_google_oauth_client(self) -> GoogleOauth:
+        if self._google_oauth_client_factory is not None:
+            return self._google_oauth_client_factory()
+
+        if not settings.google_oauth_enabled:
+            raise OAuthConfigurationError("Google OAuth is not configured")
+        return GoogleOauth(
+            client_id=str(settings.GOOGLE_OAUTH_CLIENT_ID),
+            client_secret=str(settings.GOOGLE_OAUTH_CLIENT_SECRET),
+            redirect_uri=str(settings.GOOGLE_OAUTH_REDIRECT_URI),
+            http_client=self._http_client,
+        )
+
+    def start_google_oauth_login(self, *, next_url: str) -> GoogleOauthStartFlow:
+        state = self._state_token_provider()
+        if not state:
+            raise ValueError("state_token_provider must return a non-empty state")
+
+        session_payload = {
+            "state": state,
+            "next": self._normalize_next(next_url),
+            "issued_at": self._format_datetime(self._now_provider()),
+        }
+        authorization_url = self._build_google_oauth_client().get_authorization_url(
+            state=state
+        )
+        return GoogleOauthStartFlow(
+            authorization_url=authorization_url,
+            session_payload=session_payload,
+        )
+
+    async def complete_google_oauth_login(
+        self,
+        *,
+        oauth_session: object,
+        provided_state: object,
+        provider_error: object,
+        code: object,
+    ) -> GoogleOauthLoginResult:
+        next_url = "/"
+        expected_state: str | None = None
+        issued_at: datetime | None = None
+        if isinstance(oauth_session, dict):
+            next_url = self._normalize_next(oauth_session.get("next"))
+            stored_state = oauth_session.get("state")
+            if isinstance(stored_state, str) and stored_state:
+                expected_state = stored_state
+            issued_at = self._parse_datetime(oauth_session.get("issued_at"))
+
+        now = self._now_provider()
+        state_deadline = None
+        if issued_at is not None:
+            state_deadline = issued_at + timedelta(
+                seconds=self._google_oauth_state_ttl_seconds
+            )
+
+        if (
+            not isinstance(provided_state, str)
+            or not provided_state
+            or expected_state is None
+            or issued_at is None
+            or state_deadline is None
+            or state_deadline <= now
+            or not secrets.compare_digest(expected_state, provided_state)
+        ):
+            raise OAuthStateInvalidError
+
+        if isinstance(provider_error, str) and provider_error:
+            raise OAuthProviderRejectedError
+
+        if not isinstance(code, str) or not code:
+            raise OAuthAuthorizationCodeMissingError
+
+        try:
+            identity = await self._build_google_oauth_client().authenticate(code)
+        except GoogleOauthError as exc:
+            raise OAuthProviderUnavailableError from exc
+
+        if not identity.email_verified:
+            raise OAuthEmailNotVerifiedError
+
+        user = await self.get_or_create_oauth_user(
+            email=str(identity.email),
+            provider="google",
+            provider_user_id=identity.provider_user_id,
+        )
+        session_id = await self.login_create_session(user.id)
+        return GoogleOauthLoginResult(
+            next_url=next_url,
+            session_id=session_id,
+            user=user,
+        )
 
     async def login_create_session(self, user_id: UUID) -> str:
         """Создать auth-сессию и вернуть её идентификатор."""

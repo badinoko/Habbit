@@ -52,20 +52,26 @@
                 >
             </label>
 
-            <div class="auth-note">
-                <i class="fas fa-shield-alt"></i>
-                <span>Пароль не сохраняется в HTML и отправляется только при submit формы.</span>
-            </div>
-
             <button type="submit" class="btn auth-submit">
                 <i class="fas fa-user-plus"></i>
                 Зарегистрироваться
             </button>
         </form>
-
         <div class="auth-footer">
             <p>Уже есть аккаунт? <a href="/auth/login{% if next_url != '/' %}?next={{ next_url|urlencode }}{% endif %}">Войти</a></p>
         </div>
+        {% if google_oauth_enabled %}
+        {% set google_oauth_href = "/auth/google/start?next=" ~ (next_url|urlencode) %}
+        <div class="auth-oauth auth-oauth-after-form">
+            <p class="auth-oauth-hint">Или войдите с помощью</p>
+            <a href="{{ google_oauth_href }}" class="btn auth-oauth-btn">
+                <span class="auth-oauth-badge">
+                    <i class="fab fa-google"></i>
+                </span>
+                <span>Google</span>
+            </a>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

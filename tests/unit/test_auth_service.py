@@ -8,9 +8,17 @@ import pytest
 from argon2.exceptions import InvalidHashError
 from sqlalchemy.exc import IntegrityError
 
+from src.config import settings
 from src.exceptions import (
     EmailAlreadyExistsError,
+    GoogleOauthError,
+    OAuthAuthorizationCodeMissingError,
+    OAuthConfigurationError,
+    OAuthEmailNotVerifiedError,
     OAuthIdentityAlreadyLinkedToAnotherUserError,
+    OAuthProviderRejectedError,
+    OAuthProviderUnavailableError,
+    OAuthStateInvalidError,
     ProviderAccountAlreadyLinkedError,
 )
 from src.schemas.auth import AuthLogin, AuthRegister, AuthUser
@@ -283,6 +291,274 @@ def test_verify_password_returns_false_for_invalid_hash_error() -> None:
     service.ph = BrokenHasher()  # type: ignore[assignment]
 
     assert service.verify_password("strong-pass-123", "$argon2$broken") is False
+
+
+def test_start_google_oauth_login_builds_authorize_url_and_session_payload() -> None:
+    repo = DummyAuthRepo()
+    fake_client = SimpleNamespace(
+        get_authorization_url=lambda state: f"https://google.test/auth?state={state}"
+    )
+    fixed_now = datetime(2026, 3, 8, 12, 0, tzinfo=UTC)
+    service = AuthService(
+        auth_repo=repo,
+        google_oauth_client_factory=lambda: fake_client,
+        state_token_provider=lambda: "state-123",
+        now_provider=lambda: fixed_now,
+    )
+
+    flow = service.start_google_oauth_login(next_url="https://evil.example")
+
+    assert flow.authorization_url == "https://google.test/auth?state=state-123"
+    assert flow.session_payload == {
+        "state": "state-123",
+        "next": "/",
+        "issued_at": "2026-03-08T12:00:00Z",
+    }
+
+
+def test_start_google_oauth_login_requires_configuration() -> None:
+    repo = DummyAuthRepo()
+    service = AuthService(auth_repo=repo)
+    original_client_id = settings.GOOGLE_OAUTH_CLIENT_ID
+    original_client_secret = settings.GOOGLE_OAUTH_CLIENT_SECRET
+    original_redirect_uri = settings.GOOGLE_OAUTH_REDIRECT_URI
+    settings.GOOGLE_OAUTH_CLIENT_ID = None
+    settings.GOOGLE_OAUTH_CLIENT_SECRET = None
+    settings.GOOGLE_OAUTH_REDIRECT_URI = None
+
+    try:
+        with pytest.raises(OAuthConfigurationError):
+            service.start_google_oauth_login(next_url="/tasks")
+    finally:
+        settings.GOOGLE_OAUTH_CLIENT_ID = original_client_id
+        settings.GOOGLE_OAUTH_CLIENT_SECRET = original_client_secret
+        settings.GOOGLE_OAUTH_REDIRECT_URI = original_redirect_uri
+
+
+@pytest.mark.asyncio
+async def test_complete_google_oauth_login_creates_local_session() -> None:
+    repo = DummyAuthRepo()
+    store = DummySessionStore()
+    user = _mk_auth_user(email="oauth@example.com")
+    repo.create_user_with_oauth_account_result = (user, SimpleNamespace())
+    fake_client = SimpleNamespace()
+
+    async def authenticate(code: str):
+        assert code == "oauth-code"
+        return SimpleNamespace(
+            email="oauth@example.com",
+            email_verified=True,
+            provider_user_id="google-user-1",
+        )
+
+    fake_client.authenticate = authenticate
+    fixed_now = datetime(2026, 3, 8, 12, 0, tzinfo=UTC)
+    service = AuthService(
+        auth_repo=repo,
+        session_store=store,
+        google_oauth_client_factory=lambda: fake_client,
+        now_provider=lambda: fixed_now,
+    )
+
+    result = await service.complete_google_oauth_login(
+        oauth_session={
+            "state": "expected-state",
+            "next": "/tasks",
+            "issued_at": "2026-03-08T11:55:00Z",
+        },
+        provided_state="expected-state",
+        provider_error=None,
+        code="oauth-code",
+    )
+
+    assert result.user == user
+    assert result.next_url == "/tasks"
+    assert result.session_id in store.sessions
+    assert repo.create_user_with_oauth_account_called_with == {
+        "email": "oauth@example.com",
+        "provider": "google",
+        "provider_user_id": "google-user-1",
+    }
+
+
+@pytest.mark.asyncio
+async def test_complete_google_oauth_login_rejects_invalid_state() -> None:
+    repo = DummyAuthRepo()
+    service = AuthService(auth_repo=repo, now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC))
+
+    with pytest.raises(OAuthStateInvalidError):
+        await service.complete_google_oauth_login(
+            oauth_session={
+                "state": "expected-state",
+                "next": "/tasks",
+                "issued_at": "2026-03-08T11:55:00Z",
+            },
+            provided_state="wrong-state",
+            provider_error=None,
+            code="oauth-code",
+        )
+
+
+@pytest.mark.asyncio
+async def test_complete_google_oauth_login_rejects_expired_state() -> None:
+    repo = DummyAuthRepo()
+    service = AuthService(
+        auth_repo=repo,
+        google_oauth_state_ttl_seconds=60,
+        now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
+    )
+
+    with pytest.raises(OAuthStateInvalidError):
+        await service.complete_google_oauth_login(
+            oauth_session={
+                "state": "expected-state",
+                "next": "/tasks",
+                "issued_at": "2026-03-08T10:00:00Z",
+            },
+            provided_state="expected-state",
+            provider_error=None,
+            code="oauth-code",
+        )
+
+
+@pytest.mark.asyncio
+async def test_complete_google_oauth_login_rejects_provider_error() -> None:
+    repo = DummyAuthRepo()
+    service = AuthService(
+        auth_repo=repo,
+        now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
+    )
+
+    with pytest.raises(OAuthProviderRejectedError):
+        await service.complete_google_oauth_login(
+            oauth_session={
+                "state": "expected-state",
+                "next": "/tasks",
+                "issued_at": "2026-03-08T11:55:00Z",
+            },
+            provided_state="expected-state",
+            provider_error="access_denied",
+            code="oauth-code",
+        )
+
+
+@pytest.mark.asyncio
+async def test_complete_google_oauth_login_requires_code() -> None:
+    repo = DummyAuthRepo()
+    service = AuthService(
+        auth_repo=repo,
+        now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
+    )
+
+    with pytest.raises(OAuthAuthorizationCodeMissingError):
+        await service.complete_google_oauth_login(
+            oauth_session={
+                "state": "expected-state",
+                "next": "/tasks",
+                "issued_at": "2026-03-08T11:55:00Z",
+            },
+            provided_state="expected-state",
+            provider_error=None,
+            code=None,
+        )
+
+
+@pytest.mark.asyncio
+async def test_complete_google_oauth_login_converts_provider_failures() -> None:
+    repo = DummyAuthRepo()
+    fake_client = SimpleNamespace()
+
+    async def authenticate(code: str):  # noqa: ARG001
+        raise GoogleOauthError("boom")
+
+    fake_client.authenticate = authenticate
+    service = AuthService(
+        auth_repo=repo,
+        google_oauth_client_factory=lambda: fake_client,
+        now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
+    )
+
+    with pytest.raises(OAuthProviderUnavailableError):
+        await service.complete_google_oauth_login(
+            oauth_session={
+                "state": "expected-state",
+                "next": "/tasks",
+                "issued_at": "2026-03-08T11:55:00Z",
+            },
+            provided_state="expected-state",
+            provider_error=None,
+            code="oauth-code",
+        )
+
+
+@pytest.mark.asyncio
+async def test_complete_google_oauth_login_rejects_unverified_email() -> None:
+    repo = DummyAuthRepo()
+    fake_client = SimpleNamespace()
+
+    async def authenticate(code: str):  # noqa: ARG001
+        return SimpleNamespace(
+            email="oauth@example.com",
+            email_verified=False,
+            provider_user_id="google-user-1",
+        )
+
+    fake_client.authenticate = authenticate
+    service = AuthService(
+        auth_repo=repo,
+        google_oauth_client_factory=lambda: fake_client,
+        now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
+    )
+
+    with pytest.raises(OAuthEmailNotVerifiedError):
+        await service.complete_google_oauth_login(
+            oauth_session={
+                "state": "expected-state",
+                "next": "/tasks",
+                "issued_at": "2026-03-08T11:55:00Z",
+            },
+            provided_state="expected-state",
+            provider_error=None,
+            code="oauth-code",
+        )
+
+
+@pytest.mark.asyncio
+async def test_complete_google_oauth_login_propagates_domain_errors() -> None:
+    repo = DummyAuthRepo()
+    repo.create_user_with_oauth_account_error = IntegrityError(
+        statement="INSERT INTO users ...",
+        params={},
+        orig=Exception("duplicate"),
+    )
+    repo.user_by_email = _mk_user_model(email="oauth@example.com", password_hash=None)
+    fake_client = SimpleNamespace()
+
+    async def authenticate(code: str):  # noqa: ARG001
+        return SimpleNamespace(
+            email="oauth@example.com",
+            email_verified=True,
+            provider_user_id="google-user-1",
+        )
+
+    fake_client.authenticate = authenticate
+    service = AuthService(
+        auth_repo=repo,
+        google_oauth_client_factory=lambda: fake_client,
+        now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
+    )
+
+    with pytest.raises(EmailAlreadyExistsError):
+        await service.complete_google_oauth_login(
+            oauth_session={
+                "state": "expected-state",
+                "next": "/tasks",
+                "issued_at": "2026-03-08T11:55:00Z",
+            },
+            provided_state="expected-state",
+            provider_error=None,
+            code="oauth-code",
+        )
 
 
 @pytest.mark.asyncio

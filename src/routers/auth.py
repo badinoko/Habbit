@@ -1,4 +1,4 @@
-from urllib.parse import urlsplit
+from urllib.parse import urlencode, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.exceptions import RequestValidationError
@@ -8,13 +8,24 @@ from pydantic import ValidationError
 from src.config import settings
 from src.csrf import csrf_error_message, read_request_payload, validate_csrf
 from src.dependencies import get_auth_service, get_current_user, require_auth
-from src.exceptions import EmailAlreadyExistsError
+from src.exceptions import (
+    EmailAlreadyExistsError,
+    OAuthAuthorizationCodeMissingError,
+    OAuthConfigurationError,
+    OAuthEmailNotVerifiedError,
+    OAuthIdentityAlreadyLinkedToAnotherUserError,
+    OAuthProviderRejectedError,
+    OAuthProviderUnavailableError,
+    OAuthStateInvalidError,
+    UserIsInactiveError,
+)
 from src.schemas import AuthLogin, AuthRegister, AuthUser
 from src.services.auth import AuthService
 from src.utils import ensure_csrf_token, get_user_display_name, templates
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 _DEFAULT_REDIRECT_PATH = "/"
+_GOOGLE_OAUTH_UI_SESSION_KEY = "google_oauth"
 
 
 def _normalize_next(next_value: object) -> str:
@@ -50,6 +61,7 @@ def _render_auth_template(
             "next_url": next_url,
             "error_message": error_message,
             "form_data": form_data or {},
+            "google_oauth_enabled": settings.google_oauth_enabled,
             "hide_sidebar": True,
             "csrf_token": ensure_csrf_token(request),
         }
@@ -89,6 +101,46 @@ def _render_logout_error_template(
     )
 
 
+def _build_redirect_with_next(path: str, *, next_url: str) -> str:
+    normalized_next = _normalize_next(next_url)
+    if normalized_next == _DEFAULT_REDIRECT_PATH:
+        return path
+    return f"{path}?{urlencode({'next': normalized_next})}"
+
+
+def _render_google_oauth_error_template(
+    request: Request,
+    *,
+    next_url: str,
+    title: str,
+    message: str,
+    details: str,
+    status_code: int,
+) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "message.html",
+        {
+            "request": request,
+            "current_user": None,
+            "current_user_display_name": None,
+            "hide_sidebar": True,
+            "csrf_token": ensure_csrf_token(request),
+            "title": title,
+            "message": message,
+            "details": details,
+            "message_type": "error",
+            "primary_url": _build_redirect_with_next("/auth/login", next_url=next_url),
+            "primary_text": "Ко входу",
+            "primary_icon": "fa-right-to-bracket",
+            "secondary_url": next_url,
+            "secondary_text": "Продолжить без входа",
+            "secondary_icon": "fa-arrow-right",
+        },
+        status_code=status_code,
+    )
+
+
 def _set_auth_cookie(response: Response, session_id: str) -> None:
     response.set_cookie(
         key=settings.AUTH_SESSION_COOKIE_NAME,
@@ -107,6 +159,129 @@ def _clear_auth_cookie(response: Response) -> None:
         samesite=settings.AUTH_SESSION_SAME_SITE,
         secure=settings.AUTH_SESSION_HTTPS_ONLY,
     )
+
+
+@router.get("/google/start")
+async def google_start(
+    request: Request,
+    auth_service: AuthService = Depends(get_auth_service),
+    current_user: AuthUser | None = Depends(get_current_user),
+):
+    next_url = _normalize_next(request.query_params.get("next"))
+    if current_user is not None:
+        return RedirectResponse(url=next_url, status_code=status.HTTP_303_SEE_OTHER)
+
+    try:
+        flow = auth_service.start_google_oauth_login(next_url=next_url)
+    except OAuthConfigurationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google OAuth is not configured",
+        ) from exc
+
+    request.session[_GOOGLE_OAUTH_UI_SESSION_KEY] = flow.session_payload
+    return RedirectResponse(
+        url=flow.authorization_url,
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+
+
+@router.get("/google/callback")
+async def google_callback(
+    request: Request,
+    auth_service: AuthService = Depends(get_auth_service),
+):
+    oauth_session = request.session.pop(_GOOGLE_OAUTH_UI_SESSION_KEY, None)
+    next_url = _DEFAULT_REDIRECT_PATH
+    if isinstance(oauth_session, dict):
+        next_url = _normalize_next(oauth_session.get("next"))
+
+    try:
+        result = await auth_service.complete_google_oauth_login(
+            oauth_session=oauth_session,
+            provided_state=request.query_params.get("state"),
+            provider_error=request.query_params.get("error"),
+            code=request.query_params.get("code"),
+        )
+    except OAuthConfigurationError:
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Вход через Google недоступен",
+            message="Не удалось завершить вход через Google.",
+            details="Интеграция Google OAuth сейчас недоступна. Попробуйте позже.",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    except OAuthStateInvalidError:
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Сессия входа истекла",
+            message="Не удалось подтвердить запрос на вход через Google.",
+            details="Начните вход заново: защитный токен state больше недействителен.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    except OAuthProviderRejectedError:
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Не удалось войти через Google",
+            message="Google отклонил запрос на вход.",
+            details="Повторите попытку и подтвердите доступ к аккаунту.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    except OAuthAuthorizationCodeMissingError:
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Не удалось войти через Google",
+            message="Ответ Google не содержит кода авторизации.",
+            details="Начните вход заново со страницы авторизации.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    except OAuthProviderUnavailableError:
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Google временно недоступен",
+            message="Не удалось завершить вход через Google.",
+            details="Попробуйте снова через несколько минут.",
+            status_code=status.HTTP_502_BAD_GATEWAY,
+        )
+    except OAuthEmailNotVerifiedError:
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Email не подтвержден",
+            message="Не удалось завершить вход через Google.",
+            details="Google не подтвердил email этого аккаунта.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+    except (EmailAlreadyExistsError, OAuthIdentityAlreadyLinkedToAnotherUserError):
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Аккаунт уже используется",
+            message="Не удалось завершить вход через Google.",
+            details="Этот email или Google-аккаунт уже связан с другим способом входа.",
+            status_code=status.HTTP_409_CONFLICT,
+        )
+    except UserIsInactiveError:
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Аккаунт недоступен",
+            message="Этот пользовательский аккаунт отключен.",
+            details="Обратитесь к администратору или используйте другой аккаунт.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+
+    redirect = RedirectResponse(
+        url=result.next_url,
+        status_code=status.HTTP_303_SEE_OTHER,
+    )
+    _set_auth_cookie(redirect, result.session_id)
+    return redirect
 
 
 @router.get("/login", response_class=HTMLResponse)
