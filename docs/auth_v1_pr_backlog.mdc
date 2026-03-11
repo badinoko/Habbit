@@ -95,7 +95,7 @@ DoD:
 - корректные сообщения об ошибках в HTML-flow.
 
 ### PR-05: Authorization + ownership enforcement
-Статус: `planned`
+Статус: `done`
 
 Цель:
 - ограничить доступ и закрыть cross-user доступ к данным.
@@ -161,7 +161,7 @@ DoD:
 - [+] PR-02
 - [+] PR-03
 - [+] PR-04
-- [ ] PR-05
+- [+] PR-05
 - [ ] PR-06
 - [ ] PR-07
 - [ ] PR-08

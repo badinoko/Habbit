@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from tests.helpers import with_csrf_form, with_csrf_headers
 
@@ -56,6 +57,42 @@ async def test_create_theme_twice_with_same_name_error(client):
 
     response = await create_theme(client=client, name=NAME)
     assert response.status_code == 400  # Ошибка - название темы уже существует
+
+
+@pytest.mark.asyncio
+async def test_theme_repository_enforces_unique_name_per_owner(session, owner_id):
+    from src.repositories import ThemeRepository
+    from src.schemas import ThemeCreate
+
+    repo = ThemeRepository(session=session, owner_id=owner_id)
+    await repo.add(ThemeCreate(name="Личное", color="#AA11BB"))
+    await session.commit()
+
+    with pytest.raises(IntegrityError):
+        await repo.add(ThemeCreate(name="Личное", color="#11BBAA"))
+        await session.commit()
+
+    await session.rollback()
+
+
+@pytest.mark.asyncio
+async def test_different_owners_can_create_themes_with_same_name(
+    session, owner_id, secondary_owner_id
+):
+    from src.repositories import ThemeRepository
+    from src.schemas import ThemeCreate
+
+    primary_repo = ThemeRepository(session=session, owner_id=owner_id)
+    secondary_repo = ThemeRepository(session=session, owner_id=secondary_owner_id)
+
+    first = await primary_repo.add(ThemeCreate(name="Общее имя", color="#AA11BB"))
+    second = await secondary_repo.add(ThemeCreate(name="Общее имя", color="#11BBAA"))
+    await session.commit()
+
+    assert first.name == second.name
+    assert first.id != second.id
+    assert await primary_repo.get_by_name("Общее имя") == first
+    assert await secondary_repo.get_by_name("Общее имя") == second
 
 
 @pytest.mark.asyncio
