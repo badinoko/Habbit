@@ -6,7 +6,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import ValidationError
 from starlette.datastructures import FormData
 
-from src.dependencies import get_habit_service
+from src.csrf import csrf_error_message, require_csrf
+from src.dependencies import get_habit_service, get_user_habit_service
 from src.exceptions import HabitNotFound
 from src.schemas import (
     HabitCompletionResult,
@@ -19,6 +20,7 @@ from src.services.habits import HabitService
 from src.utils import error_context_updater, get_template_context, templates
 
 router = APIRouter(prefix="/habits", tags=["Habits"])
+_WRITE_ROUTE_DEPENDENCIES = [Depends(require_csrf)]
 
 
 @router.get(
@@ -99,9 +101,30 @@ async def habit_page(
 async def create_habit(
     request: Request,
     context: dict[str, Any] = Depends(get_template_context),
-    habits_service: HabitService = Depends(get_habit_service),
+    habits_service: HabitService = Depends(get_user_habit_service),
 ):
     expects_json = "application/json" in request.headers.get("content-type", "").lower()
+    try:
+        await require_csrf(request)
+    except HTTPException as exc:
+        if expects_json:
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"detail": exc.detail},
+            )
+        context.update(
+            {
+                "current_page": "habits",
+                "error_message": csrf_error_message(),
+            }
+        )
+        return templates.TemplateResponse(
+            request,
+            "habits/habits_form.html",
+            context,
+            status_code=exc.status_code,
+        )
+
     try:
         if expects_json:
             payload = await request.json()
@@ -186,6 +209,7 @@ def _as_positive_int_or_raise(value: object, label: str) -> int:
     "/{id}",
     response_model=Response,
     summary="Updates habit",
+    dependencies=_WRITE_ROUTE_DEPENDENCIES,
     responses={
         500: {"description": "Internal server error"},
         400: {"description": "Bad request - validation error"},
@@ -195,7 +219,7 @@ def _as_positive_int_or_raise(value: object, label: str) -> int:
 async def update_habit(
     id: UUID,
     habit_data: HabitUpdateAPI,
-    habits_service: HabitService = Depends(get_habit_service),
+    habits_service: HabitService = Depends(get_user_habit_service),
 ):
     try:
         res = await habits_service.update_habit(id, habit_data)
@@ -230,34 +254,44 @@ async def update_habit(
     "/{id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Deletes habit",
+    dependencies=_WRITE_ROUTE_DEPENDENCIES,
     responses={
         204: {"description": "Habit deleted"},
+        404: {"description": "Habit not found"},
         500: {"description": "Internal server error"},
     },
 )
 async def delete_habit(
-    id: UUID, habits_service: HabitService = Depends(get_habit_service)
+    id: UUID,
+    habits_service: HabitService = Depends(get_user_habit_service),
 ):
     try:
-        await habits_service.delete_habit(id)
+        res = await habits_service.delete_habit(id)
     except RuntimeError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error",
         ) from None
+    if not res:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Habit not found",
+        )
 
 
 @router.patch(
     "/{id}/complete",
     response_model=HabitCompletionResult,
     summary="Marks habit as completed",
+    dependencies=_WRITE_ROUTE_DEPENDENCIES,
     responses={
         404: {"description": "Habit not found"},
         500: {"description": "Internal server error"},
     },
 )
 async def complete_habit(
-    id: UUID, habits_service: HabitService = Depends(get_habit_service)
+    id: UUID,
+    habits_service: HabitService = Depends(get_user_habit_service),
 ):
     try:
         habit_completion_result = await habits_service.complete_habit(id)
@@ -274,13 +308,15 @@ async def complete_habit(
     "/{id}/incomplete",
     response_model=HabitCompletionResult,
     summary="Marks habit as incomplete",
+    dependencies=_WRITE_ROUTE_DEPENDENCIES,
     responses={
         404: {"description": "Habit not found"},
         500: {"description": "Internal server error"},
     },
 )
 async def incomplete_habit(
-    id: UUID, habits_service: HabitService = Depends(get_habit_service)
+    id: UUID,
+    habits_service: HabitService = Depends(get_user_habit_service),
 ):
     try:
         habit_completion_result = await habits_service.incomplete_habit(id)

@@ -7,6 +7,7 @@ from src.repositories import TaskRepository, ThemeRepository
 from src.schemas import TaskCreateAPI, ThemeCreate
 from src.services import TaskService
 from src.services.tasks import PRIORITY_IDS
+from tests.helpers import with_csrf_form, with_csrf_headers
 
 NAME = "Читать книги"
 THEME_NAME = "Хобби"
@@ -16,19 +17,32 @@ PARTIAL_UPDATE_FIELD_NAMES = ("name", "description", "theme_id", "priority")
 
 
 async def mark_task_as_completed(client, id):
-    return await client.patch(f"/tasks/{id}/complete")
+    return await client.patch(
+        f"/tasks/{id}/complete",
+        headers=await with_csrf_headers(client),
+    )
 
 
 async def mark_task_as_incompleted(client, id):
-    return await client.patch(f"/tasks/{id}/incomplete")
+    return await client.patch(
+        f"/tasks/{id}/incomplete",
+        headers=await with_csrf_headers(client),
+    )
 
 
 async def delete_task(client, id):
-    return await client.delete(f"/tasks/{id}")
+    return await client.delete(
+        f"/tasks/{id}",
+        headers=await with_csrf_headers(client),
+    )
 
 
 async def update_task(client, id, data):
-    return await client.put(f"/tasks/{id}", json=data)
+    return await client.put(
+        f"/tasks/{id}",
+        json=data,
+        headers=await with_csrf_headers(client),
+    )
 
 
 def _build_partial_update_payloads() -> list[object]:
@@ -50,17 +64,26 @@ def _build_partial_update_payloads() -> list[object]:
 
 
 @pytest.mark.asyncio
-async def test_create_task(client, session):
+async def test_create_task(client, session, owner_id):
     # Простой случай
-    data = {"name": NAME, "priority": PRIORITY}
+    data = await with_csrf_form(client, {"name": NAME, "priority": PRIORITY}, path="/tasks/new")
     response = await client.post("/tasks/", data=data)
     assert response.status_code == 303  # перенаправление
 
     # Случай с темой и описанием
-    theme_repo = ThemeRepository(session=session)
+    theme_repo = ThemeRepository(session=session, owner_id=owner_id)
     theme = await theme_repo.add(ThemeCreate(name=THEME_NAME, color="#FF5733"))
     await session.commit()
-    data.update({"description": DESCRIPTION, "theme_id": theme.id})
+    data = await with_csrf_form(
+        client,
+        {
+            "name": NAME,
+            "priority": PRIORITY,
+            "description": DESCRIPTION,
+            "theme_id": theme.id,
+        },
+        path="/tasks/new",
+    )
     response = await client.post("/tasks/", data=data)
     assert response.status_code == 303  # перенаправление
 
@@ -74,8 +97,8 @@ async def test_create_task_error(client):
 
 
 @pytest.mark.asyncio
-async def test_mark_task_as_completed(client, session):
-    id = await create_task_and_return_id(session)
+async def test_mark_task_as_completed(client, session, owner_id):
+    id = await create_task_and_return_id(session, owner_id=owner_id)
     res = await mark_task_as_completed(client, id)
     assert res.status_code == 200
     assert res.headers["content-type"].startswith("application/json")
@@ -84,7 +107,7 @@ async def test_mark_task_as_completed(client, session):
     assert data["completed"] is True
     assert data["task"]["id"] == str(id)
 
-    task = await TaskRepository(session=session).get_by_id(id)
+    task = await TaskRepository(session=session, owner_id=owner_id).get_by_id(id)
     assert task is not None
     assert task.completed_at is not None
 
@@ -96,8 +119,8 @@ async def test_mark_as_completed_task_not_found(client):
 
 
 @pytest.mark.asyncio
-async def test_mark_task_as_incompleted(client, session):
-    id = await create_task_and_return_id(session)
+async def test_mark_task_as_incompleted(client, session, owner_id):
+    id = await create_task_and_return_id(session, owner_id=owner_id)
     res = await mark_task_as_completed(client, id)
     assert res.status_code == 200
     res = await mark_task_as_incompleted(client, id)
@@ -108,7 +131,7 @@ async def test_mark_task_as_incompleted(client, session):
     assert data["completed"] is False
     assert data["task"]["id"] == str(id)
 
-    task = await TaskRepository(session=session).get_by_id(id)
+    task = await TaskRepository(session=session, owner_id=owner_id).get_by_id(id)
     assert task is not None
     assert task.completed_at is None
 
@@ -120,8 +143,8 @@ async def test_mark_as_incompleted_task_not_found(client):
 
 
 @pytest.mark.asyncio
-async def test_delete_task(client, session):
-    id = await create_task_and_return_id(session)
+async def test_delete_task(client, session, owner_id):
+    id = await create_task_and_return_id(session, owner_id=owner_id)
     response = await delete_task(client, id)
     assert response.status_code == 204
 
@@ -129,16 +152,16 @@ async def test_delete_task(client, session):
     assert response.status_code == 200
     assert NAME not in response.text
 
-    response = await delete_task(client, id)  # Идемпотентность метода delete
-    assert response.status_code == 204
+    response = await delete_task(client, id)
+    assert response.status_code == 404
 
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("payload", _build_partial_update_payloads())
 async def test_update_task_partial_updates_persist_changed_and_keep_unchanged_fields(
-    client, session, payload
+    client, session, owner_id, payload
 ):
-    theme_repo = ThemeRepository(session=session)
+    theme_repo = ThemeRepository(session=session, owner_id=owner_id)
     initial_theme = await theme_repo.add(
         ThemeCreate(name="Начальная тема partial", color="#FF5733")
     )
@@ -153,6 +176,7 @@ async def test_update_task_partial_updates_persist_changed_and_keep_unchanged_fi
 
     task_id = await create_task_and_return_id(
         session,
+        owner_id=owner_id,
         name=initial_name,
         description=initial_description,
         theme_id=initial_theme.id,
@@ -168,7 +192,7 @@ async def test_update_task_partial_updates_persist_changed_and_keep_unchanged_fi
     assert response.headers["content-type"].startswith("application/json")
     assert response.json() == {"message": "success"}
 
-    task = await TaskRepository(session=session).get_by_id(task_id)
+    task = await TaskRepository(session=session, owner_id=owner_id).get_by_id(task_id)
     assert task is not None
 
     assert task.name == (
@@ -190,10 +214,10 @@ async def test_update_task_partial_updates_persist_changed_and_keep_unchanged_fi
 
 
 @pytest.mark.asyncio
-async def test_update_task_persists_payload(client, session):
-    task_id = await create_task_and_return_id(session)
+async def test_update_task_persists_payload(client, session, owner_id):
+    task_id = await create_task_and_return_id(session, owner_id=owner_id)
 
-    theme_repo = ThemeRepository(session=session)
+    theme_repo = ThemeRepository(session=session, owner_id=owner_id)
     theme = await theme_repo.add(ThemeCreate(name="Обновлённая тема", color="#123ABC"))
     await session.commit()
 
@@ -208,7 +232,7 @@ async def test_update_task_persists_payload(client, session):
     assert response.headers["content-type"].startswith("application/json")
     assert response.json() == {"message": "success"}
 
-    task = await TaskRepository(session=session).get_by_id(task_id)
+    task = await TaskRepository(session=session, owner_id=owner_id).get_by_id(task_id)
     assert task is not None
     assert task.name == "Новое имя"
     assert task.description == "Новое описание"
@@ -217,8 +241,8 @@ async def test_update_task_persists_payload(client, session):
 
 
 @pytest.mark.asyncio
-async def test_tasks_list_page(client, session):
-    await create_task_and_return_id(session)  # название task'а == NAME
+async def test_tasks_list_page(client, session, owner_id):
+    await create_task_and_return_id(session, owner_id=owner_id)  # название task'а == NAME
     response = await client.get("/tasks/")
     assert response.status_code == 200
     assert NAME in response.text
@@ -231,8 +255,8 @@ async def test_task_creation_page(client, session):
 
 
 @pytest.mark.asyncio
-async def test_task_update_page(client, session):
-    id = await create_task_and_return_id(session)
+async def test_task_update_page(client, session, owner_id):
+    id = await create_task_and_return_id(session, owner_id=owner_id)
     response = await client.get(f"/tasks/{id}")
     assert response.status_code == 200
     assert NAME in response.text
@@ -246,9 +270,13 @@ async def test_task_update_page_returns_404_when_task_missing(client):
 
 
 @pytest.mark.asyncio
-async def test_tasks_list_status_filter_active_and_completed(client, session):
-    active_id = await create_task_and_return_id(session, name="status-active")
-    completed_id = await create_task_and_return_id(session, name="status-completed")
+async def test_tasks_list_status_filter_active_and_completed(client, session, owner_id):
+    active_id = await create_task_and_return_id(
+        session, owner_id=owner_id, name="status-active"
+    )
+    completed_id = await create_task_and_return_id(
+        session, owner_id=owner_id, name="status-completed"
+    )
     await mark_task_as_completed(client, completed_id)
 
     response = await client.get("/tasks/?status=active")
@@ -262,20 +290,24 @@ async def test_tasks_list_status_filter_active_and_completed(client, session):
     assert "status-completed" in response.text
 
     # Санити-чек: задача действительно стала completed в БД.
-    completed_task = await TaskRepository(session=session).get_by_id(completed_id)
+    completed_task = await TaskRepository(
+        session=session, owner_id=owner_id
+    ).get_by_id(completed_id)
     assert completed_task is not None
     assert completed_task.completed_at is not None
 
-    active_task = await TaskRepository(session=session).get_by_id(active_id)
+    active_task = await TaskRepository(session=session, owner_id=owner_id).get_by_id(
+        active_id
+    )
     assert active_task is not None
     assert active_task.completed_at is None
 
 
 @pytest.mark.asyncio
-async def test_tasks_list_sort_by_name_and_order(client, session):
-    await create_task_and_return_id(session, name="sort-C")
-    await create_task_and_return_id(session, name="sort-A")
-    await create_task_and_return_id(session, name="sort-B")
+async def test_tasks_list_sort_by_name_and_order(client, session, owner_id):
+    await create_task_and_return_id(session, owner_id=owner_id, name="sort-C")
+    await create_task_and_return_id(session, owner_id=owner_id, name="sort-A")
+    await create_task_and_return_id(session, owner_id=owner_id, name="sort-B")
 
     asc_response = await client.get("/tasks/?status=active&sort=name&order=asc")
     assert asc_response.status_code == 200
@@ -295,10 +327,10 @@ async def test_tasks_list_sort_by_name_and_order(client, session):
 
 
 @pytest.mark.asyncio
-async def test_tasks_list_pagination(client, session):
-    await create_task_and_return_id(session, name="page-A")
-    await create_task_and_return_id(session, name="page-B")
-    await create_task_and_return_id(session, name="page-C")
+async def test_tasks_list_pagination(client, session, owner_id):
+    await create_task_and_return_id(session, owner_id=owner_id, name="page-A")
+    await create_task_and_return_id(session, owner_id=owner_id, name="page-B")
+    await create_task_and_return_id(session, owner_id=owner_id, name="page-C")
 
     page_1 = await client.get(
         "/tasks/?status=active&sort=name&order=asc&per_page=1&page=1"
@@ -318,14 +350,18 @@ async def test_tasks_list_pagination(client, session):
 
 
 @pytest.mark.asyncio
-async def test_tasks_list_theme_filter_is_persisted_in_session(client, session):
-    theme_repo = ThemeRepository(session=session)
+async def test_tasks_list_theme_filter_is_persisted_in_session(client, session, owner_id):
+    theme_repo = ThemeRepository(session=session, owner_id=owner_id)
     hobby = await theme_repo.add(ThemeCreate(name="Фильтр Хобби", color="#112233"))
     work = await theme_repo.add(ThemeCreate(name="Фильтр Работа", color="#445566"))
     await session.commit()
 
-    await create_task_and_return_id(session, name="task-hobby", theme_id=hobby.id)
-    await create_task_and_return_id(session, name="task-work", theme_id=work.id)
+    await create_task_and_return_id(
+        session, owner_id=owner_id, name="task-hobby", theme_id=hobby.id
+    )
+    await create_task_and_return_id(
+        session, owner_id=owner_id, name="task-work", theme_id=work.id
+    )
 
     # Выбираем тему через query-параметр -> фильтр сохраняется в session.
     filtered = await client.get("/tasks/?theme=Фильтр Хобби&status=active")
@@ -346,16 +382,90 @@ async def test_tasks_list_theme_filter_is_persisted_in_session(client, session):
     assert "task-work" in reset.text
 
 
+@pytest.mark.asyncio
+async def test_task_owner_scope_hides_foreign_task_and_blocks_mutations(
+    client, secondary_client, session, secondary_owner_id
+):
+    foreign_task_name = "foreign-task-owned-by-user-b"
+    foreign_task_id = await create_task_and_return_id(
+        session,
+        owner_id=secondary_owner_id,
+        name=foreign_task_name,
+    )
+
+    list_response = await client.get("/tasks/")
+    assert list_response.status_code == 200
+    assert foreign_task_name not in list_response.text
+
+    detail_response = await client.get(f"/tasks/{foreign_task_id}")
+    assert detail_response.status_code == 404
+    assert "Задача не найдена" in detail_response.text
+
+    update_response = await update_task(
+        client,
+        foreign_task_id,
+        {"name": "task-overwritten-by-user-a"},
+    )
+    assert update_response.status_code == 404
+    assert update_response.json()["error"]["code"] == "not_found"
+
+    complete_response = await mark_task_as_completed(client, foreign_task_id)
+    assert complete_response.status_code == 404
+
+    delete_response = await delete_task(client, foreign_task_id)
+    assert delete_response.status_code == 404
+
+    owner_detail_response = await secondary_client.get(f"/tasks/{foreign_task_id}")
+    assert owner_detail_response.status_code == 200
+    assert foreign_task_name in owner_detail_response.text
+
+    foreign_task = await TaskRepository(
+        session=session,
+        owner_id=secondary_owner_id,
+    ).get_by_id(foreign_task_id)
+    assert foreign_task is not None
+    assert foreign_task.name == foreign_task_name
+    assert foreign_task.completed_at is None
+
+
+@pytest.mark.asyncio
+async def test_task_repository_with_missing_owner_is_fail_closed(session, owner_id):
+    task_id = await create_task_and_return_id(session, owner_id=owner_id, name="visible-only-for-owner")
+
+    guest_repo = TaskRepository(session=session, owner_id=None)
+
+    task = await guest_repo.get_by_id(task_id)
+    tasks, total = await guest_repo.list_tasks(
+        skip=0,
+        limit=20,
+        theme_id=None,
+        status="active",
+        sort="created_at",
+        order="desc",
+    )
+    recent = await guest_repo.get_recent_for_dashboard(
+        theme_name=None,
+        completed=False,
+        limit=5,
+    )
+
+    assert task is None
+    assert tasks == []
+    assert total == 0
+    assert recent == []
+
+
 async def create_task_and_return_id(
     session,
     *,
+    owner_id: UUID,
     name: str = NAME,
     description: str | None = None,
     theme_id: UUID | None = None,
     priority: str = PRIORITY,
 ):
-    task_repo = TaskRepository(session=session)
-    theme_repo = ThemeRepository(session=session)
+    task_repo = TaskRepository(session=session, owner_id=owner_id)
+    theme_repo = ThemeRepository(session=session, owner_id=owner_id)
 
     task_service = TaskService(task_repo=task_repo, theme_repo=theme_repo)
 

@@ -1,4 +1,5 @@
-from collections.abc import Iterator
+from collections.abc import AsyncGenerator, Iterator
+from contextlib import asynccontextmanager
 import os
 import socket
 import time
@@ -340,30 +341,132 @@ async def session(session_factory_async):
 
 
 @pytest.fixture
-async def client(session_factory_async):
+async def redis_db_cleanup(redis_container) -> AsyncGenerator[None, None]:
+    from redis.asyncio import Redis
+    from src.config import settings
+    from src.dependencies import get_redis_adapter
+
+    redis_client = Redis.from_url(settings.redis_dsn, decode_responses=True)
+    await redis_client.flushdb()
+    try:
+        yield
+    finally:
+        await redis_client.flushdb()
+        await redis_client.aclose()
+        cached_adapter = get_redis_adapter()
+        await cached_adapter.close()
+        get_redis_adapter.cache_clear()
+
+
+@pytest.fixture
+async def authenticated_user(session, redis_db_cleanup):
+    from src.repositories import AuthRepository
+
+    auth_repo = AuthRepository(session=session)
+    user = await auth_repo.create_user(
+        email=f"test-{uuid4().hex[:12]}@example.com",
+        password_hash=None,
+    )
+    await session.commit()
+    return user
+
+
+@pytest.fixture
+def owner_id(authenticated_user):
+    return authenticated_user.id
+
+
+@pytest.fixture
+async def secondary_authenticated_user(session, redis_db_cleanup):
+    from src.repositories import AuthRepository
+
+    auth_repo = AuthRepository(session=session)
+    user = await auth_repo.create_user(
+        email=f"test-{uuid4().hex[:12]}@example.com",
+        password_hash=None,
+    )
+    await session.commit()
+    return user
+
+
+@pytest.fixture
+def secondary_owner_id(secondary_authenticated_user):
+    return secondary_authenticated_user.id
+
+
+@pytest.fixture
+async def auth_session_id(session, authenticated_user, redis_db_cleanup) -> str:
+    from src.dependencies import get_redis_adapter
+    from src.repositories import AuthRepository, RedisSessionStore
+    from src.services.auth import AuthService
+
+    auth_service = AuthService(
+        auth_repo=AuthRepository(session=session),
+        session_store=RedisSessionStore(redis_adapter=get_redis_adapter()),
+    )
+    session_id = await auth_service.login_create_session(authenticated_user.id)
+    await session.commit()
+    return session_id
+
+
+@pytest.fixture
+async def secondary_auth_session_id(
+    session, secondary_authenticated_user, redis_db_cleanup
+) -> str:
+    from src.dependencies import get_redis_adapter
+    from src.repositories import AuthRepository, RedisSessionStore
+    from src.services.auth import AuthService
+
+    auth_service = AuthService(
+        auth_repo=AuthRepository(session=session),
+        session_store=RedisSessionStore(redis_adapter=get_redis_adapter()),
+    )
+    session_id = await auth_service.login_create_session(secondary_authenticated_user.id)
+    await session.commit()
+    return session_id
+
+
+@pytest.fixture
+def authed_client_factory(session_factory_async):
     """
-    Тестовый клиент FastAPI с переопределённой зависимостью БД.
-    Использует временную тестовую БД через session_factory_async.
+    Фабрика авторизованных FastAPI-клиентов с переопределённой зависимостью БД.
     """
     from src.database.connection import get_db
+    from src.config import settings
     from src.main import app
 
-    async def override_get_db():
-        async with session_factory_async() as session:
-            try:
-                yield session
-                await session.commit()
-            except Exception:
-                await session.rollback()
-                raise
+    @asynccontextmanager
+    async def make_client(session_id: str):
+        async def override_get_db():
+            async with session_factory_async() as session:
+                try:
+                    yield session
+                    await session.commit()
+                except Exception:
+                    await session.rollback()
+                    raise
 
-    # Подменяем зависимость
-    app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_db] = override_get_db
 
-    # Создаём тестовый клиент
-    transport = ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        transport = ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url="http://test"
+        ) as client:
+            client.cookies.set(settings.AUTH_SESSION_COOKIE_NAME, session_id)
+            yield client
+
+        app.dependency_overrides.clear()
+
+    return make_client
+
+
+@pytest.fixture
+async def client(authed_client_factory, auth_session_id):
+    async with authed_client_factory(auth_session_id) as client:
         yield client
 
-    # Очищаем переопределения после теста
-    app.dependency_overrides.clear()
+
+@pytest.fixture
+async def secondary_client(authed_client_factory, secondary_auth_session_id):
+    async with authed_client_factory(secondary_auth_session_id) as client:
+        yield client

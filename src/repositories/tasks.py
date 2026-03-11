@@ -9,16 +9,14 @@ from src.database.models import Priority, Task, Theme
 from src.schemas import TaskCreate, TaskInDB, TaskUpdate
 from src.schemas.tasks import TaskResponse
 
-from .base import GenericSqlRepository
+from .owned_base import OwnedRepository
 
 Status = Literal["active", "completed", "all"]
 Sort = Literal["created_at", "updated_at", "name", "priority"]
 Order = Literal["asc", "desc"]
 
 
-class TaskRepository(
-    GenericSqlRepository[TaskCreate, TaskInDB, TaskUpdate, Task, UUID]
-):
+class TaskRepository(OwnedRepository[TaskCreate, TaskInDB, TaskUpdate, Task, UUID]):
     """
     Репозиторий для работы с задачами
     """
@@ -45,6 +43,7 @@ class TaskRepository(
             select(Task, Priority, Theme)
             .join(Priority, Task.priority_id == Priority.id)
             .outerjoin(Theme, Task.theme_id == Theme.id)
+            .where(self._owner_filter(Task.owner_id))
         )
 
         if theme_name is not None:
@@ -85,9 +84,13 @@ class TaskRepository(
         sort: Sort,
         order: Order,
     ) -> tuple[list[TaskResponse], int]:
-        stmt = select(Task).options(
-            joinedload(Task.theme),
-            joinedload(Task.priority),
+        stmt = (
+            select(Task)
+            .options(
+                joinedload(Task.theme),
+                joinedload(Task.priority),
+            )
+            .where(self._owner_filter(Task.owner_id))
         )
 
         if theme_id:

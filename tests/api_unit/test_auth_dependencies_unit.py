@@ -10,8 +10,17 @@ from fastapi.responses import HTMLResponse
 from httpx import ASGITransport, AsyncClient
 
 from src.config import settings
-from src.dependencies import get_auth_service, optional_user, require_auth
+from src.database.connection import get_db
+from src.dependencies import (
+    get_auth_service,
+    get_habit_service,
+    get_task_service,
+    get_theme_service,
+    optional_user,
+    require_auth,
+)
 from src.schemas.auth import AuthUser
+from src.services import HabitService, TaskService, ThemeService
 
 pytestmark = pytest.mark.asyncio
 
@@ -124,3 +133,40 @@ async def test_require_auth_returns_user_when_cookie_session_is_valid(
     assert res.headers["content-type"].startswith("application/json")
     assert res.json()["user_id"] == str(fake_auth_service.resolved_user.id)
     assert fake_auth_service.resolve_calls == ["sess-valid"]
+
+
+async def test_public_service_providers_do_not_require_authentication() -> None:
+    app = FastAPI()
+
+    async def override_get_db():
+        yield object()
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    @app.get("/theme-service")
+    async def theme_service_route(
+        service: ThemeService = Depends(get_theme_service),
+    ) -> dict[str, str]:
+        return {"service": service.__class__.__name__}
+
+    @app.get("/task-service")
+    async def task_service_route(
+        service: TaskService = Depends(get_task_service),
+    ) -> dict[str, str]:
+        return {"service": service.__class__.__name__}
+
+    @app.get("/habit-service")
+    async def habit_service_route(
+        service: HabitService = Depends(get_habit_service),
+    ) -> dict[str, str]:
+        return {"service": service.__class__.__name__}
+
+    transport = ASGITransport(app=app)
+    try:
+        async with AsyncClient(transport=transport, base_url="http://test") as http_client:
+            for path in ("/theme-service", "/task-service", "/habit-service"):
+                res = await http_client.get(path, headers={"Accept": "application/json"})
+                assert res.status_code == 200
+                assert res.headers["content-type"].startswith("application/json")
+    finally:
+        app.dependency_overrides.clear()

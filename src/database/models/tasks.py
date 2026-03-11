@@ -9,7 +9,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from .base import BaseModel
+from .base import BaseModel, OwnedModel
 
 
 class Priority(BaseModel):
@@ -22,7 +22,7 @@ class Priority(BaseModel):
     __table_args__ = (CheckConstraint("LENGTH(color) >= 7", name="min_color_length"),)
 
 
-class Task(BaseModel):
+class Task(OwnedModel):
     __tablename__ = "tasks"
 
     name = Column(String(46), nullable=False)
@@ -30,9 +30,6 @@ class Task(BaseModel):
     description = Column(String(200), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True, default=None)
     priority_id = Column(UUID, ForeignKey("priorities.id"), nullable=False)
-    owner_id = Column(
-        UUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
-    )
 
     theme = relationship("Theme", back_populates="tasks")
     priority = relationship("Priority")

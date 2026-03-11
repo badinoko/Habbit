@@ -25,6 +25,7 @@
 
         <!-- Основная форма -->
         <form class="item-form" method="{% block form_method %}post{% endblock %}" action="{% block form_action %}#{% endblock %}" novalidate>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <!-- Блок для основной информации -->
             <div class="form-section">
                 <div class="section-header">

@@ -1,4 +1,3 @@
-import secrets
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -7,7 +6,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import ValidationError
 
 from src.config import settings
-from src.dependencies import get_auth_service, get_current_user
+from src.csrf import csrf_error_message, read_request_payload, validate_csrf
+from src.dependencies import get_auth_service, get_current_user, require_auth
 from src.exceptions import EmailAlreadyExistsError
 from src.schemas import AuthLogin, AuthRegister, AuthUser
 from src.services.auth import AuthService
@@ -15,11 +15,6 @@ from src.utils import ensure_csrf_token, get_user_display_name, templates
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 _DEFAULT_REDIRECT_PATH = "/"
-_JSON_CONTENT_TYPE = "application/json"
-_FORM_CONTENT_TYPES = {
-    "application/x-www-form-urlencoded",
-    "multipart/form-data",
-}
 
 
 def _normalize_next(next_value: object) -> str:
@@ -32,52 +27,6 @@ def _normalize_next(next_value: object) -> str:
     if not next_value.startswith("/") or next_value.startswith("//"):
         return _DEFAULT_REDIRECT_PATH
     return next_value
-
-
-def _validate_csrf(request: Request, submitted_token: object) -> None:
-    expected_token = request.session.get("csrf_token")
-    if not isinstance(expected_token, str) or not expected_token:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="CSRF token is missing",
-        )
-    if not isinstance(submitted_token, str) or not secrets.compare_digest(
-        expected_token,
-        submitted_token,
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid CSRF token",
-        )
-
-
-async def _read_request_payload(request: Request) -> tuple[str, dict[str, object]]:
-    content_type = request.headers.get("content-type", "")
-    media_type = content_type.split(";", 1)[0].strip().lower()
-
-    if media_type == _JSON_CONTENT_TYPE:
-        try:
-            payload = await request.json()
-        except ValueError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Malformed JSON body",
-            ) from exc
-        if not isinstance(payload, dict):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="JSON body must be an object",
-            )
-        return "json", payload
-
-    if media_type in _FORM_CONTENT_TYPES:
-        form = await request.form()
-        return "form", dict(form)
-
-    raise HTTPException(
-        status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-        detail="Unsupported Media Type",
-    )
 
 
 def _render_auth_template(
@@ -113,10 +62,6 @@ def _render_auth_template(
     )
 
 
-def _csrf_error_message() -> str:
-    return "Сессия формы истекла или стала недействительной. Обновите страницу и попробуйте снова."
-
-
 def _render_logout_error_template(
     request: Request,
     *,
@@ -133,7 +78,7 @@ def _render_logout_error_template(
             "hide_sidebar": True,
             "csrf_token": ensure_csrf_token(request),
             "title": "Не удалось выполнить выход",
-            "message": _csrf_error_message(),
+            "message": csrf_error_message(),
             "details": "Обновите страницу, затем повторите попытку.",
             "message_type": "error",
             "primary_url": "/",
@@ -208,7 +153,7 @@ async def register(
     current_user: AuthUser | None = Depends(get_current_user),
 ):
     next_url = _normalize_next(request.query_params.get("next"))
-    source, raw_payload = await _read_request_payload(request)
+    source, raw_payload = await read_request_payload(request)
     if current_user is not None:
         if source == "form":
             return RedirectResponse(url=next_url, status_code=status.HTTP_303_SEE_OTHER)
@@ -219,14 +164,14 @@ async def register(
 
     if source == "form":
         try:
-            _validate_csrf(request, raw_payload.get("csrf_token"))
+            validate_csrf(request, raw_payload.get("csrf_token"))
         except HTTPException as exc:
             return _render_auth_template(
                 request,
                 template_name="auth/register.html",
                 current_page="register",
                 next_url=_normalize_next(raw_payload.get("next")),
-                error_message=_csrf_error_message(),
+                error_message=csrf_error_message(),
                 form_data={"email": raw_payload.get("email", "")},
                 status_code=exc.status_code,
             )
@@ -284,7 +229,7 @@ async def login(
     current_user: AuthUser | None = Depends(get_current_user),
 ):
     next_url = _normalize_next(request.query_params.get("next"))
-    source, raw_payload = await _read_request_payload(request)
+    source, raw_payload = await read_request_payload(request)
     if current_user is not None:
         if source == "form":
             return RedirectResponse(url=next_url, status_code=status.HTTP_303_SEE_OTHER)
@@ -295,14 +240,14 @@ async def login(
 
     if source == "form":
         try:
-            _validate_csrf(request, raw_payload.get("csrf_token"))
+            validate_csrf(request, raw_payload.get("csrf_token"))
         except HTTPException as exc:
             return _render_auth_template(
                 request,
                 template_name="auth/login.html",
                 current_page="login",
                 next_url=_normalize_next(raw_payload.get("next")),
-                error_message=_csrf_error_message(),
+                error_message=csrf_error_message(),
                 form_data={"email": raw_payload.get("email", "")},
                 status_code=exc.status_code,
             )
@@ -352,17 +297,20 @@ async def login(
     return user
 
 
-@router.post("/logout", status_code=status.HTTP_200_OK)
+@router.post(
+    "/logout",
+    status_code=status.HTTP_200_OK,
+)
 async def logout(
     request: Request,
     response: Response,
-    current_user: AuthUser | None = Depends(get_current_user),
+    current_user: AuthUser = Depends(require_auth),
     auth_service: AuthService = Depends(get_auth_service),
 ):
-    source, payload = await _read_request_payload(request)
+    source, payload = await read_request_payload(request)
     if source == "form":
         try:
-            _validate_csrf(request, payload.get("csrf_token"))
+            validate_csrf(request, payload.get("csrf_token"))
         except HTTPException as exc:
             return _render_logout_error_template(
                 request,

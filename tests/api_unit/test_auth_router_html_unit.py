@@ -743,15 +743,16 @@ async def test_logout_json_without_user_or_session_skips_service_call(
 
     res = await http_client.post("/auth/logout", json={})
 
-    assert res.status_code == 200
-    assert res.json() == {"message": "Logged out"}
+    assert res.status_code == 401
+    assert res.json() == {"detail": "Authentication required"}
     assert fake_auth_service.logout_calls == []
 
 
 async def test_logout_rejects_unsupported_media_type_with_415(
     client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, current_user_state = client
+    current_user_state["value"] = _mk_user()
 
     res = await http_client.post(
         "/auth/logout",

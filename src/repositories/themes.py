@@ -1,15 +1,15 @@
 from uuid import UUID
 
-from sqlalchemy import desc, distinct, func, select
+from sqlalchemy import and_, desc, distinct, func, select
 
 from src.database.models import Habit, Task, Theme
 from src.schemas import ThemeCreate, ThemeInDB, ThemeUpdate
 
-from .base import GenericSqlRepository
+from .owned_base import OwnedRepository
 
 
 class ThemeRepository(
-    GenericSqlRepository[ThemeCreate, ThemeInDB, ThemeUpdate, Theme, UUID]
+    OwnedRepository[ThemeCreate, ThemeInDB, ThemeUpdate, Theme, UUID]
 ):
     """
     Репозиторий для работы с темами
@@ -51,8 +51,16 @@ class ThemeRepository(
                 func.count(distinct(Task.id)).label("task_count"),
                 func.count(distinct(Habit.id)).label("habit_count"),
             )
-            .outerjoin(Task, Theme.id == Task.theme_id)
-            .outerjoin(Habit, Theme.id == Habit.theme_id)
+            .select_from(Theme)
+            .outerjoin(
+                Task,
+                and_(Theme.id == Task.theme_id, self._owner_filter(Task.owner_id)),
+            )
+            .outerjoin(
+                Habit,
+                and_(Theme.id == Habit.theme_id, self._owner_filter(Habit.owner_id)),
+            )
+            .where(self._owner_filter(Theme.owner_id))
             .group_by(Theme.id)
             .order_by(desc(Theme.created_at), desc(Theme.id))
             .offset(skip)
@@ -65,5 +73,7 @@ class ThemeRepository(
         return [(row[0], row[1], row[2]) for row in rows]
 
     async def count_themes(self) -> int:
-        total = await self._session.scalar(select(func.count(Theme.id)))
+        total = await self._session.scalar(
+            select(func.count(Theme.id)).where(self._owner_filter(Theme.owner_id))
+        )
         return int(total or 0)

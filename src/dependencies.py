@@ -49,50 +49,6 @@ def get_redis_adapter() -> RedisAdapter:
     return RedisAdapter()
 
 
-async def get_theme_repository(
-    db: Annotated[AsyncSession, Depends(get_db)],
-) -> ThemeRepository:
-    """Провайдер для репозитория тем"""
-    return ThemeRepository(session=db)
-
-
-async def get_theme_service(
-    theme_repo: ThemeRepository = Depends(get_theme_repository),
-) -> ThemeService:
-    """Провайдер для сервиса тем"""
-    return ThemeService(theme_repo=theme_repo)
-
-
-async def get_task_repository(
-    db: Annotated[AsyncSession, Depends(get_db)],
-) -> TaskRepository:
-    """Провайдер для репозитория задач"""
-    return TaskRepository(session=db)
-
-
-async def get_task_service(
-    task_repo: TaskRepository = Depends(get_task_repository),
-    theme_repo: ThemeRepository = Depends(get_theme_repository),
-) -> TaskService:
-    """Провайдер для сервиса задач"""
-    return TaskService(task_repo=task_repo, theme_repo=theme_repo)
-
-
-async def get_habit_repository(
-    db: Annotated[AsyncSession, Depends(get_db)],
-) -> HabitRepository:
-    """Провайдер для репозитория привычек"""
-    return HabitRepository(session=db)
-
-
-async def get_habit_service(
-    habit_repo: HabitRepository = Depends(get_habit_repository),
-    theme_repo: ThemeRepository = Depends(get_theme_repository),
-) -> HabitService:
-    """Провайдер для сервиса привычек"""
-    return HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
-
-
 async def get_auth_repository(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AuthRepository:
@@ -157,3 +113,105 @@ async def require_auth(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Authentication required",
     )
+
+
+async def get_theme_repository(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: AuthUser | None = Depends(get_current_user),
+) -> ThemeRepository:
+    """Провайдер для репозитория тем"""
+    return ThemeRepository(
+        session=db,
+        owner_id=current_user.id if current_user is not None else None,
+    )
+
+
+async def get_user_theme_repository(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: AuthUser = Depends(require_auth),
+) -> ThemeRepository:
+    """Провайдер для репозитория тем с обязательной авторизацией."""
+    return ThemeRepository(session=db, owner_id=current_user.id)
+
+
+async def get_theme_service(
+    theme_repo: ThemeRepository = Depends(get_theme_repository),
+) -> ThemeService:
+    """Провайдер для сервиса тем"""
+    return ThemeService(theme_repo=theme_repo)
+
+
+async def get_user_theme_service(
+    theme_repo: ThemeRepository = Depends(get_user_theme_repository),
+) -> ThemeService:
+    """Провайдер для сервиса тем с обязательной авторизацией."""
+    return ThemeService(theme_repo=theme_repo)
+
+
+async def get_task_repository(
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthUser | None = Depends(get_current_user),
+) -> TaskRepository:
+    return TaskRepository(
+        session=db,
+        owner_id=current_user.id if current_user is not None else None,
+    )
+
+
+async def get_user_task_repository(
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthUser = Depends(require_auth),
+) -> TaskRepository:
+    """Провайдер для репозитория задач с обязательной авторизацией."""
+    return TaskRepository(session=db, owner_id=current_user.id)
+
+
+async def get_task_service(
+    task_repo: TaskRepository = Depends(get_task_repository),
+    theme_repo: ThemeRepository = Depends(get_theme_repository),
+) -> TaskService:
+    """Провайдер для сервиса задач"""
+    return TaskService(task_repo=task_repo, theme_repo=theme_repo)
+
+
+async def get_user_task_service(
+    task_repo: TaskRepository = Depends(get_user_task_repository),
+    theme_repo: ThemeRepository = Depends(get_user_theme_repository),
+) -> TaskService:
+    """Провайдер для сервиса задач с обязательной авторизацией."""
+    return TaskService(task_repo=task_repo, theme_repo=theme_repo)
+
+
+async def get_habit_repository(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: AuthUser | None = Depends(get_current_user),
+) -> HabitRepository:
+    """Провайдер для репозитория привычек"""
+    return HabitRepository(
+        session=db,
+        owner_id=current_user.id if current_user is not None else None,
+    )
+
+
+async def get_user_habit_repository(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: AuthUser = Depends(require_auth),
+) -> HabitRepository:
+    """Провайдер для репозитория привычек с обязательной авторизацией."""
+    return HabitRepository(session=db, owner_id=current_user.id)
+
+
+async def get_habit_service(
+    habit_repo: HabitRepository = Depends(get_habit_repository),
+    theme_repo: ThemeRepository = Depends(get_theme_repository),
+) -> HabitService:
+    """Провайдер для сервиса привычек"""
+    return HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+
+
+async def get_user_habit_service(
+    habit_repo: HabitRepository = Depends(get_user_habit_repository),
+    theme_repo: ThemeRepository = Depends(get_user_theme_repository),
+) -> HabitService:
+    """Провайдер для сервиса привычек с обязательной авторизацией."""
+    return HabitService(habit_repo=habit_repo, theme_repo=theme_repo)

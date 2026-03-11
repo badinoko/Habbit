@@ -1,5 +1,7 @@
 import pytest
 
+from tests.helpers import with_csrf_form, with_csrf_headers
+
 NAME = "Хобби"
 COLOR = "#FF00FF"
 
@@ -10,7 +12,10 @@ async def create_theme(client, name: str | None = None, color: str | None = None
         data["name"] = name
     if color is not None:
         data["color"] = color
-    return await client.post("/themes/", data=data)
+    return await client.post(
+        "/themes/",
+        data=await with_csrf_form(client, data, path="/themes/new"),
+    )
 
 
 async def update_theme(client, id, name=None, color=None):
@@ -19,11 +24,18 @@ async def update_theme(client, id, name=None, color=None):
         data["name"] = name
     if color is not None:
         data["color"] = color
-    return await client.put(f"/themes/{id}", json=data)
+    return await client.put(
+        f"/themes/{id}",
+        json=data,
+        headers=await with_csrf_headers(client),
+    )
 
 
 async def delete_theme(client, id):
-    return await client.delete(f"/themes/{id}")
+    return await client.delete(
+        f"/themes/{id}",
+        headers=await with_csrf_headers(client),
+    )
 
 
 @pytest.mark.asyncio
@@ -114,3 +126,57 @@ async def test_themes_page_redirects_to_last_page_when_page_is_too_high(client):
     response = await client.get("/themes/?page=9&per_page=2", follow_redirects=False)
     assert response.status_code == 302
     assert response.headers["location"] == "/themes/?page=2&per_page=2"
+
+
+@pytest.mark.asyncio
+async def test_theme_owner_scope_hides_foreign_theme_and_blocks_mutations(
+    client, secondary_client
+):
+    foreign_theme_name = "Чужая тема B"
+
+    create_response = await create_theme(client=secondary_client, name=foreign_theme_name)
+    assert create_response.status_code == 303
+
+    list_response = await client.get("/themes/")
+    assert list_response.status_code == 200
+    assert foreign_theme_name not in list_response.text
+
+    detail_response = await client.get(f"/themes/{foreign_theme_name}")
+    assert detail_response.status_code == 404
+    assert "Тема не найдена" in detail_response.text
+
+    update_response = await update_theme(
+        client=client,
+        id=foreign_theme_name,
+        name="Попытка чужого обновления",
+    )
+    assert update_response.status_code == 404
+
+    delete_response = await delete_theme(client=client, id=foreign_theme_name)
+    assert delete_response.status_code == 404
+
+    owner_detail_response = await secondary_client.get(f"/themes/{foreign_theme_name}")
+    assert owner_detail_response.status_code == 200
+    assert foreign_theme_name in owner_detail_response.text
+
+
+@pytest.mark.asyncio
+async def test_theme_repository_with_missing_owner_is_fail_closed(session, owner_id):
+    from src.repositories import ThemeRepository
+    from src.schemas import ThemeCreate
+
+    owner_repo = ThemeRepository(session=session, owner_id=owner_id)
+    theme = await owner_repo.add(ThemeCreate(name="Owner theme", color="#AABBCC"))
+    await session.commit()
+
+    guest_repo = ThemeRepository(session=session, owner_id=None)
+
+    guest_theme = await guest_repo.get_by_id(theme.id)
+    guest_by_name = await guest_repo.get_by_name("Owner theme")
+    guest_count = await guest_repo.count_themes()
+    guest_list_with_counts = await guest_repo.list_with_counts()
+
+    assert guest_theme is None
+    assert guest_by_name is None
+    assert guest_count == 0
+    assert guest_list_with_counts == []

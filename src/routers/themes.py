@@ -3,13 +3,15 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from src.dependencies import get_theme_service
+from src.csrf import csrf_error_message, require_csrf
+from src.dependencies import get_theme_service, get_user_theme_service
 from src.schemas import ThemeCreate, ThemeUpdate
 from src.services import ThemeService
 from src.services.themes import THEME_COLORS
 from src.utils import get_template_context, templates
 
 router = APIRouter(prefix="/themes", tags=["Themes"])
+_WRITE_ROUTE_DEPENDENCIES = [Depends(require_csrf)]
 
 
 @router.get(
@@ -81,8 +83,25 @@ async def create_theme(
     request: Request,
     theme_data: Annotated[ThemeCreate, Form()],
     context: dict[str, Any] = Depends(get_template_context),
-    service: ThemeService = Depends(get_theme_service),
+    service: ThemeService = Depends(get_user_theme_service),
 ):
+    try:
+        await require_csrf(request)
+    except HTTPException as exc:
+        context.update(
+            {
+                "message_type": "error",
+                "title": "Ошибка",
+                "message": csrf_error_message(),
+            }
+        )
+        return templates.TemplateResponse(
+            request,
+            "message.html",
+            context,
+            status_code=exc.status_code,
+        )
+
     try:
         res = await service.create_theme(theme_data)
         if not res:
@@ -164,6 +183,7 @@ async def get_theme(
     status_code=status.HTTP_200_OK,
     response_class=JSONResponse,
     summary="Updates theme",
+    dependencies=_WRITE_ROUTE_DEPENDENCIES,
     responses={
         400: {"description": "Bad request"},
         404: {"description": "Theme not found"},
@@ -172,7 +192,7 @@ async def get_theme(
 async def update_theme(
     name: str,
     theme_data: ThemeUpdate,
-    service: ThemeService = Depends(get_theme_service),
+    service: ThemeService = Depends(get_user_theme_service),
 ):
     theme = await service.get_theme_by_name(name)
     if not theme:
@@ -202,15 +222,21 @@ async def update_theme(
     "/{name}",
     status_code=status.HTTP_204_NO_CONTENT,
     description="Deletes theme",
+    dependencies=_WRITE_ROUTE_DEPENDENCIES,
 )
 async def delete_theme(
     name: str,
-    service: ThemeService = Depends(get_theme_service),
+    service: ThemeService = Depends(get_user_theme_service),
 ):
     try:
-        await service.delete_theme(name)
+        res = await service.delete_theme(name)
     except RuntimeError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error",
         ) from None
+    if not res:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Habit not found",
+        )

@@ -89,10 +89,11 @@ class ThemeService:
         updated_theme = ThemeUpdate(**update_dict)
         return await self.theme_repo.update(old_theme.id, updated_theme)
 
-    async def delete_theme(self, theme: str) -> None:
+    async def delete_theme(self, theme: str) -> bool:
         theme_obj = await self.theme_repo.get_by_name(theme)
         if theme_obj:
-            await self.theme_repo.delete(theme_obj.id)
+            return await self.theme_repo.delete(theme_obj.id)
+        return False
 
     async def list_themes(
         self, skip: int = 0, limit: int | None = 100

@@ -1,20 +1,38 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
-from datetime import date
+from datetime import UTC, date, datetime
+import re
 from uuid import UUID, uuid4
 
 import pytest
 from fastapi import Request
 from httpx import ASGITransport, AsyncClient
 
-from src.dependencies import get_habit_service
+from src.dependencies import (
+    get_habit_service,
+    get_user_habit_service,
+    require_auth,
+)
+from src.csrf import require_csrf
 from src.exceptions import HabitNotFound
 from src.main import app
+from src.schemas.auth import AuthUser
 from src.schemas.habits import HabitCompletionResult
-from src.utils import get_template_context
+from src.utils import ensure_csrf_token, get_template_context
 
 pytestmark = pytest.mark.asyncio
+
+
+def _mk_user() -> AuthUser:
+    now = datetime(2026, 3, 8, 12, 0, tzinfo=UTC)
+    return AuthUser(
+        id=uuid4(),
+        email="habit-user@example.com",
+        is_active=True,
+        created_at=now,
+        updated_at=now,
+    )
 
 
 class _FakeHabitService:
@@ -89,6 +107,17 @@ class _FakeHabitService:
         return True
 
 
+def _override_habit_service(service: _FakeHabitService) -> None:
+    app.dependency_overrides[get_habit_service] = lambda: service
+    app.dependency_overrides[get_user_habit_service] = lambda: service
+
+
+def _extract_csrf_token(html: str) -> str:
+    match = re.search(r'name="csrf_token" value="([^"]+)"', html)
+    assert match is not None
+    return match.group(1)
+
+
 @pytest.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
     async def fake_template_context(request: Request) -> dict[str, object]:
@@ -96,10 +125,13 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
             "request": request,
             "themes": [],
             "stats": {"active_tasks": 0, "total_habits": 0, "success_rate": 0},
+            "csrf_token": ensure_csrf_token(request),
         }
 
     app.dependency_overrides[get_template_context] = fake_template_context
-    app.dependency_overrides[get_habit_service] = lambda: _FakeHabitService()
+    app.dependency_overrides[require_auth] = _mk_user
+    app.dependency_overrides[require_csrf] = lambda: None
+    _override_habit_service(_FakeHabitService())
     transport = ASGITransport(app=app)
     try:
         async with AsyncClient(transport=transport, base_url="http://test") as c:
@@ -139,17 +171,60 @@ async def test_habits_list_rejects_invalid_per_page_with_422(client: AsyncClient
 
 
 async def test_create_habit_returns_303_redirect_on_success(client: AsyncClient) -> None:
+    page = await client.get("/habits/new")
+    csrf_token = _extract_csrf_token(page.text)
     payload = {
         "name": "Утренняя зарядка",
         "schedule_type": "daily",
+        "csrf_token": csrf_token,
     }
     res = await client.post("/habits/", data=payload, follow_redirects=False)
     assert res.status_code == 303
     assert res.headers["location"] == "/habits"
 
 
+async def test_create_habit_rejects_missing_csrf_token_for_form(client: AsyncClient) -> None:
+    app.dependency_overrides.pop(require_csrf, None)
+    payload = {
+        "name": "Утренняя зарядка",
+        "schedule_type": "daily",
+    }
+    res = await client.post("/habits/", data=payload, follow_redirects=False)
+    assert res.status_code == 403
+    assert res.headers["content-type"].startswith("text/html")
+    assert "Сессия формы истекла" in res.text
+
+
+async def test_create_habit_rejects_missing_csrf_token_for_json(client: AsyncClient) -> None:
+    app.dependency_overrides.pop(require_csrf, None)
+    res = await client.post(
+        "/habits/",
+        json={"name": "Утренняя зарядка", "schedule_type": "daily"},
+    )
+    assert res.status_code == 403
+    assert res.headers["content-type"].startswith("application/json")
+    assert res.json()["detail"] == "Invalid CSRF token"
+
+
+async def test_create_habit_accepts_valid_csrf_token(client: AsyncClient) -> None:
+    app.dependency_overrides.pop(require_csrf, None)
+    page = await client.get("/habits/new")
+    csrf_token = _extract_csrf_token(page.text)
+    res = await client.post(
+        "/habits/",
+        data={
+            "name": "Утренняя зарядка",
+            "schedule_type": "daily",
+            "csrf_token": csrf_token,
+        },
+        follow_redirects=False,
+    )
+    assert res.status_code == 303
+    assert res.headers["location"] == "/habits"
+
+
 async def test_get_habit_page_returns_404_when_missing(client: AsyncClient) -> None:
-    app.dependency_overrides[get_habit_service] = lambda: _FakeHabitService(exists=False)
+    _override_habit_service(_FakeHabitService(exists=False))
     res = await client.get(f"/habits/{uuid4()}")
     assert res.status_code == 404
     assert res.headers["content-type"].startswith("text/html")
@@ -172,9 +247,7 @@ async def test_update_habit_returns_success_payload(client: AsyncClient) -> None
 
 
 async def test_update_habit_returns_400_on_business_error(client: AsyncClient) -> None:
-    app.dependency_overrides[get_habit_service] = lambda: _FakeHabitService(
-        update_error=ValueError("bad update")
-    )
+    _override_habit_service(_FakeHabitService(update_error=ValueError("bad update")))
     res = await client.put(
         f"/habits/{uuid4()}",
         json={"name": "Обновленная привычка"},
@@ -186,9 +259,7 @@ async def test_update_habit_returns_400_on_business_error(client: AsyncClient) -
 
 
 async def test_update_habit_returns_404_when_missing(client: AsyncClient) -> None:
-    app.dependency_overrides[get_habit_service] = lambda: _FakeHabitService(
-        update_error=HabitNotFound()
-    )
+    _override_habit_service(_FakeHabitService(update_error=HabitNotFound()))
     res = await client.put(f"/habits/{uuid4()}", json={"name": "Missing"})
     assert res.status_code == 404
     assert res.headers["content-type"].startswith("application/json")
@@ -215,10 +286,18 @@ async def test_complete_habit_returns_payload_when_ok(client: AsyncClient) -> No
 
 
 async def test_complete_habit_returns_404_when_missing(client: AsyncClient) -> None:
-    app.dependency_overrides[get_habit_service] = lambda: _FakeHabitService(exists=False)
+    _override_habit_service(_FakeHabitService(exists=False))
     res = await client.patch(f"/habits/{uuid4()}/complete")
     assert res.status_code == 404
     assert res.headers["content-type"].startswith("application/json")
+
+
+async def test_complete_habit_rejects_missing_csrf_token(client: AsyncClient) -> None:
+    app.dependency_overrides.pop(require_csrf, None)
+    res = await client.patch(f"/habits/{uuid4()}/complete")
+    assert res.status_code == 403
+    assert res.headers["content-type"].startswith("application/json")
+    assert res.json()["detail"] == "CSRF token is missing"
 
 
 async def test_complete_habit_rejects_invalid_uuid_with_422(client: AsyncClient) -> None:
@@ -228,9 +307,7 @@ async def test_complete_habit_rejects_invalid_uuid_with_422(client: AsyncClient)
 
 
 async def test_complete_habit_returns_400_on_value_error(client: AsyncClient) -> None:
-    app.dependency_overrides[get_habit_service] = lambda: _FakeHabitService(
-        complete_error=ValueError("bad complete")
-    )
+    _override_habit_service(_FakeHabitService(complete_error=ValueError("bad complete")))
     res = await client.patch(f"/habits/{uuid4()}/complete")
     assert res.status_code == 400
     assert res.headers["content-type"].startswith("application/json")
@@ -238,9 +315,7 @@ async def test_complete_habit_returns_400_on_value_error(client: AsyncClient) ->
 
 
 async def test_complete_habit_returns_500_on_runtime_error(client: AsyncClient) -> None:
-    app.dependency_overrides[get_habit_service] = lambda: _FakeHabitService(
-        complete_error=RuntimeError("boom")
-    )
+    _override_habit_service(_FakeHabitService(complete_error=RuntimeError("boom")))
     res = await client.patch(f"/habits/{uuid4()}/complete")
     assert res.status_code == 500
     assert res.headers["content-type"].startswith("application/json")
@@ -260,7 +335,7 @@ async def test_incomplete_habit_returns_payload_when_ok(client: AsyncClient) -> 
 
 
 async def test_incomplete_habit_returns_404_when_missing(client: AsyncClient) -> None:
-    app.dependency_overrides[get_habit_service] = lambda: _FakeHabitService(exists=False)
+    _override_habit_service(_FakeHabitService(exists=False))
     res = await client.patch(f"/habits/{uuid4()}/incomplete")
     assert res.status_code == 404
     assert res.headers["content-type"].startswith("application/json")
@@ -273,8 +348,8 @@ async def test_incomplete_habit_rejects_invalid_uuid_with_422(client: AsyncClien
 
 
 async def test_incomplete_habit_returns_400_on_value_error(client: AsyncClient) -> None:
-    app.dependency_overrides[get_habit_service] = lambda: _FakeHabitService(
-        incomplete_error=ValueError("bad incomplete")
+    _override_habit_service(
+        _FakeHabitService(incomplete_error=ValueError("bad incomplete"))
     )
     res = await client.patch(f"/habits/{uuid4()}/incomplete")
     assert res.status_code == 400
@@ -283,9 +358,7 @@ async def test_incomplete_habit_returns_400_on_value_error(client: AsyncClient) 
 
 
 async def test_incomplete_habit_returns_500_on_runtime_error(client: AsyncClient) -> None:
-    app.dependency_overrides[get_habit_service] = lambda: _FakeHabitService(
-        incomplete_error=RuntimeError("boom")
-    )
+    _override_habit_service(_FakeHabitService(incomplete_error=RuntimeError("boom")))
     res = await client.patch(f"/habits/{uuid4()}/incomplete")
     assert res.status_code == 500
     assert res.headers["content-type"].startswith("application/json")

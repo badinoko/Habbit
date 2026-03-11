@@ -11,10 +11,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
-from .base import BaseModel
+from .base import BaseModel, OwnedModel
 
 
-class Habit(BaseModel):
+class Habit(OwnedModel):
     __tablename__ = "habits"
 
     name = Column(String(46), nullable=False)
@@ -25,9 +25,6 @@ class Habit(BaseModel):
     starts_on = Column(Date, nullable=True)
     ends_on = Column(Date, nullable=True, index=True)
     is_archived = Column(Boolean, nullable=False, default=False)
-    owner_id = Column(
-        UUID, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
-    )
 
     __table_args__ = (
         CheckConstraint(

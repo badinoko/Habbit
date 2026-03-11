@@ -4,7 +4,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
-from src.dependencies import get_task_service
+from src.csrf import csrf_error_message, require_csrf
+from src.dependencies import get_task_service, get_user_task_service
 from src.exceptions import TaskNotFound
 from src.schemas import Response
 from src.schemas.tasks import (
@@ -16,6 +17,7 @@ from src.services import TaskService
 from src.utils import error_context_updater, get_template_context, templates
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
+_WRITE_ROUTE_DEPENDENCIES = [Depends(require_csrf)]
 
 
 @router.get(
@@ -122,8 +124,19 @@ async def create_task(
     request: Request,
     task_data: Annotated[TaskCreateAPI, Form()],
     context: dict[str, Any] = Depends(get_template_context),
-    service: TaskService = Depends(get_task_service),
+    service: TaskService = Depends(get_user_task_service),
 ):
+    try:
+        await require_csrf(request)
+    except HTTPException as exc:
+        context = error_context_updater(context, csrf_error_message())
+        return templates.TemplateResponse(
+            request,
+            "message.html",
+            context,
+            status_code=exc.status_code,
+        )
+
     try:
         res = await service.create_task(task_data)
         if not res:
@@ -154,27 +167,40 @@ async def create_task(
     "/{task_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Deletes Task",
+    dependencies=_WRITE_ROUTE_DEPENDENCIES,
 )
-async def delete_task(task_id: UUID, service: TaskService = Depends(get_task_service)):
+async def delete_task(
+    task_id: UUID,
+    service: TaskService = Depends(get_user_task_service),
+):
     try:
-        await service.delete_task(task_id)
+        res = await service.delete_task(task_id)
     except RuntimeError:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error",
         ) from None
+    if not res:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
 
 
 @router.patch(
     "/{id}/complete",
     summary="Marks task as completed",
     response_model=TaskMarkCompleted,
+    dependencies=_WRITE_ROUTE_DEPENDENCIES,
     responses={
         404: {"description": "Task not found"},
         500: {"description": "Internal server error"},
     },
 )
-async def complete_task(id: UUID, service: TaskService = Depends(get_task_service)):
+async def complete_task(
+    id: UUID,
+    service: TaskService = Depends(get_user_task_service),
+):
     try:
         res = await service.complete_task(id)
         return TaskMarkCompleted(success=True, completed=True, task=res)
@@ -188,12 +214,16 @@ async def complete_task(id: UUID, service: TaskService = Depends(get_task_servic
     "/{id}/incomplete",
     summary="Marks task as incompleted",
     response_model=TaskMarkCompleted,
+    dependencies=_WRITE_ROUTE_DEPENDENCIES,
     responses={
         404: {"description": "Task not found"},
         500: {"description": "Internal server error"},
     },
 )
-async def incomplete_task(id: UUID, service: TaskService = Depends(get_task_service)):
+async def incomplete_task(
+    id: UUID,
+    service: TaskService = Depends(get_user_task_service),
+):
     try:
         res = await service.incomplete_task(id)
         return TaskMarkCompleted(success=True, completed=False, task=res)
@@ -207,6 +237,7 @@ async def incomplete_task(id: UUID, service: TaskService = Depends(get_task_serv
     "/{id}",
     response_model=Response,
     summary="Updates task",
+    dependencies=_WRITE_ROUTE_DEPENDENCIES,
     responses={
         500: {"description": "Internal server error"},
         400: {"description": "Bad request - validation error"},
@@ -216,7 +247,7 @@ async def incomplete_task(id: UUID, service: TaskService = Depends(get_task_serv
 async def update_task(
     id: UUID,
     task_data: TaskUpdateAPI,
-    service: TaskService = Depends(get_task_service),
+    service: TaskService = Depends(get_user_task_service),
 ):
     try:
         res = await service.update_task(id, task_data)

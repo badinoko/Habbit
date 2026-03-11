@@ -1,4 +1,4 @@
-from .base import BaseModel
+from .base import BaseModel, OwnedModel
 from .habits import Habit, HabitCompletion
 from .tasks import Priority, Task
 from .themes import Theme
@@ -9,6 +9,7 @@ __all__ = [
     "Habit",
     "HabitCompletion",
     "OAuthAccount",
+    "OwnedModel",
     "Priority",
     "Task",
     "Theme",

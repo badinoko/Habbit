@@ -17,11 +17,11 @@ from src.schemas.habits import (
     HabitUpdate,
 )
 
-from .base import GenericSqlRepository
+from .owned_base import OwnedRepository
 
 
 class HabitRepository(
-    GenericSqlRepository[HabitCreate, HabitInDB, HabitUpdate, Habit, UUID]
+    OwnedRepository[HabitCreate, HabitInDB, HabitUpdate, Habit, UUID]
 ):
     _model = Habit
     _create_schema = HabitCreate
@@ -40,7 +40,7 @@ class HabitRepository(
         sort: HabitSort,
         order: HabitOrder,
     ) -> tuple[list[HabitInDB], int]:
-        stmt = select(Habit)
+        stmt = select(Habit).where(self._owner_filter(Habit.owner_id))
 
         if theme_id:
             stmt = stmt.where(Habit.theme_id == theme_id)
@@ -97,6 +97,7 @@ class HabitRepository(
     async def archive_expired_habits(self, today: date) -> int:
         ids_stmt = (
             select(Habit.id)
+            .where(self._owner_filter(Habit.owner_id))
             .where(Habit.is_archived.is_(False))
             .where(Habit.ends_on.is_not(None))
             .where(Habit.ends_on < today)
@@ -106,20 +107,34 @@ class HabitRepository(
         if not habit_ids:
             return 0
 
-        stmt = update(Habit).where(Habit.id.in_(habit_ids)).values(is_archived=True)
+        stmt = (
+            update(Habit)
+            .where(Habit.id.in_(habit_ids))
+            .where(self._owner_filter(Habit.owner_id))
+            .values(is_archived=True)
+        )
         await self._session.execute(stmt)
         await self._session.flush()
         return len(habit_ids)
 
     async def list_completion_dates(self, habit_id: UUID) -> set[date]:
-        stmt = select(HabitCompletion.completed_on).where(
-            HabitCompletion.habit_id == habit_id
+        stmt = (
+            select(HabitCompletion.completed_on)
+            .join(Habit, Habit.id == HabitCompletion.habit_id)
+            .where(HabitCompletion.habit_id == habit_id)
+            .where(self._owner_filter(Habit.owner_id))
         )
         result = await self._session.execute(stmt)
         dates = result.scalars().all()
         return set(dates)
 
     async def add_completion(self, habit_id: UUID, completed_on: date) -> bool:
+        habit_result = await self._session.execute(
+            self._construct_owned_habit_stmt(habit_id)
+        )
+        if habit_result.scalar_one_or_none() is None:
+            return False
+
         exists_stmt = self._construct_completion_stmt(
             habit_id=habit_id, completed_on=completed_on
         )
@@ -134,9 +149,12 @@ class HabitRepository(
         return True
 
     async def remove_completion(self, habit_id: UUID, completed_on: date) -> bool:
-        exists_stmt = select(HabitCompletion.id).where(
-            HabitCompletion.habit_id == habit_id,
-            HabitCompletion.completed_on == completed_on,
+        exists_stmt = (
+            select(HabitCompletion.id)
+            .join(Habit, Habit.id == HabitCompletion.habit_id)
+            .where(HabitCompletion.habit_id == habit_id)
+            .where(HabitCompletion.completed_on == completed_on)
+            .where(self._owner_filter(Habit.owner_id))
         )
         exists_result = await self._session.execute(exists_stmt)
         if exists_result.scalar_one_or_none() is None:
@@ -146,16 +164,27 @@ class HabitRepository(
             sa_delete(HabitCompletion)
             .where(HabitCompletion.habit_id == habit_id)
             .where(HabitCompletion.completed_on == completed_on)
+            .where(
+                HabitCompletion.habit_id.in_(self._construct_owned_habit_stmt(habit_id))
+            )
         )
         await self._session.execute(stmt)
         await self._session.flush()
         return True
+
+    def _construct_owned_habit_stmt(self, habit_id: UUID) -> Select[tuple[UUID]]:
+        return select(Habit.id).where(
+            Habit.id == habit_id,
+            self._owner_filter(Habit.owner_id),
+        )
 
     def _construct_completion_stmt(
         self, habit_id: UUID, completed_on: date
     ) -> Select[tuple[HabitCompletion]]:
         return (
             select(HabitCompletion)
+            .join(Habit, Habit.id == HabitCompletion.habit_id)
             .where(HabitCompletion.habit_id == habit_id)
             .where(HabitCompletion.completed_on == completed_on)
+            .where(self._owner_filter(Habit.owner_id))
         )

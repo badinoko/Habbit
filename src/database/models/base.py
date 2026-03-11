@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import UUID, DateTime, MetaData
+from sqlalchemy import UUID, DateTime, ForeignKey, MetaData
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -28,4 +28,15 @@ class BaseModel(DeclarativeBase):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now
+    )
+
+
+class OwnedModel(BaseModel):
+    __abstract__ = True
+
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
