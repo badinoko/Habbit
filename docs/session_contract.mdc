@@ -2,52 +2,129 @@
 alwaysApply: false
 ---
 
-# Контракт сессий (Cookie + Redis)
+# Контракт сессий
 
 ## 1. Назначение
-Документ фиксирует, что хранится в cookie, что — в Redis, формат ключей и TTL сессий для Auth v1.
+`session_contract.mdc` фиксирует текущее устройство сессий в HabitFlow:
+- UI session через signed cookie `SessionMiddleware`;
+- auth session через отдельную cookie с opaque `session_id` и хранением payload в Redis.
 
-## 2. Cookie
-В cookie передаётся **только** идентификатор сессии:
-- **Имя cookie:** `auth_session`
-- **Значение:** непредсказуемый opaque session id (например, UUID или криптостойкий random), по которому сервер ищет данные в Redis.
-- Остальные auth-данные в cookie **не** хранятся.
+## 2. UI session
 
-## 3. Redis: данные сессии
-В Redis по ключу сессии хранится объект с полями:
+### 2.1 Назначение
+UI session используется для вспомогательного состояния интерфейса и не является auth-источником.
 
-| Поле        | Тип     | Обязательно | Описание                          |
-|-------------|---------|-------------|-----------------------------------|
-| `user_id`   | строка  | да          | ID пользователя (например UUID)   |
-| `created_at`| строка  | да          | ISO 8601 UTC момент создания     |
-| `expires_at`| строка  | да          | ISO 8601 UTC момент истечения    |
-| `ua`        | строка  | нет         | User-Agent при создании сессии    |
-| `ip`        | строка  | нет         | IP при создании сессии             |
+Типичные значения в UI session:
+- `csrf_token` — токен CSRF для HTML-форм и AJAX-запросов;
+- `selected_theme` — выбранная тема-фильтр для `tasks/habits`;
+- `google_oauth` — временный payload OAuth flow (`state`, `next`, `issued_at`).
 
-Сервис авторизации при логине создаёт запись в Redis; при каждом запросе по `auth_session` из cookie читает `user_id` (и при необходимости проверяет TTL/`expires_at`).
+### 2.2 Cookie UI session
+- Имя cookie по умолчанию: `habitflow_session`
+- Cookie подписывается `SessionMiddleware`
+- Настройки берутся из `UI_SESSION_*`:
+  - `UI_SESSION_COOKIE_NAME`
+  - `UI_SESSION_MAX_AGE`
+  - `UI_SESSION_SAME_SITE`
+  - `UI_SESSION_HTTPS_ONLY`
+- Значение хранится клиентом в signed cookie; отдельного server-side storage для UI session сейчас нет.
 
-## 4. TTL
-- **TTL сессии в Redis:** 14 дней (например, `1209600` секунд).
-- Рекомендуется выставлять TTL на ключ при создании и при продлении активности (sliding window — по желанию), либо фиксированный срок от `created_at`; в любом случае `expires_at` в payload должен соответствовать политике.
+## 3. Auth session
+
+### 3.1 Cookie
+В auth-cookie передаётся только идентификатор сессии:
+- имя cookie по умолчанию: `auth_session`;
+- значение: opaque `session_id` (сейчас UUID-строка);
+- cookie помечается как `HttpOnly`;
+- параметры берутся из `AUTH_SESSION_*`.
+
+Auth-cookie не хранит `user_id`, `email`, роли или другие auth-данные напрямую.
+
+### 3.2 Redis payload
+В Redis по `session_id` хранится JSON-объект.
+
+Текущий обязательный payload:
+
+| Поле | Тип | Обязательно | Описание |
+|---|---|---|---|
+| `user_id` | string | да | UUID пользователя |
+| `created_at` | string | да | момент создания в ISO 8601 UTC |
+| `expires_at` | string | да | момент истечения в ISO 8601 UTC |
+
+Дополнительно resolver понимает и корректно обрабатывает payload с полями:
+- `revoked`
+- `revoked_at`
+
+Но в текущей реализации эти поля при создании обычной сессии не записываются.
+
+### 3.3 Что сейчас не хранится
+В текущей реализации auth session не сохраняет:
+- `ua`;
+- `ip`;
+- fingerprint устройства;
+- sliding refresh metadata.
+
+## 4. TTL и жизненный цикл
+- TTL auth session по умолчанию: `1209600` секунд (`14` дней);
+- TTL задаётся при создании ключа в Redis;
+- политика сейчас фиксированная от момента логина;
+- automatic sliding extension в текущей реализации не используется;
+- помимо Redis TTL, `expires_at` проверяется и в payload при `resolve_user`.
+
+Если `expires_at` истёк или payload повреждён:
+- auth session считается недействительной;
+- ключ удаляется из Redis;
+- пользователь становится неавторизованным.
 
 ## 5. Формат ключей Redis
-- **Ключ сессии:** `habitflow:session:{session_id}`, где `{session_id}` — значение из cookie `auth_session`.
-- **Тип значения ключа сессии:** строка (JSON) или Hash — на усмотрение реализации; при Hash поля выше хранятся как поля Hash.
-- **Индексный ключ пользователя:** `habitflow:user:{user_id}:sessions`.
-- **Тип значения индексного ключа:** Redis Set из `session_id` пользователя.
+- ключ сессии: `habitflow:session:{session_id}`
+- индекс пользователя: `habitflow:user:{user_id}:sessions`
 
-Пример ключа:
+Примеры:
 ```text
 habitflow:session:a1b2c3d4-e5f6-7890-abcd-ef1234567890
-```
-
-Пример индексного ключа:
-```text
 habitflow:user:8d8a2f6d-0a7d-4df6-a8f4-b4e4f3432b8d:sessions
 ```
 
-## 6. Истечение и логаут
-- При истечении TTL ключ удаляется Redis автоматически; последующие запросы с этим `auth_session` считаются неавторизованными.
-- Явный логаут: удаление ключа в Redis и очистка cookie `auth_session` на клиенте.
-- При удалении одной сессии (`delete_session`) соответствующий `session_id` удаляется из `habitflow:user:{user_id}:sessions`.
-- При удалении всех сессий пользователя (`delete_user_sessions`) удаляются все ключи `habitflow:session:{session_id}` из индексного Set и затем удаляется сам индексный ключ.
+Типы значений:
+- ключ сессии -> JSON-строка;
+- индекс пользователя -> Redis Set из `session_id`.
+
+## 6. Создание и удаление auth session
+
+### 6.1 Создание
+При успешном локальном логине, регистрации или OAuth-логине:
+1. создаётся новый `session_id`;
+2. в Redis записывается payload с `user_id`, `created_at`, `expires_at`;
+3. `session_id` добавляется в индексный Set пользователя;
+4. клиенту выставляется cookie `auth_session`.
+
+### 6.2 Logout одной сессии
+При `logout(session_id, user_id)`:
+- сервис читает payload;
+- если `session_id` принадлежит этому `user_id`, ключ сессии удаляется;
+- `session_id` удаляется из пользовательского Set;
+- клиентская cookie очищается роутером.
+
+### 6.3 Logout всех сессий пользователя
+`delete_user_sessions(user_id)`:
+- читает все `session_id` из `habitflow:user:{user_id}:sessions`;
+- удаляет все session-ключи;
+- удаляет индексный Set пользователя.
+
+## 7. Google OAuth state в UI session
+Для Google OAuth flow временно хранится объект `google_oauth` в UI session:
+
+| Поле | Тип | Описание |
+|---|---|---|
+| `state` | string | CSRF-like state для OAuth callback |
+| `next` | string | безопасный redirect target после логина |
+| `issued_at` | string | момент начала flow в ISO 8601 UTC |
+
+TTL этого состояния логически ограничен `GOOGLE_OAUTH_STATE_TTL` (по умолчанию `600` секунд) и проверяется при callback.
+
+## 8. Связь с доступом
+- auth identity извлекается только из Redis auth session;
+- UI session не может сама по себе аутентифицировать пользователя;
+- CSRF завязан на UI session, а не на Redis auth session;
+- owner-scoped доступ к `themes/tasks/habits` строится на `current_user`, разрешённом по auth session.

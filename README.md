@@ -55,6 +55,17 @@ HabitFlow — веб-приложение для управления задач
 - **Инфраструктура**: Docker, Docker Compose
 - **Инструменты**: Poetry, pre-commit, Ruff, mypy, pytest
 
+## Что реализовано
+
+- CRUD для `themes`, `tasks`, `habits`
+- web-first интерфейс на серверных шаблонах
+- sidebar-статистика по задачам и привычкам
+- auth v1: регистрация, логин, logout, cookie-based сессии
+- хранение auth-сессий в Redis
+- owner-scoped доступ к данным пользователя
+- CSRF-защита для state-changing действий (дорабатывается)
+- Google OAuth login flow при заданных `GOOGLE_OAUTH_*` переменных
+
 ## Структура проекта
 
 ```text
@@ -99,6 +110,7 @@ cp .env.docker.example .env.docker
 
 - `.env` используется локальным запуском (например, `POSTGRES_HOST=localhost`, `REDIS_HOST=localhost`).
 - `.env.docker` подмешивается в `app`-контейнер и переопределяет хосты для сети compose (`postgres`, `redis`).
+- `GOOGLE_OAUTH_*` можно оставить пустыми: тогда вход через Google будет отключен.
 
 ### 3. Запуск через Docker (рекомендуется)
 
@@ -121,6 +133,13 @@ docker compose exec app alembic upgrade head
 ### 5. Проверка
 
 Приложение доступно на `http://localhost:8000` (порт задаётся `CONTAINER_APP_PORT`, по умолчанию `8000`).
+
+Основные страницы:
+- `/` — главная
+- `/themes/` — темы
+- `/tasks/` — задачи
+- `/habits/` — привычки
+- `/auth/login` и `/auth/register` — auth UI
 
 ## Локальный запуск (без app-контейнера)
 
@@ -177,6 +196,9 @@ make test
 poetry run pytest -v
 ```
 
+`make test` запускает pytest с coverage для `src` и порогом `75%`.
+Integration-тесты поднимают временные контейнеры PostgreSQL и Redis через Docker, поэтому для полного прогона нужен работающий Docker daemon.
+
 Основные группы тестов:
 - `tests/unit`
 - `tests/api_unit`
@@ -214,7 +236,11 @@ poetry run pytest -v
 | AUTH_SESSION_MAX_AGE | TTL auth-сессии (сек.) | 1209600 |
 | AUTH_SESSION_SAME_SITE | SameSite auth-cookie | lax |
 | AUTH_SESSION_HTTPS_ONLY | `Secure` для auth-cookie | False |
+| GOOGLE_OAUTH_CLIENT_ID | Client ID Google OAuth | пусто |
+| GOOGLE_OAUTH_CLIENT_SECRET | Client secret Google OAuth | пусто |
+| GOOGLE_OAUTH_REDIRECT_URI | Redirect URI для callback Google OAuth | http://localhost:8000/auth/google/callback |
+| GOOGLE_OAUTH_STATE_TTL | TTL OAuth state (сек.) | 600 |
 | API_KEY | Технический ключ приложения | your_api_key_here |
 | DEBUG | Режим отладки | True |
 
-> Если `DEBUG=False`, `UI_SESSION_SECRET_KEY` должен быть задан явно.
+> Если `DEBUG=False`, `UI_SESSION_SECRET_KEY` должен быть задан явно. Если `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` и `GOOGLE_OAUTH_REDIRECT_URI` не заполнены одновременно, вход через Google автоматически выключен.

@@ -5,27 +5,47 @@ alwaysApply: false
 # API-контракт (Web-first)
 
 ## 1. Назначение документа
-`api_contract.md` фиксирует контракт HTTP-интерфейсов HabitFlow с учетом текущей архитектуры проекта.
+`api_contract.mdc` фиксирует фактический HTTP-контракт HabitFlow на текущем этапе.
 
 Ключевой принцип:
-- основной интерфейс проекта: серверные веб-роуты (`HTML + Redirect + AJAX JSON`);
-- дополнительный интерфейс (опционально): отдельный JSON API под префиксом `/api`.
+- основной интерфейс проекта: серверные web-роуты (`HTML + Redirect + AJAX JSON`);
+- отдельный JSON API под `/api/*` остаётся optional-слоем и сейчас не зарегистрирован.
 
-## 2. Позиционирование
-Этот контракт:
-- не превращает проект в API-first;
-- не требует обязательной реализации полного REST API для дипломного минимума;
-- фиксирует фактические текущие роуты и утвержденные доменные контракты iteration 1
-  (для новых модулей со статусом `planned` до реализации).
+## 2. Общие соглашения
+- Все JSON-ответы используют `application/json`.
+- Все даты/время в JSON сериализуются в ISO 8601; auth/session использует UTC.
+- HTML-формы после успешного submit обычно завершаются `303 See Other`.
+- Ошибки валидации FastAPI/Pydantic по path/query/body возвращаются как `422`, если запрос дошёл до стандартной валидации FastAPI.
+- Для некоторых auth-эндпоинтов чтение payload сделано вручную:
+  - malformed JSON -> `400`;
+  - JSON body не-объект -> `400`;
+  - неподдерживаемый `Content-Type` -> `415`.
 
-## 3. Общие соглашения
-- Все даты/время в JSON-ответах: ISO 8601 в UTC.
-- Для HTML-форм используется `POST` + `303 See Other` после успешного создания.
-- AJAX-операции (через `fetch`) должны возвращать JSON-консистентно в success/error ветках.
-- Идемпотентные удаления допустимы (`204` даже если ресурс уже отсутствует), если это явно зафиксировано в контракте.
-- Ошибки валидации FastAPI/Pydantic (path/query/body) возвращаются как `422` до выполнения бизнес-логики.
+## 3. Правила доступа и CSRF
 
-## 4. Основной контракт: web-роуты и утвержденные контракты iteration 1
+### 3.1 Авторизация
+- `GET`-страницы (`/`, `/themes/*`, `/tasks/*`, `/habits/*`, `/auth/login`, `/auth/register`) доступны без обязательной авторизации.
+- Чтение данных для `themes/tasks/habits` работает в owner-scoped режиме:
+  - авторизованный пользователь видит только свои данные;
+  - гость может открыть страницы, но бизнес-данные фактически fail-closed и чужие записи не видны.
+- Все state-changing роуты `themes/tasks/habits` требуют авторизацию.
+- `POST /auth/logout` также требует авторизацию.
+
+### 3.2 Поведение при отсутствии авторизации
+- HTML/form request -> `303` redirect на `/auth/login?next=...`
+- JSON/AJAX request -> `401 {"detail":"Authentication required"}`
+
+### 3.3 CSRF
+- Для `themes/tasks/habits` все state-changing роуты требуют CSRF.
+- Для HTML auth-форм (`POST /auth/login`, `POST /auth/register`, `POST /auth/logout`) CSRF тоже обязателен.
+- JSON `POST /auth/login` и JSON `POST /auth/register` CSRF не требуют.
+- JSON `POST /auth/logout` сейчас CSRF не валидирует.
+- Токен принимается:
+  - из поля формы `csrf_token`;
+  - из заголовков `X-CSRFToken` или `X-CSRF-Token`.
+- Missing/invalid CSRF -> `403`.
+
+## 4. Основной контракт: web-роуты
 
 ### 4.1 Базовые страницы
 | Метод | Путь | Назначение | Успех | Формат |
@@ -33,52 +53,134 @@ alwaysApply: false
 | `GET` | `/` | Главная страница | `200` | `text/html` |
 | `GET` | `/soon` | Заглушка раздела в разработке | `200` | `text/html` |
 
-### 4.2 Themes
+### 4.2 Auth
+| Метод | Путь | Назначение | Успех | Формат |
+|---|---|---|---|---|
+| `GET` | `/auth/login` | Страница логина | `200` | `text/html` |
+| `GET` | `/auth/register` | Страница регистрации | `200` | `text/html` |
+| `POST` | `/auth/login` | Логин (form/json) | `303` form / `200` json | redirect / `application/json` |
+| `POST` | `/auth/register` | Регистрация (form/json) | `303` form / `201` json | redirect / `application/json` |
+| `POST` | `/auth/logout` | Выход (form/json) | `303` form / `200` json | redirect / `application/json` |
+| `GET` | `/auth/google/start` | Старт Google OAuth | `303` | redirect |
+| `GET` | `/auth/google/callback` | Callback Google OAuth | `303` success / error HTML page | redirect / `text/html` |
+
+Параметры:
+- `next`: опциональный redirect target; небезопасные внешние URL нормализуются к `/`.
+
+Контракт `GET /auth/login` и `GET /auth/register`:
+- если пользователь уже авторизован, запрос завершается `303` на безопасный `next`;
+- если Google OAuth не настроен, ссылка на вход через Google в HTML не рендерится.
+
+Контракт `POST /auth/login`:
+- form success -> `303` на безопасный `next` + установка auth-cookie;
+- json success -> `200` + `AuthUser` + установка auth-cookie;
+- invalid credentials -> `401` (`HTML` страница ошибки для form, `JSON detail` для json);
+- invalid payload -> `400` для form, `422` для json;
+- missing/invalid CSRF в form -> `403`;
+- malformed JSON -> `400`;
+- unsupported media -> `415`;
+- если пользователь уже авторизован:
+  - form -> `303` на безопасный `next`;
+  - json -> `409 {"detail":"Already authenticated"}`.
+
+Контракт `POST /auth/register`:
+- form success -> `303` на безопасный `next` + установка auth-cookie;
+- json success -> `201` + `AuthUser` + установка auth-cookie;
+- duplicate email:
+  - form -> `409` + HTML ошибка;
+  - json -> `409 {"detail":"Email already exists"}`;
+- invalid payload -> `400` для form, `422` для json;
+- missing/invalid CSRF в form -> `403`;
+- malformed JSON -> `400`;
+- JSON body не-объект -> `400`;
+- unsupported media -> `415`;
+- если пользователь уже авторизован:
+  - form -> `303` на безопасный `next`;
+  - json -> `409 {"detail":"Already authenticated"}`.
+
+Контракт `POST /auth/logout`:
+- требует авторизацию;
+- form success -> `303` на безопасный `next` + очистка auth-cookie;
+- json success -> `200 {"message":"Logged out"}` + очистка auth-cookie;
+- form invalid CSRF -> `403` + HTML error page;
+- unauthenticated json -> `401`;
+- unsupported media -> `415`.
+
+Контракт Google OAuth:
+- `GET /auth/google/start`:
+  - success -> `303` на Google authorization URL и сохранение `state/next/issued_at` в UI session;
+  - если пользователь уже авторизован -> `303` на `next`;
+  - если OAuth не настроен -> `503`.
+- `GET /auth/google/callback`:
+  - success -> `303` на сохранённый `next` + установка auth-cookie;
+  - ошибки отдаются как HTML page с кодами `400/403/409/502/503` в зависимости от сценария (`state`, provider error, email not verified, configuration, conflicts).
+
+### 4.3 Themes
 | Метод | Путь | Назначение | Успех | Формат |
 |---|---|---|---|---|
 | `GET` | `/themes/` | Список тем | `200` | `text/html` |
 | `GET` | `/themes/new` | Форма создания темы | `200` | `text/html` |
-| `POST` | `/themes/` | Создание темы (форма) | `303` -> `/themes` | redirect |
+| `POST` | `/themes/` | Создание темы (form) | `303` -> `/themes` | redirect |
 | `GET` | `/themes/{name}` | Страница редактирования темы | `200` | `text/html` |
 | `PUT` | `/themes/{name}` | Обновление темы (AJAX) | `200` | `application/json` |
 | `DELETE` | `/themes/{name}` | Удаление темы (AJAX) | `204` | empty |
 
 Параметры `GET /themes/`:
-- `page`: `int >= 1`, по умолчанию `1`.
+- `page`: `int >= 1`, по умолчанию `1`;
 - `per_page`: `int` в диапазоне `1..100`, по умолчанию `20`.
 
 Ошибки и детали:
-- `POST /themes/`: `422` (валидация формы FastAPI), `400/500` с HTML-страницей ошибки.
-- `GET /themes/{name}`: при отсутствии темы `404` (HTML).
-- `PUT /themes/{name}`: `400/422/404/500` в JSON.
-- `DELETE /themes/{name}`: идемпотентный `204`; `500` в JSON при внутренней ошибке.
-- `GET /themes/`: `422` при невалидных query-параметрах; при некорректной пагинации (`page` вне диапазона) возможен `302` redirect на корректную страницу.
+- `GET /themes/` -> `422` при невалидных query-параметрах;
+- `GET /themes/` -> `302` redirect на корректную страницу, если `page` вне доступного диапазона;
+- `POST /themes/` -> требует auth + CSRF;
+- `POST /themes/` -> `400/403/422/500` в HTML;
+- `GET /themes/{name}` -> `404` (HTML), если тема не найдена или недоступна по owner-scope;
+- `PUT /themes/{name}` -> требует auth + CSRF, ошибки `400/401/403/404/500` в JSON;
+- `PUT /themes/{name}` success payload:
+```json
+{
+  "status": "success",
+  "theme": {
+    "id": "uuid",
+    "name": "Work",
+    "color": "#FF5733"
+  }
+}
+```
+- `DELETE /themes/{name}` -> требует auth + CSRF, ошибки `401/403/404/500` в JSON.
 
-### 4.3 Tasks
+### 4.4 Tasks
 | Метод | Путь | Назначение | Успех | Формат |
 |---|---|---|---|---|
 | `GET` | `/tasks/` | Список задач | `200` | `text/html` |
 | `GET` | `/tasks/new` | Форма создания задачи | `200` | `text/html` |
 | `GET` | `/tasks/{id}` | Страница редактирования задачи | `200` | `text/html` |
-| `POST` | `/tasks/` | Создание задачи (форма) | `303` -> `/tasks` | redirect |
+| `POST` | `/tasks/` | Создание задачи (form) | `303` -> `/tasks` | redirect |
 | `PUT` | `/tasks/{id}` | Обновление задачи (AJAX) | `200` | `application/json` |
 | `PATCH` | `/tasks/{id}/complete` | Отметить выполненной | `200` | `application/json` |
 | `PATCH` | `/tasks/{id}/incomplete` | Снять выполнение | `200` | `application/json` |
 | `DELETE` | `/tasks/{id}` | Удаление задачи (AJAX) | `204` | empty |
 
 Параметры `GET /tasks/`:
-- `page`: `int >= 1`, по умолчанию `1`.
-- `per_page`: `int` в диапазоне `1..100`, по умолчанию `20`.
-- `status`: `active | completed`, по умолчанию `active`.
-- `sort`: `created_at | updated_at | name | priority`, по умолчанию `created_at`.
-- `order`: `asc | desc`, по умолчанию `desc`.
-- `theme`: опциональный фильтр по теме через общий template-context; при `theme=Все темы` фильтр сбрасывается, иначе значение сохраняется в session (`selected_theme`) и применяется к последующим запросам списка.
+- `page`: `int >= 1`, по умолчанию `1`;
+- `per_page`: `int` в диапазоне `1..100`, по умолчанию `20`;
+- `status`: `active | completed`, по умолчанию `active`;
+- `sort`: `created_at | updated_at | name | priority`, по умолчанию `created_at`;
+- `order`: `asc | desc`, по умолчанию `desc`;
+- `theme`: опциональный фильтр через общий template-context; при `theme=Все темы` фильтр сбрасывается, иначе сохраняется в UI session как `selected_theme`.
 
 Ошибки и детали:
-- `POST /tasks/`: `422` (валидация формы FastAPI), `400/500` (HTML-ошибка).
-- `GET /tasks/`: `422` при невалидных `page/per_page/status/sort/order`.
-- `GET /tasks/{id}`: `422` при невалидном UUID; при отсутствии задачи `404` (HTML).
-- `PUT /tasks/{id}`: `422` (валидация формы FastAPI), `/400/404/500` в JSON с форматом:
+- `GET /tasks/` -> `422` при невалидных query-параметрах;
+- `GET /tasks/{id}` -> `422` при невалидном UUID; `404` (HTML) если задача не найдена/недоступна;
+- `POST /tasks/` -> требует auth + CSRF, ошибки `400/403/422/500` в HTML;
+- `PUT /tasks/{id}` -> требует auth + CSRF;
+- `PUT /tasks/{id}` success payload:
+```json
+{
+  "message": "success"
+}
+```
+- `PUT /tasks/{id}` error payload:
 ```json
 {
   "error": {
@@ -87,86 +189,95 @@ alwaysApply: false
   }
 }
 ```
-- `PATCH /tasks/{id}/complete|incomplete`: `422/404/500` в JSON.
-- `DELETE /tasks/{id}`: `422` при невалидном UUID; идемпотентный `204`; `500` в JSON при внутренней ошибке.
+- `PATCH /tasks/{id}/complete|incomplete` -> требует auth + CSRF; ошибки `401/403/404/500` в JSON;
+- `PATCH /tasks/{id}/complete|incomplete` success payload:
+```json
+{
+  "success": true,
+  "completed": true,
+  "task": {
+    "id": "uuid"
+  }
+}
+```
+- `DELETE /tasks/{id}` -> требует auth + CSRF; ошибки `401/403/404/500` в JSON.
 
-
-### 4.4 Habits
+### 4.5 Habits
 | Метод | Путь | Назначение | Успех | Формат |
 |---|---|---|---|---|
 | `GET` | `/habits/` | Список привычек | `200` | `text/html` |
 | `GET` | `/habits/new` | Форма создания привычки | `200` | `text/html` |
 | `GET` | `/habits/{id}` | Страница редактирования привычки | `200` | `text/html` |
-| `POST` | `/habits/` | Создание привычки (dual-mode: form/json) | `303` -> `/habits` (form) / `201` (json) | redirect / `application/json` |
+| `POST` | `/habits/` | Создание привычки (form/json) | `303` form / `201` json | redirect / `application/json` |
 | `PUT` | `/habits/{id}` | Обновление привычки (AJAX) | `200` | `application/json` |
-| `PATCH` | `/habits/{id}/complete` | Отметить выполнение привычки за дату | `200` | `application/json` |
-| `PATCH` | `/habits/{id}/incomplete` | Снять выполнение привычки за дату | `200` | `application/json` |
+| `PATCH` | `/habits/{id}/complete` | Отметить выполнение за текущую дату UTC | `200` | `application/json` |
+| `PATCH` | `/habits/{id}/incomplete` | Снять выполнение за текущую дату UTC | `200` | `application/json` |
 | `DELETE` | `/habits/{id}` | Удаление привычки (AJAX) | `204` | empty |
 
 Параметры `GET /habits/`:
-- `page`: `int >= 1`, по умолчанию `1`.
-- `per_page`: `int` в диапазоне `1..100`, по умолчанию `20`.
-- `status`: `todays| completed | active | archived`, по умолчанию `todays`.
-- `schedule_type`: `daily | interval_cycle | weekly_days | monthly_day | yearly_date | all`, по умолчанию `all`.
-- `sort`: `created_at | updated_at | name | streak`, по умолчанию `created_at`.
-- `order`: `asc | desc`, по умолчанию `desc`.
-- `theme`: опциональный фильтр по теме через общий template-context; при `theme=Все темы` фильтр сбрасывается, иначе значение сохраняется в session (`selected_theme`) и применяется к последующим запросам списка.
+- `page`: `int >= 1`, по умолчанию `1`;
+- `per_page`: `int` в диапазоне `1..100`, по умолчанию `20`;
+- `status`: `todays | completed | active | archived`, по умолчанию `todays`;
+- `schedule_type`: `daily | interval_cycle | weekly_days | monthly_day | yearly_date | all`, по умолчанию `all`;
+- `sort`: `created_at | updated_at | name | streak`, по умолчанию `created_at`;
+- `order`: `asc | desc`, по умолчанию `desc`;
+- `theme`: опциональный фильтр через UI session `selected_theme`.
 
 Поля `POST /habits/` и `PUT /habits/{id}`:
-- `name`: `str`, обязательное, `max_length=46`.
-- `description`: `str | null`, необязательное, `max_length=200`.
-- `theme_id`: `UUID | null`, в форме допускается `NoTheme`.
-- `schedule_type`: `daily | interval_cycle | weekly_days | monthly_day | yearly_date`.
-- `schedule_config`: объект, структура зависит от `schedule_type`:
-  - `daily`: `{}`.
-  - `interval_cycle`: `{"active_days": 2, "break_days": 2}`.
-  - `weekly_days`: `{"days": ["mon", "wed", "fri"]}`.
-  - `monthly_day`: `{"day": 15}`.
-  - `yearly_date`: `{"month": 12, "day": 31}`.
+- `name`: `str`, обязательное, `max_length=46`;
+- `description`: `str | null`, `max_length=200`;
+- `theme_id`: `UUID | null`, допускаются `NoTheme` и специальный sentinel-id для "без темы";
+- `schedule_type`: `daily | interval_cycle | weekly_days | monthly_day | yearly_date`;
+- `schedule_config`:
+  - `daily`: `{}`;
+  - `interval_cycle`: `{"active_days": 2, "break_days": 2}`;
+  - `weekly_days`: `{"days": ["mon", "wed", "fri"]}`;
+  - `monthly_day`: `{"day": 15}`;
+  - `yearly_date`: `{"month": 12, "day": 31}`;
+- `starts_on`: `date | null`;
+- `ends_on`: `date | null`, не может быть раньше `starts_on`.
 
-Режимы `POST /habits/`:
-- `Content-Type: application/json` -> API-режим (используется JS-формой habits):
-  - success: `201` + `{"ok": true}`;
-  - validation/business error: `400` + `{"error": {"code": "bad_request", "message": "..."}}`.
-- Любой другой `Content-Type` (обычный form submit):
-  - success: `303` redirect на `/habits`;
-  - validation/business error: `400` + HTML формы (`habits_form.html`) с текстом ошибки.
-
-
-Пример успешного JSON-ответа (`PATCH /habits/{id}/complete`):
+Ошибки и детали:
+- `GET /habits/` -> `422` при невалидных query-параметрах;
+- `GET /habits/{id}` -> `422` при невалидном UUID; `404` (HTML) если привычка не найдена/недоступна;
+- `POST /habits/` -> требует auth + CSRF и для form, и для json;
+- `POST /habits/` form success -> `303` redirect на `/habits`;
+- `POST /habits/` json success -> `201 {"ok": true}`;
+- `POST /habits/` validation/business error:
+  - json -> `400 {"error":{"code":"bad_request","message":"..."}}`;
+  - form -> `400` + HTML форма;
+- `POST /habits/` CSRF error:
+  - json -> `403 {"detail":"CSRF token is missing|Invalid CSRF token"}`;
+  - form -> `403` + HTML форма;
+- `PUT /habits/{id}` -> требует auth + CSRF; success payload `{"message":"success"}`;
+- `PUT /habits/{id}` error payload:
+```json
+{
+  "error": {
+    "code": "bad_request|not_found|internal_error",
+    "message": "Описание ошибки"
+  }
+}
+```
+- `PATCH /habits/{id}/complete|incomplete` -> требует auth + CSRF; success payload:
 ```json
 {
   "success": true,
   "completed": true,
-  "date": "2026-03-04",
+  "date": "2026-03-12",
   "new_streak": 7,
   "changed": true
 }
 ```
+- `PATCH /habits/{id}/complete|incomplete` -> ошибки `400/401/403/404/500` в JSON;
+- `DELETE /habits/{id}` -> требует auth + CSRF; ошибки `401/403/404/500` в JSON.
 
-Ошибки и детали:
-- `POST /habits/`: `400` при ошибках валидации/бизнес-правилах (JSON или HTML в зависимости от режима запроса).
-- `GET /habits/`: `422` при невалидных query-параметрах (`page/per_page/status/schedule_type/sort/order`).
-- `GET /habits/{id}`: `422` при невалидном UUID; `404` если привычка не найдена.
-- `PUT /habits/{id}`: `422/400/404/500` в JSON.
-- `PATCH /habits/{id}/complete|incomplete`: `422/400/404/500` в JSON.
-- `DELETE /habits/{id}`: `422` при невалидном UUID; идемпотентный `204`; `500` в JSON при внутренней ошибке.
-- `400` для бизнес-ошибок расписания:
-  - несовпадение `schedule_type` и структуры `schedule_config`;
-  - пустой список `days` для `weekly_days`;
-  - некорректный `day` для `monthly_day` или `yearly_date`;
-  - попытка отметки выполнения на будущую дату.
-
-Time policy (habit completion/streak):
-- учет выполнения — по календарной дате UTC (`DATE`, без времени).
-- недельные правила считаются по ISO-неделе (`Monday..Sunday`, UTC).
-- для `monthly_day` при отсутствии дня в месяце (например, 31 в феврале) используется последний день месяца.
-- для `yearly_date` с `02-29` в невисокосный год используется `02-28`.
-
+Time policy:
+- учёт выполнения привычек идёт по календарной дате UTC;
+- текущие router-эндпоинты completion/incompletion не принимают дату извне и работают с текущей датой UTC;
+- `monthly_day`: если нужного дня нет в месяце, используется последний день месяца;
+- `yearly_date` с `02-29` в невисокосный год нормализуется к `02-28`.
 
 ## 5. Статус JSON API `/api/*`
 - На текущем этапе в приложении нет зарегистрированных роутов под префиксом `/api/*`.
-- `/api/habits/*` рассматривается как optional-слой и не входит в обязательный web-first минимум.
-
-## 6. Матрица доступа (фактическое состояние)
-- Роуты `tasks/themes/habits` доступны без обязательной авторизации.
+- Любой отдельный `/api/*` слой рассматривается как дополнительный backlog и не блокирует web-first минимум.
