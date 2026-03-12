@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
-import re
 from uuid import UUID, uuid4
 
 import pytest
@@ -17,23 +16,12 @@ from src.dependencies import (
 from src.csrf import require_csrf
 from src.exceptions import TaskNotFound
 from src.main import app
-from src.schemas.auth import AuthUser
 from src.schemas.tasks import TaskInDB
 from src.services.tasks import PRIORITY_IDS
 from src.utils import ensure_csrf_token, get_template_context
+from tests.helpers import extract_csrf_token, make_auth_user
 
 pytestmark = pytest.mark.asyncio
-
-
-def _mk_user() -> AuthUser:
-    now = datetime(2026, 3, 8, 12, 0, tzinfo=UTC)
-    return AuthUser(
-        id=uuid4(),
-        email="task-user@example.com",
-        is_active=True,
-        created_at=now,
-        updated_at=now,
-    )
 
 
 def _mk_task(task_id: UUID) -> TaskInDB:
@@ -117,13 +105,6 @@ def _override_task_service(service: _FakeTaskService) -> None:
     app.dependency_overrides[get_task_service] = lambda: service
     app.dependency_overrides[get_user_task_service] = lambda: service
 
-
-def _extract_csrf_token(html: str) -> str:
-    match = re.search(r'name="csrf_token" value="([^"]+)"', html)
-    assert match is not None
-    return match.group(1)
-
-
 @pytest.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
     async def fake_template_context(request: Request):
@@ -135,7 +116,9 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
         }
 
     app.dependency_overrides[get_template_context] = fake_template_context
-    app.dependency_overrides[require_auth] = _mk_user
+    app.dependency_overrides[require_auth] = lambda: make_auth_user(
+        "task-user@example.com"
+    )
     app.dependency_overrides[require_csrf] = lambda: None
     _override_task_service(_FakeTaskService())
     transport = ASGITransport(app=app)
@@ -203,7 +186,7 @@ async def test_incomplete_task_returns_500_on_unexpected_error(client):
 async def test_create_task_returns_redirect_on_success(client):
     _override_task_service(_FakeTaskService())
     page = await client.get("/tasks/new")
-    csrf_token = _extract_csrf_token(page.text)
+    csrf_token = extract_csrf_token(page.text)
     res = await client.post(
         "/tasks/",
         data={"name": "Task", "priority": "low", "csrf_token": csrf_token},
@@ -216,7 +199,7 @@ async def test_create_task_returns_redirect_on_success(client):
 async def test_create_task_returns_400_on_value_error(client):
     _override_task_service(_FakeTaskService(create_error=ValueError("bad task")))
     page = await client.get("/tasks/new")
-    csrf_token = _extract_csrf_token(page.text)
+    csrf_token = extract_csrf_token(page.text)
     res = await client.post(
         "/tasks/",
         data={"name": "Task", "priority": "low", "csrf_token": csrf_token},
@@ -229,7 +212,7 @@ async def test_create_task_returns_400_on_value_error(client):
 async def test_create_task_returns_500_on_runtime_error(client):
     _override_task_service(_FakeTaskService(create_error=RuntimeError("broken")))
     page = await client.get("/tasks/new")
-    csrf_token = _extract_csrf_token(page.text)
+    csrf_token = extract_csrf_token(page.text)
     res = await client.post(
         "/tasks/",
         data={"name": "Task", "priority": "low", "csrf_token": csrf_token},
@@ -242,7 +225,7 @@ async def test_create_task_returns_500_on_runtime_error(client):
 async def test_create_task_returns_500_when_service_returns_none(client):
     _override_task_service(_FakeTaskService(create_returns_none=True))
     page = await client.get("/tasks/new")
-    csrf_token = _extract_csrf_token(page.text)
+    csrf_token = extract_csrf_token(page.text)
     res = await client.post(
         "/tasks/",
         data={"name": "Task", "priority": "low", "csrf_token": csrf_token},
@@ -271,7 +254,7 @@ async def test_complete_task_rejects_missing_csrf_token(client):
 async def test_create_task_accepts_valid_csrf_token(client):
     app.dependency_overrides.pop(require_csrf, None)
     page = await client.get("/tasks/new")
-    csrf_token = _extract_csrf_token(page.text)
+    csrf_token = extract_csrf_token(page.text)
     res = await client.post(
         "/tasks/",
         data={"name": "Task", "priority": "low", "csrf_token": csrf_token},

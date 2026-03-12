@@ -1,11 +1,26 @@
 from __future__ import annotations
 
 import re
+from datetime import UTC, datetime
+from uuid import uuid4
 
 from httpx import AsyncClient
 
+from src.schemas.auth import AuthUser
+
 _META_CSRF_RE = re.compile(r'<meta name="csrf-token" content="([^"]+)"')
 _INPUT_CSRF_RE = re.compile(r'name="csrf_token" value="([^"]+)"')
+
+
+def make_auth_user(email: str = "user@example.com") -> AuthUser:
+    now = datetime(2026, 3, 8, 12, 0, tzinfo=UTC)
+    return AuthUser(
+        id=uuid4(),
+        email=email,
+        is_active=True,
+        created_at=now,
+        updated_at=now,
+    )
 
 
 def extract_csrf_token(html: str) -> str:

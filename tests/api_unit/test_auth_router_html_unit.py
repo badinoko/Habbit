@@ -5,7 +5,6 @@ from collections.abc import AsyncGenerator
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from urllib.parse import parse_qs, urlsplit
-from uuid import uuid4
 
 import pytest
 from fastapi import FastAPI, Request
@@ -28,27 +27,17 @@ from src.exceptions import (
 from src.routers.auth import _normalize_next
 from src.routers.auth import router as auth_router
 from src.schemas.auth import AuthUser
+from tests.helpers import extract_csrf_token, make_auth_user
 
 pytestmark = pytest.mark.asyncio
 
 
-def _mk_user(email: str = "user@example.com") -> AuthUser:
-    now = datetime(2026, 3, 8, 12, 0, tzinfo=UTC)
-    return AuthUser(
-        id=uuid4(),
-        email=email,
-        is_active=True,
-        created_at=now,
-        updated_at=now,
-    )
-
-
 class _FakeAuthService:
     def __init__(self) -> None:
-        self.register_result = _mk_user("new@example.com")
+        self.register_result = make_auth_user("new@example.com")
         self.register_error: Exception | None = None
         self.authenticate_result: AuthUser | None = None
-        self.oauth_user_result: AuthUser = _mk_user("oauth@example.com")
+        self.oauth_user_result: AuthUser = make_auth_user("oauth@example.com")
         self.oauth_user_error: Exception | None = None
         self.google_start_error: Exception | None = None
         self.google_callback_error: Exception | None = None
@@ -143,12 +132,6 @@ class _FakeAuthService:
             session_id="session-123",
             user=self.oauth_user_result,
         )
-
-
-def _extract_csrf_token(html: str) -> str:
-    match = re.search(r'name="csrf_token" value="([^"]+)"', html)
-    assert match is not None
-    return match.group(1)
 
 
 def _extract_form(html: str, action: str) -> str:
@@ -333,7 +316,7 @@ async def test_login_page_redirects_authenticated_user_to_safe_next(
     client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
 ) -> None:
     http_client, _, current_user_state = client
-    current_user_state["value"] = _mk_user()
+    current_user_state["value"] = make_auth_user()
 
     res = await http_client.get(
         "/auth/login?next=https://evil.example",
@@ -378,7 +361,7 @@ async def test_google_start_redirects_authenticated_user_to_safe_next(
     client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
 ) -> None:
     http_client, _, current_user_state = client
-    current_user_state["value"] = _mk_user()
+    current_user_state["value"] = make_auth_user()
 
     res = await http_client.get(
         "/auth/google/start?next=https://evil.example",
@@ -670,7 +653,7 @@ async def test_register_page_redirects_authenticated_user(
     client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
 ) -> None:
     http_client, _, current_user_state = client
-    current_user_state["value"] = _mk_user()
+    current_user_state["value"] = make_auth_user()
 
     res = await http_client.get(
         "/auth/register?next=/tasks",
@@ -742,7 +725,7 @@ async def test_login_form_rejects_invalid_csrf_token(
     http_client, _, _state = client
 
     page = await http_client.get("/auth/login", headers={"Accept": "text/html"})
-    assert _extract_csrf_token(page.text)
+    assert extract_csrf_token(page.text)
 
     res = await http_client.post(
         "/auth/login",
@@ -767,7 +750,7 @@ async def test_register_form_rejects_invalid_csrf_token_with_html_error(
     http_client, _, _state = client
 
     page = await http_client.get("/auth/register", headers={"Accept": "text/html"})
-    assert _extract_csrf_token(page.text)
+    assert extract_csrf_token(page.text)
 
     res = await http_client.post(
         "/auth/register",
@@ -790,10 +773,10 @@ async def test_login_form_redirects_after_success(
     client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
 ) -> None:
     http_client, fake_auth_service, _state = client
-    fake_auth_service.authenticate_result = _mk_user()
+    fake_auth_service.authenticate_result = make_auth_user()
 
     page = await http_client.get("/auth/login?next=/tasks", headers={"Accept": "text/html"})
-    csrf_token = _extract_csrf_token(page.text)
+    csrf_token = extract_csrf_token(page.text)
 
     res = await http_client.post(
         "/auth/login",
@@ -816,7 +799,7 @@ async def test_login_json_returns_user_and_sets_cookie(
     client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
 ) -> None:
     http_client, fake_auth_service, _state = client
-    fake_auth_service.authenticate_result = _mk_user()
+    fake_auth_service.authenticate_result = make_auth_user()
 
     res = await http_client.post(
         "/auth/login",
@@ -833,7 +816,7 @@ async def test_login_json_returns_409_for_authenticated_user_without_auth_attemp
     client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
 ) -> None:
     http_client, fake_auth_service, current_user_state = client
-    current_user_state["value"] = _mk_user()
+    current_user_state["value"] = make_auth_user()
 
     res = await http_client.post(
         "/auth/login",
@@ -853,12 +836,12 @@ async def test_login_json_returns_409_for_authenticated_user_without_auth_attemp
         (
             "/auth/login",
             {"email": "user@example.com", "password": "strong-pass-123"},
-            lambda service: setattr(service, "authenticate_result", _mk_user()),
+            lambda service: setattr(service, "authenticate_result", make_auth_user()),
         ),
         (
             "/auth/register",
             {"email": "new@example.com", "password": "strong-pass-123"},
-            lambda service: setattr(service, "register_result", _mk_user("new@example.com")),
+            lambda service: setattr(service, "register_result", make_auth_user("new@example.com")),
         ),
     ],
 )
@@ -951,7 +934,7 @@ async def test_login_form_returns_generic_error_on_invalid_credentials(
     fake_auth_service.authenticate_result = None
 
     page = await http_client.get("/auth/login", headers={"Accept": "text/html"})
-    csrf_token = _extract_csrf_token(page.text)
+    csrf_token = extract_csrf_token(page.text)
 
     res = await http_client.post(
         "/auth/login",
@@ -975,7 +958,7 @@ async def test_login_form_returns_validation_error_for_invalid_payload(
     http_client, _, _state = client
 
     page = await http_client.get("/auth/login", headers={"Accept": "text/html"})
-    csrf_token = _extract_csrf_token(page.text)
+    csrf_token = extract_csrf_token(page.text)
 
     res = await http_client.post(
         "/auth/login",
@@ -999,7 +982,7 @@ async def test_register_form_returns_validation_error_and_preserves_email(
     http_client, _, _state = client
 
     page = await http_client.get("/auth/register", headers={"Accept": "text/html"})
-    csrf_token = _extract_csrf_token(page.text)
+    csrf_token = extract_csrf_token(page.text)
 
     res = await http_client.post(
         "/auth/register",
@@ -1021,10 +1004,10 @@ async def test_register_form_redirects_after_success(
     client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
 ) -> None:
     http_client, fake_auth_service, _state = client
-    fake_auth_service.register_result = _mk_user("new@example.com")
+    fake_auth_service.register_result = make_auth_user("new@example.com")
 
     page = await http_client.get("/auth/register?next=/tasks", headers={"Accept": "text/html"})
-    csrf_token = _extract_csrf_token(page.text)
+    csrf_token = extract_csrf_token(page.text)
 
     res = await http_client.post(
         "/auth/register",
@@ -1050,7 +1033,7 @@ async def test_register_form_returns_conflict_error_when_email_exists(
     fake_auth_service.register_error = EmailAlreadyExistsError()
 
     page = await http_client.get("/auth/register", headers={"Accept": "text/html"})
-    csrf_token = _extract_csrf_token(page.text)
+    csrf_token = extract_csrf_token(page.text)
 
     res = await http_client.post(
         "/auth/register",
@@ -1071,7 +1054,7 @@ async def test_register_json_returns_user_and_sets_cookie(
     client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
 ) -> None:
     http_client, fake_auth_service, _state = client
-    fake_auth_service.register_result = _mk_user("new@example.com")
+    fake_auth_service.register_result = make_auth_user("new@example.com")
 
     res = await http_client.post(
         "/auth/register",
@@ -1088,7 +1071,7 @@ async def test_register_json_returns_409_for_authenticated_user_without_register
     client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
 ) -> None:
     http_client, fake_auth_service, current_user_state = client
-    current_user_state["value"] = _mk_user()
+    current_user_state["value"] = make_auth_user()
 
     res = await http_client.post(
         "/auth/register",
@@ -1183,9 +1166,9 @@ async def test_logout_form_clears_cookie_and_redirects_home(
 ) -> None:
     http_client, fake_auth_service, current_user_state = client
     page = await http_client.get("/auth/login", headers={"Accept": "text/html"})
-    csrf_token = _extract_csrf_token(page.text)
+    csrf_token = extract_csrf_token(page.text)
 
-    current_user = _mk_user()
+    current_user = make_auth_user()
     http_client.cookies.set(settings.AUTH_SESSION_COOKIE_NAME, "session-123")
     current_user_state["value"] = current_user
 
@@ -1207,9 +1190,9 @@ async def test_logout_form_normalizes_unsafe_next_target(
 ) -> None:
     http_client, fake_auth_service, current_user_state = client
     page = await http_client.get("/auth/login", headers={"Accept": "text/html"})
-    csrf_token = _extract_csrf_token(page.text)
+    csrf_token = extract_csrf_token(page.text)
 
-    current_user = _mk_user()
+    current_user = make_auth_user()
     http_client.cookies.set(settings.AUTH_SESSION_COOKIE_NAME, "session-unsafe")
     current_user_state["value"] = current_user
 
@@ -1230,9 +1213,9 @@ async def test_logout_form_rejects_invalid_csrf_token_with_html_error(
 ) -> None:
     http_client, fake_auth_service, current_user_state = client
     page = await http_client.get("/auth/login", headers={"Accept": "text/html"})
-    assert _extract_csrf_token(page.text)
+    assert extract_csrf_token(page.text)
 
-    current_user_state["value"] = _mk_user()
+    current_user_state["value"] = make_auth_user()
 
     res = await http_client.post(
         "/auth/logout",
@@ -1251,7 +1234,7 @@ async def test_logout_json_logs_out_and_clears_cookie(
     client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
 ) -> None:
     http_client, fake_auth_service, current_user_state = client
-    current_user = _mk_user()
+    current_user = make_auth_user()
     current_user_state["value"] = current_user
     http_client.cookies.set(settings.AUTH_SESSION_COOKIE_NAME, "session-json")
 
@@ -1280,7 +1263,7 @@ async def test_logout_rejects_unsupported_media_type_with_415(
     client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
 ) -> None:
     http_client, fake_auth_service, current_user_state = client
-    current_user_state["value"] = _mk_user()
+    current_user_state["value"] = make_auth_user()
 
     res = await http_client.post(
         "/auth/logout",

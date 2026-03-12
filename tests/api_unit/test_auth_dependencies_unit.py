@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
-from datetime import UTC, datetime
-from uuid import uuid4
 
 import pytest
 from fastapi import Depends, FastAPI
@@ -21,19 +19,9 @@ from src.dependencies import (
 )
 from src.schemas.auth import AuthUser
 from src.services import HabitService, TaskService, ThemeService
+from tests.helpers import make_auth_user
 
 pytestmark = pytest.mark.asyncio
-
-
-def _mk_user() -> AuthUser:
-    now = datetime(2026, 3, 8, 12, 0, tzinfo=UTC)
-    return AuthUser(
-        id=uuid4(),
-        email="user@example.com",
-        is_active=True,
-        created_at=now,
-        updated_at=now,
-    )
 
 
 class _FakeAuthService:
@@ -106,7 +94,7 @@ async def test_optional_user_resolves_user_by_auth_cookie(
     client: tuple[AsyncClient, _FakeAuthService],
 ) -> None:
     http_client, fake_auth_service = client
-    fake_auth_service.resolved_user = _mk_user()
+    fake_auth_service.resolved_user = make_auth_user()
 
     res = await http_client.get(
         "/optional",
@@ -122,7 +110,7 @@ async def test_require_auth_returns_user_when_cookie_session_is_valid(
     client: tuple[AsyncClient, _FakeAuthService],
 ) -> None:
     http_client, fake_auth_service = client
-    fake_auth_service.resolved_user = _mk_user()
+    fake_auth_service.resolved_user = make_auth_user()
 
     res = await http_client.get(
         "/protected-json",
