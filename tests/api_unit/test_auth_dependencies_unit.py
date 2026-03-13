@@ -19,6 +19,7 @@ from src.dependencies import (
 )
 from src.schemas.auth import AuthUser
 from src.services import HabitService, TaskService, ThemeService
+from tests.api_unit.assertions import assert_json_response, assert_redirect
 from tests.helpers import make_auth_user
 
 pytestmark = pytest.mark.asyncio
@@ -68,8 +69,7 @@ async def test_require_auth_returns_401_for_api_request_without_cookie(
 
     res = await http_client.get("/protected-json", headers={"Accept": "application/json"})
 
-    assert res.status_code == 401
-    assert res.headers["content-type"].startswith("application/json")
+    assert_json_response(res, status_code=401)
     assert res.json()["detail"] == "Authentication required"
     assert fake_auth_service.resolve_calls == []
 
@@ -85,8 +85,7 @@ async def test_require_auth_redirects_html_request_to_login(
         follow_redirects=False,
     )
 
-    assert res.status_code == 303
-    assert res.headers["location"] == "/auth/login?next=%2Fprotected-html%3Ffoo%3Dbar"
+    assert_redirect(res, location="/auth/login?next=%2Fprotected-html%3Ffoo%3Dbar")
     assert fake_auth_service.resolve_calls == []
 
 
@@ -101,7 +100,7 @@ async def test_optional_user_resolves_user_by_auth_cookie(
         headers={"Cookie": f"{settings.AUTH_SESSION_COOKIE_NAME}=sess-123"},
     )
 
-    assert res.status_code == 200
+    assert_json_response(res, status_code=200)
     assert res.json() == {"authenticated": True}
     assert fake_auth_service.resolve_calls == ["sess-123"]
 
@@ -117,8 +116,7 @@ async def test_require_auth_returns_user_when_cookie_session_is_valid(
         headers={"Cookie": f"{settings.AUTH_SESSION_COOKIE_NAME}=sess-valid"},
     )
 
-    assert res.status_code == 200
-    assert res.headers["content-type"].startswith("application/json")
+    assert_json_response(res, status_code=200)
     assert res.json()["user_id"] == str(fake_auth_service.resolved_user.id)
     assert fake_auth_service.resolve_calls == ["sess-valid"]
 
@@ -126,7 +124,7 @@ async def test_require_auth_returns_user_when_cookie_session_is_valid(
 async def test_public_service_providers_do_not_require_authentication() -> None:
     app = FastAPI()
 
-    async def override_get_db():
+    async def override_get_db() -> AsyncGenerator[object, None]:
         yield object()
 
     app.dependency_overrides[get_db] = override_get_db
@@ -154,7 +152,6 @@ async def test_public_service_providers_do_not_require_authentication() -> None:
         async with AsyncClient(transport=transport, base_url="http://test") as http_client:
             for path in ("/theme-service", "/task-service", "/habit-service"):
                 res = await http_client.get(path, headers={"Accept": "application/json"})
-                assert res.status_code == 200
-                assert res.headers["content-type"].startswith("application/json")
+                assert_json_response(res, status_code=200)
     finally:
         app.dependency_overrides.clear()

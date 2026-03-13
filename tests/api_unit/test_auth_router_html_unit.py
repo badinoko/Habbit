@@ -1,20 +1,18 @@
 from __future__ import annotations
 
-import re
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
 from datetime import UTC, datetime, timedelta
-from types import SimpleNamespace
+from typing import Never
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 from httpx import ASGITransport, AsyncClient
 from starlette.middleware.sessions import SessionMiddleware
-from fastapi.staticfiles import StaticFiles
 
-from src.routers import auth as auth_module
 from src.config import settings
-from src.dependencies import get_auth_service, get_current_user, _is_html_request
+from src.dependencies import _is_html_request, get_auth_service, get_current_user
 from src.exceptions import (
     EmailAlreadyExistsError,
     OAuthAuthorizationCodeMissingError,
@@ -24,149 +22,18 @@ from src.exceptions import (
     OAuthProviderUnavailableError,
     OAuthStateInvalidError,
 )
-from src.routers.auth import _normalize_next
-from src.routers.auth import router as auth_router
+from src.routers import auth as auth_module
+from src.routers.auth import _normalize_next, router as auth_router
 from src.schemas.auth import AuthUser
+from tests.api_unit.auth_router_shared import (  # noqa: F401
+    _extract_form,
+    _extract_google_oauth_href,
+    _FakeAuthService,
+    configure_google_oauth,
+)
 from tests.helpers import extract_csrf_token, make_auth_user
 
 pytestmark = pytest.mark.asyncio
-
-
-class _FakeAuthService:
-    def __init__(self) -> None:
-        self.register_result = make_auth_user("new@example.com")
-        self.register_error: Exception | None = None
-        self.authenticate_result: AuthUser | None = None
-        self.oauth_user_result: AuthUser = make_auth_user("oauth@example.com")
-        self.oauth_user_error: Exception | None = None
-        self.google_start_error: Exception | None = None
-        self.google_callback_error: Exception | None = None
-        self.register_calls: list[object] = []
-        self.authenticate_calls: list[object] = []
-        self.oauth_user_calls: list[dict[str, str]] = []
-        self.google_start_calls: list[dict[str, str]] = []
-        self.google_callback_calls: list[dict[str, object]] = []
-        self.created_session_for: list[str] = []
-        self.logout_calls: list[tuple[str, str]] = []
-
-    async def register(self, payload) -> AuthUser:  # noqa: ANN001
-        self.register_calls.append(payload)
-        if self.register_error is not None:
-            raise self.register_error
-        return self.register_result
-
-    async def authenticate(self, payload) -> AuthUser | None:  # noqa: ANN001
-        self.authenticate_calls.append(payload)
-        return self.authenticate_result
-
-    async def get_or_create_oauth_user(  # noqa: ANN001
-        self,
-        *,
-        email: str,
-        provider: str,
-        provider_user_id: str,
-    ) -> AuthUser:
-        self.oauth_user_calls.append(
-            {
-                "email": email,
-                "provider": provider,
-                "provider_user_id": provider_user_id,
-            }
-        )
-        if self.oauth_user_error is not None:
-            raise self.oauth_user_error
-        return self.oauth_user_result
-
-    async def login_create_session(self, user_id) -> str:  # noqa: ANN001
-        self.created_session_for.append(str(user_id))
-        return "session-123"
-
-    async def logout(self, session_id: str, user_id) -> None:  # noqa: ANN001
-        self.logout_calls.append((session_id, str(user_id)))
-
-    def start_google_oauth_login(self, *, next_url: str):  # noqa: ANN001
-        self.google_start_calls.append({"next_url": next_url})
-        if self.google_start_error is not None:
-            raise self.google_start_error
-        return SimpleNamespace(
-            authorization_url="https://accounts.google.com/o/oauth2/v2/auth?state=fake-state",
-            session_payload={
-                "state": "fake-state",
-                "next": next_url,
-                "issued_at": "2026-03-08T12:00:00Z",
-            },
-        )
-
-    async def complete_google_oauth_login(  # noqa: ANN001
-        self,
-        *,
-        oauth_session: object,
-        provided_state: object,
-        provider_error: object,
-        code: object,
-    ):
-        self.google_callback_calls.append(
-            {
-                "oauth_session": oauth_session,
-                "provided_state": provided_state,
-                "provider_error": provider_error,
-                "code": code,
-            }
-        )
-        if self.google_callback_error is not None:
-            raise self.google_callback_error
-
-        self.oauth_user_calls.append(
-            {
-                "email": "oauth@example.com",
-                "provider": "google",
-                "provider_user_id": "google-user-123",
-            }
-        )
-        self.created_session_for.append(str(self.oauth_user_result.id))
-        next_url = "/"
-        if isinstance(oauth_session, dict):
-            next_url = str(oauth_session.get("next") or "/")
-        return SimpleNamespace(
-            next_url=next_url,
-            session_id="session-123",
-            user=self.oauth_user_result,
-        )
-
-
-def _extract_form(html: str, action: str) -> str:
-    match = re.search(
-        rf'<form[^>]*action="{re.escape(action)}"[^>]*>(.*?)</form>',
-        html,
-        re.DOTALL,
-    )
-    assert match is not None
-    return match.group(1)
-
-
-def _extract_google_oauth_href(html: str) -> str:
-    match = re.search(
-        r'<a href="([^"]+)" class="btn auth-oauth-btn">',
-        html,
-    )
-    assert match is not None
-    return match.group(1)
-
-
-@pytest.fixture(autouse=True)
-def configure_google_oauth() -> None:
-    original_client_id = settings.GOOGLE_OAUTH_CLIENT_ID
-    original_client_secret = settings.GOOGLE_OAUTH_CLIENT_SECRET
-    original_redirect_uri = settings.GOOGLE_OAUTH_REDIRECT_URI
-    settings.GOOGLE_OAUTH_CLIENT_ID = "google-client-id"
-    settings.GOOGLE_OAUTH_CLIENT_SECRET = "google-client-secret"
-    settings.GOOGLE_OAUTH_REDIRECT_URI = "http://test/auth/google/callback"
-    try:
-        yield
-    finally:
-        settings.GOOGLE_OAUTH_CLIENT_ID = original_client_id
-        settings.GOOGLE_OAUTH_CLIENT_SECRET = original_client_secret
-        settings.GOOGLE_OAUTH_REDIRECT_URI = original_redirect_uri
 
 
 @pytest.mark.parametrize(
@@ -244,7 +111,7 @@ async def client() -> AsyncGenerator[
             request.session[key] = value
         return dict(request.session)
 
-    async def override_current_user():
+    async def override_current_user() -> AuthUser | None:
         return current_user_state["value"]
 
     app.dependency_overrides[get_auth_service] = lambda: fake_auth_service
@@ -850,12 +717,12 @@ async def test_json_auth_endpoints_do_not_render_html_templates(
     monkeypatch: pytest.MonkeyPatch,
     path: str,
     payload: dict[str, str],
-    prepare_service,
+    prepare_service: Callable[[_FakeAuthService], None],
 ) -> None:
     http_client, fake_auth_service, _state = client
     prepare_service(fake_auth_service)
 
-    def fail_on_render(*args, **kwargs):  # noqa: ANN002, ANN003
+    def fail_on_render(*args, **kwargs) -> Never:  # noqa: ANN002, ANN003
         raise AssertionError("HTML template render should not happen for JSON requests")
 
     monkeypatch.setattr(auth_module, "_render_auth_template", fail_on_render)

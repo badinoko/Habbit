@@ -8,18 +8,20 @@ import pytest
 from fastapi import Request
 from httpx import ASGITransport, AsyncClient
 
-from src.dependencies import (
-    get_task_service,
-    get_user_task_service,
-    require_auth,
-)
 from src.csrf import require_csrf
+from src.dependencies import get_task_service, get_user_task_service, require_auth
 from src.exceptions import TaskNotFound
 from src.main import app
 from src.schemas.tasks import TaskInDB
 from src.services.tasks import PRIORITY_IDS
 from src.utils import ensure_csrf_token, get_template_context
-from tests.helpers import extract_csrf_token, make_auth_user
+from tests.api_unit.assertions import (
+    assert_html_response,
+    assert_json_detail,
+    assert_json_response,
+    assert_redirect,
+)
+from tests.helpers import make_auth_user, with_csrf_form
 
 pytestmark = pytest.mark.asyncio
 
@@ -60,14 +62,14 @@ class _FakeTaskService:
         self.update_returns_none = update_returns_none
         self.delete_error = delete_error
 
-    async def create_task(self, task_data):
+    async def create_task(self, task_data: object) -> TaskInDB | None:
         if self.create_error:
             raise self.create_error
         if self.create_returns_none:
             return None
         return _mk_task(uuid4())
 
-    async def update_task(self, task_id: UUID, task_data):
+    async def update_task(self, task_id: UUID, task_data: object) -> TaskInDB | None:
         if self.update_error:
             raise self.update_error
         if self.update_returns_none:
@@ -105,9 +107,10 @@ def _override_task_service(service: _FakeTaskService) -> None:
     app.dependency_overrides[get_task_service] = lambda: service
     app.dependency_overrides[get_user_task_service] = lambda: service
 
+
 @pytest.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
-    async def fake_template_context(request: Request):
+    async def fake_template_context(request: Request) -> dict[str, object]:
         return {
             "request": request,
             "themes": [],
@@ -129,198 +132,175 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
         app.dependency_overrides.clear()
 
 
-async def test_complete_task_returns_404_when_missing(client):
-    _override_task_service(_FakeTaskService(exists=False))
-    res = await client.patch(f"/tasks/{uuid4()}/complete")
-    assert res.status_code == 404
-    assert res.headers["content-type"].startswith("application/json")
-
-
-async def test_complete_task_returns_payload_when_ok(client):
-    _override_task_service(_FakeTaskService(exists=True))
+@pytest.mark.parametrize(
+    ("path_suffix", "expected_completed"),
+    [("complete", True), ("incomplete", False)],
+)
+async def test_task_toggle_returns_payload_when_ok(
+    client: AsyncClient,
+    path_suffix: str,
+    expected_completed: bool,
+) -> None:
     task_id = uuid4()
-    res = await client.patch(f"/tasks/{task_id}/complete")
-    assert res.status_code == 200
-    assert res.headers["content-type"].startswith("application/json")
+    res = await client.patch(f"/tasks/{task_id}/{path_suffix}")
+
+    assert_json_response(res, status_code=200)
     payload = res.json()
     assert payload["success"] is True
-    assert payload["completed"] is True
+    assert payload["completed"] is expected_completed
     assert payload["task"]["id"] == str(task_id)
 
 
-async def test_incomplete_task_returns_404_when_missing(client):
+@pytest.mark.parametrize("path_suffix", ["complete", "incomplete"])
+async def test_task_toggle_returns_404_when_missing(
+    client: AsyncClient,
+    path_suffix: str,
+) -> None:
     _override_task_service(_FakeTaskService(exists=False))
-    res = await client.patch(f"/tasks/{uuid4()}/incomplete")
-    assert res.status_code == 404
-    assert res.headers["content-type"].startswith("application/json")
+
+    res = await client.patch(f"/tasks/{uuid4()}/{path_suffix}")
+
+    assert_json_response(res, status_code=404)
 
 
-async def test_incomplete_task_returns_payload_when_ok(client):
-    _override_task_service(_FakeTaskService(exists=True))
-    task_id = uuid4()
-    res = await client.patch(f"/tasks/{task_id}/incomplete")
-    assert res.status_code == 200
-    assert res.headers["content-type"].startswith("application/json")
-    payload = res.json()
-    assert payload["success"] is True
-    assert payload["completed"] is False
-    assert payload["task"]["id"] == str(task_id)
+@pytest.mark.parametrize(
+    ("path_suffix", "service_kwargs"),
+    [
+        ("complete", {"complete_error": RuntimeError("boom")}),
+        ("incomplete", {"incomplete_error": RuntimeError("boom")}),
+    ],
+)
+async def test_task_toggle_returns_500_on_unexpected_error(
+    client: AsyncClient,
+    path_suffix: str,
+    service_kwargs: dict[str, object],
+) -> None:
+    _override_task_service(_FakeTaskService(**service_kwargs))
+
+    res = await client.patch(f"/tasks/{uuid4()}/{path_suffix}")
+
+    assert_json_detail(res, status_code=500, detail="Internal server error")
 
 
-async def test_complete_task_returns_500_on_unexpected_error(client):
-    _override_task_service(_FakeTaskService(complete_error=RuntimeError("boom")))
-    res = await client.patch(f"/tasks/{uuid4()}/complete")
-    assert res.status_code == 500
-    assert res.headers["content-type"].startswith("application/json")
-    assert res.json()["detail"] == "Internal server error"
-
-
-async def test_incomplete_task_returns_500_on_unexpected_error(client):
-    _override_task_service(_FakeTaskService(incomplete_error=RuntimeError("boom")))
-    res = await client.patch(f"/tasks/{uuid4()}/incomplete")
-    assert res.status_code == 500
-    assert res.headers["content-type"].startswith("application/json")
-    assert res.json()["detail"] == "Internal server error"
-
-
-async def test_create_task_returns_redirect_on_success(client):
-    _override_task_service(_FakeTaskService())
-    page = await client.get("/tasks/new")
-    csrf_token = extract_csrf_token(page.text)
+async def test_create_task_returns_redirect_on_success(client: AsyncClient) -> None:
     res = await client.post(
         "/tasks/",
-        data={"name": "Task", "priority": "low", "csrf_token": csrf_token},
+        data=await with_csrf_form(client, {"name": "Task", "priority": "low"}, path="/tasks/new"),
         follow_redirects=False,
     )
-    assert res.status_code == 303
-    assert res.headers["location"] == "/tasks"
+
+    assert_redirect(res, location="/tasks")
 
 
-async def test_create_task_returns_400_on_value_error(client):
-    _override_task_service(_FakeTaskService(create_error=ValueError("bad task")))
-    page = await client.get("/tasks/new")
-    csrf_token = extract_csrf_token(page.text)
+@pytest.mark.parametrize(
+    ("service_kwargs", "expected_status", "expected_message"),
+    [
+        ({"create_error": ValueError("bad task")}, 400, "bad task"),
+        ({"create_error": RuntimeError("broken")}, 500, "broken"),
+        ({"create_returns_none": True}, 500, "Задача не создана"),
+    ],
+)
+async def test_create_task_returns_html_error_for_failures(
+    client: AsyncClient,
+    service_kwargs: dict[str, object],
+    expected_status: int,
+    expected_message: str,
+) -> None:
+    _override_task_service(_FakeTaskService(**service_kwargs))
+
     res = await client.post(
         "/tasks/",
-        data={"name": "Task", "priority": "low", "csrf_token": csrf_token},
+        data=await with_csrf_form(client, {"name": "Task", "priority": "low"}, path="/tasks/new"),
     )
-    assert res.status_code == 400
-    assert res.headers["content-type"].startswith("text/html")
-    assert "bad task" in res.text
+
+    assert_html_response(res, status_code=expected_status)
+    assert expected_message in res.text
 
 
-async def test_create_task_returns_500_on_runtime_error(client):
-    _override_task_service(_FakeTaskService(create_error=RuntimeError("broken")))
-    page = await client.get("/tasks/new")
-    csrf_token = extract_csrf_token(page.text)
-    res = await client.post(
-        "/tasks/",
-        data={"name": "Task", "priority": "low", "csrf_token": csrf_token},
-    )
-    assert res.status_code == 500
-    assert res.headers["content-type"].startswith("text/html")
-    assert "broken" in res.text
-
-
-async def test_create_task_returns_500_when_service_returns_none(client):
-    _override_task_service(_FakeTaskService(create_returns_none=True))
-    page = await client.get("/tasks/new")
-    csrf_token = extract_csrf_token(page.text)
-    res = await client.post(
-        "/tasks/",
-        data={"name": "Task", "priority": "low", "csrf_token": csrf_token},
-    )
-    assert res.status_code == 500
-    assert res.headers["content-type"].startswith("text/html")
-    assert "Задача не создана" in res.text
-
-
-async def test_create_task_rejects_missing_csrf_token(client):
+async def test_create_task_rejects_missing_csrf_token(client: AsyncClient) -> None:
     app.dependency_overrides.pop(require_csrf, None)
+
     res = await client.post("/tasks/", data={"name": "Task", "priority": "low"})
-    assert res.status_code == 403
-    assert res.headers["content-type"].startswith("text/html")
+
+    assert_html_response(res, status_code=403)
     assert "Сессия формы истекла" in res.text
 
 
-async def test_complete_task_rejects_missing_csrf_token(client):
+async def test_complete_task_rejects_missing_csrf_token(client: AsyncClient) -> None:
     app.dependency_overrides.pop(require_csrf, None)
+
     res = await client.patch(f"/tasks/{uuid4()}/complete")
-    assert res.status_code == 403
-    assert res.headers["content-type"].startswith("application/json")
-    assert res.json()["detail"] == "CSRF token is missing"
+
+    assert_json_detail(res, status_code=403, detail="CSRF token is missing")
 
 
-async def test_create_task_accepts_valid_csrf_token(client):
+async def test_create_task_accepts_valid_csrf_token(client: AsyncClient) -> None:
     app.dependency_overrides.pop(require_csrf, None)
-    page = await client.get("/tasks/new")
-    csrf_token = extract_csrf_token(page.text)
+
     res = await client.post(
         "/tasks/",
-        data={"name": "Task", "priority": "low", "csrf_token": csrf_token},
+        data=await with_csrf_form(client, {"name": "Task", "priority": "low"}, path="/tasks/new"),
         follow_redirects=False,
     )
-    assert res.status_code == 303
-    assert res.headers["location"] == "/tasks"
+
+    assert_redirect(res, location="/tasks")
 
 
-async def test_update_task_returns_success_payload(client):
-    _override_task_service(_FakeTaskService())
+async def test_update_task_returns_success_payload(client: AsyncClient) -> None:
     res = await client.put(f"/tasks/{uuid4()}", json={"name": "Updated"})
-    assert res.status_code == 200
-    assert res.headers["content-type"].startswith("application/json")
+
+    assert_json_response(res, status_code=200)
     assert res.json() == {"message": "success"}
 
 
-async def test_update_task_returns_400_on_value_error(client):
-    _override_task_service(_FakeTaskService(update_error=ValueError("bad update")))
+@pytest.mark.parametrize(
+    ("service_kwargs", "expected_status", "expected_body"),
+    [
+        (
+            {"update_error": ValueError("bad update")},
+            400,
+            {"error": {"code": "bad_request", "message": "bad update"}},
+        ),
+        (
+            {"update_error": TaskNotFound()},
+            404,
+            {"error": {"code": "not_found", "message": "Задача не найдена"}},
+        ),
+        (
+            {"update_error": RuntimeError("failed update")},
+            500,
+            {"error": {"code": "internal_error", "message": "Internal server error"}},
+        ),
+        (
+            {"update_returns_none": True},
+            500,
+            {"error": {"code": "internal_error", "message": "Задача не обновлена"}},
+        ),
+    ],
+)
+async def test_update_task_returns_expected_error_payload(
+    client: AsyncClient,
+    service_kwargs: dict[str, object],
+    expected_status: int,
+    expected_body: dict[str, object],
+) -> None:
+    _override_task_service(_FakeTaskService(**service_kwargs))
+
     res = await client.put(f"/tasks/{uuid4()}", json={"name": "Updated"})
-    assert res.status_code == 400
-    assert res.headers["content-type"].startswith("application/json")
-    assert res.json() == {
-        "error": {"code": "bad_request", "message": "bad update"}
-    }
+
+    assert_json_response(res, status_code=expected_status)
+    assert res.json() == expected_body
 
 
-async def test_update_task_returns_404_on_task_not_found(client):
-    _override_task_service(_FakeTaskService(update_error=TaskNotFound()))
-    res = await client.put(f"/tasks/{uuid4()}", json={"name": "Updated"})
-    assert res.status_code == 404
-    assert res.headers["content-type"].startswith("application/json")
-    assert res.json() == {
-        "error": {"code": "not_found", "message": "Задача не найдена"}
-    }
-
-
-async def test_update_task_returns_500_on_runtime_error(client):
-    _override_task_service(_FakeTaskService(update_error=RuntimeError("failed update")))
-    res = await client.put(f"/tasks/{uuid4()}", json={"name": "Updated"})
-    assert res.status_code == 500
-    assert res.headers["content-type"].startswith("application/json")
-    assert res.json() == {
-        "error": {"code": "internal_error", "message": "Internal server error"}
-    }
-
-
-async def test_update_task_returns_500_when_service_returns_none(client):
-    _override_task_service(_FakeTaskService(update_returns_none=True))
-    res = await client.put(f"/tasks/{uuid4()}", json={"name": "Updated"})
-    assert res.status_code == 500
-    assert res.headers["content-type"].startswith("application/json")
-    assert res.json() == {
-        "error": {"code": "internal_error", "message": "Задача не обновлена"}
-    }
-
-
-async def test_delete_task_returns_204_when_success(client):
-    _override_task_service(_FakeTaskService())
+async def test_delete_task_returns_204_when_success(client: AsyncClient) -> None:
     res = await client.delete(f"/tasks/{uuid4()}")
+
     assert res.status_code == 204
 
 
-async def test_delete_task_returns_500_when_runtime_error(client):
+async def test_delete_task_returns_500_when_runtime_error(client: AsyncClient) -> None:
     _override_task_service(_FakeTaskService(delete_error=RuntimeError("cannot delete")))
+
     res = await client.delete(f"/tasks/{uuid4()}")
-    assert res.status_code == 500
-    assert res.headers["content-type"].startswith("application/json")
-    assert res.json()["detail"] == "Internal server error"
+
+    assert_json_detail(res, status_code=500, detail="Internal server error")
