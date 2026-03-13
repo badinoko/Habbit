@@ -63,7 +63,7 @@ HabitFlow — веб-приложение для управления задач
 - auth v1: регистрация, логин, logout, cookie-based сессии
 - хранение auth-сессий в Redis
 - owner-scoped доступ к данным пользователя
-- CSRF-защита для state-changing действий (дорабатывается)
+- CSRF-защита для state-changing действий
 - Google OAuth login flow при заданных `GOOGLE_OAUTH_*` переменных
 
 ## Структура проекта
