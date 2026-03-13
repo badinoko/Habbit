@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block title %}Статистика - HabitFlow{% endblock %}
+
+{% block content %}
+<div class="stats-page">
+    <div class="stats-page-header card">
+        <div class="stats-page-heading">
+            <p class="stats-page-eyebrow">Statistics v2</p>
+            <h1>Статистика</h1>
+            <p class="stats-page-description">
+                Каркас страницы уже готов. Все поля контракта уже выведены, а реальные агрегаты будут подключаться в следующих PR.
+            </p>
+        </div>
+        <div class="stats-range-filter" aria-label="Выбор периода статистики">
+            <a
+                href="/stats?range=7d"
+                class="stats-range-link {% if page_data.range == '7d' %}active{% endif %}"
+            >
+                7 дней
+            </a>
+            <a
+                href="/stats?range=30d"
+                class="stats-range-link {% if page_data.range == '30d' %}active{% endif %}"
+            >
+                30 дней
+            </a>
+        </div>
+    </div>
+
+    <div class="stats-kpi-grid">
+        {% for kpi in page_data.kpis %}
+        <article class="card stats-kpi-card">
+            <p class="stats-kpi-label">{{ kpi.label }}</p>
+            <p class="stats-kpi-value">{{ kpi.value }}</p>
+            {% if kpi.hint %}
+            <p class="stats-kpi-hint">{{ kpi.hint }}</p>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+
+    <div class="stats-sections-grid">
+        <section class="card stats-section-card">
+            <div class="card-header">
+                <h2><i class="fas fa-tasks"></i> Задачи</h2>
+            </div>
+
+            <div class="stats-summary-list">
+                <div class="stats-summary-row">
+                    <span>Всего</span>
+                    <strong>{{ page_data.tasks.total }}</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Активные</span>
+                    <strong>{{ page_data.tasks.active }}</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Выполненные</span>
+                    <strong>{{ page_data.tasks.completed }}</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Completion rate</span>
+                    <strong>{{ page_data.tasks.completion_rate }}%</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Создано за 7 дней</span>
+                    <strong>{{ page_data.tasks.created_in_7d }}</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Создано за 30 дней</span>
+                    <strong>{{ page_data.tasks.created_in_30d }}</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Завершено за 7 дней</span>
+                    <strong>{{ page_data.tasks.completed_in_7d }}</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Завершено за 30 дней</span>
+                    <strong>{{ page_data.tasks.completed_in_30d }}</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Среднее время до выполнения</span>
+                    <strong>
+                        {% if page_data.tasks.avg_completion_time_hours is not none %}
+                            {{ page_data.tasks.avg_completion_time_hours }} ч
+                        {% else %}
+                            —
+                        {% endif %}
+                    </strong>
+                </div>
+            </div>
+
+            <div class="stats-detail-grid">
+                <article class="stats-detail-card">
+                    <h3>По приоритетам</h3>
+                    {% if page_data.tasks.by_priority %}
+                    <div class="stats-chip-list">
+                        {% for label, value in page_data.tasks.by_priority.items() %}
+                        <div class="stats-chip-row">
+                            <span>{{ label }}</span>
+                            <strong>{{ value }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state stats-empty-state">
+                        <p>Разбивка по приоритетам появится здесь.</p>
+                    </div>
+                    {% endif %}
+                </article>
+
+                <article class="stats-detail-card">
+                    <h3>По темам</h3>
+                    {% if page_data.tasks.by_theme %}
+                    <div class="stats-chip-list">
+                        {% for label, value in page_data.tasks.by_theme.items() %}
+                        <div class="stats-chip-row">
+                            <span>{{ label }}</span>
+                            <strong>{{ value }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state stats-empty-state">
+                        <p>Разбивка по темам появится здесь.</p>
+                    </div>
+                    {% endif %}
+                </article>
+            </div>
+        </section>
+
+        <section class="card stats-section-card">
+            <div class="card-header">
+                <h2><i class="fas fa-sync-alt"></i> Привычки</h2>
+            </div>
+
+            <div class="stats-summary-list">
+                <div class="stats-summary-row">
+                    <span>Всего</span>
+                    <strong>{{ page_data.habits.total }}</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Активные</span>
+                    <strong>{{ page_data.habits.active }}</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Архивные</span>
+                    <strong>{{ page_data.habits.archived }}</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>На сегодня</span>
+                    <strong>{{ page_data.habits.due_today }}</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Выполнено сегодня</span>
+                    <strong>{{ page_data.habits.completed_today }}</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Success rate сегодня</span>
+                    <strong>{{ page_data.habits.success_rate_today }}%</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Success rate 7d</span>
+                    <strong>{{ page_data.habits.success_rate_7d }}%</strong>
+                </div>
+                <div class="stats-summary-row">
+                    <span>Success rate 30d</span>
+                    <strong>{{ page_data.habits.success_rate_30d }}%</strong>
+                </div>
+            </div>
+
+            <div class="stats-detail-grid">
+                <article class="stats-detail-card">
+                    <h3>Распределение по типам расписания</h3>
+                    {% if page_data.habits.schedule_type_distribution %}
+                    <div class="stats-chip-list">
+                        {% for label, value in page_data.habits.schedule_type_distribution.items() %}
+                        <div class="stats-chip-row">
+                            <span>{{ label }}</span>
+                            <strong>{{ value }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state stats-empty-state">
+                        <p>Распределение по типам расписания появится здесь.</p>
+                    </div>
+                    {% endif %}
+                </article>
+
+                <article class="stats-detail-card">
+                    <h3>Daily trend</h3>
+                    {% if page_data.habits.completions_by_day %}
+                    <div class="stats-chip-list">
+                        {% for item in page_data.habits.completions_by_day %}
+                        <div class="stats-chip-row">
+                            <span>{{ item.label }}</span>
+                            <strong>{{ item.value }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state stats-empty-state">
+                        <p>Тренд выполнений по дням появится здесь.</p>
+                    </div>
+                    {% endif %}
+                </article>
+
+                <article class="stats-detail-card">
+                    <h3>Топ серий</h3>
+                    {% if page_data.habits.top_streaks %}
+                    <div class="stats-chip-list">
+                        {% for item in page_data.habits.top_streaks %}
+                        <div class="stats-chip-row">
+                            <span>{{ item.label }}</span>
+                            <strong>{{ item.value }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state stats-empty-state">
+                        <p>Топ привычек по серии появится здесь.</p>
+                    </div>
+                    {% endif %}
+                </article>
+
+                <article class="stats-detail-card">
+                    <h3>Топ тем по активным привычкам</h3>
+                    {% if page_data.habits.top_themes %}
+                    <div class="stats-chip-list">
+                        {% for item in page_data.habits.top_themes %}
+                        <div class="stats-chip-row">
+                            <span>{{ item.label }}</span>
+                            <strong>{{ item.value }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state stats-empty-state">
+                        <p>Топ тем по активным привычкам появится здесь.</p>
+                    </div>
+                    {% endif %}
+                </article>
+            </div>
+        </section>
+
+        <section class="card stats-section-card">
+            <div class="card-header">
+                <h2><i class="fas fa-tags"></i> Темы</h2>
+            </div>
+
+            <div class="stats-detail-grid stats-detail-grid-single">
+                <article class="stats-detail-card">
+                    <h3>Самая загруженная тема</h3>
+                    {% if page_data.themes.busiest_theme %}
+                    <div class="stats-highlight">
+                        <span>{{ page_data.themes.busiest_theme.label }}</span>
+                        <strong>{{ page_data.themes.busiest_theme.value }}</strong>
+                    </div>
+                    {% else %}
+                    <div class="empty-state stats-empty-state">
+                        <p>Самая загруженная тема появится здесь.</p>
+                    </div>
+                    {% endif %}
+                </article>
+            </div>
+
+            <div class="stats-detail-grid">
+                <article class="stats-detail-card">
+                    <h3>Топ тем по числу задач</h3>
+                    {% if page_data.themes.top_task_themes %}
+                    <div class="stats-chip-list">
+                        {% for item in page_data.themes.top_task_themes %}
+                        <div class="stats-chip-row">
+                            <span>{{ item.label }}</span>
+                            <strong>{{ item.value }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state stats-empty-state">
+                        <p>Топ тем по задачам появится здесь.</p>
+                    </div>
+                    {% endif %}
+                </article>
+
+                <article class="stats-detail-card">
+                    <h3>Топ тем по числу привычек</h3>
+                    {% if page_data.themes.top_habit_themes %}
+                    <div class="stats-chip-list">
+                        {% for item in page_data.themes.top_habit_themes %}
+                        <div class="stats-chip-row">
+                            <span>{{ item.label }}</span>
+                            <strong>{{ item.value }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state stats-empty-state">
+                        <p>Топ тем по привычкам появится здесь.</p>
+                    </div>
+                    {% endif %}
+                </article>
+            </div>
+        </section>
+
+        <section class="card stats-section-card">
+            <div class="card-header">
+                <h2><i class="fas fa-lightbulb"></i> Инсайты</h2>
+            </div>
+            {% if page_data.insights %}
+            <div class="stats-insight-list">
+                {% for insight in page_data.insights %}
+                <article class="stats-insight stats-insight-{{ insight.severity }}">
+                    <h3>{{ insight.title }}</h3>
+                    <p>{{ insight.description }}</p>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state stats-empty-state">
+                <p>Инсайты будут доступны после подключения агрегатов.</p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</div>
+{% endblock %}

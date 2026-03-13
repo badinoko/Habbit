@@ -11,6 +11,7 @@ from src.config import settings
 from src.dependencies import get_habit_service, get_task_service
 from src.routers.auth import router as auth_router
 from src.routers.habits import router as habits_router
+from src.routers.stats import router as stats_router
 from src.routers.tasks import router as tasks_router
 from src.routers.themes import router as themes_router
 from src.services.habits import HabitService
@@ -39,6 +40,7 @@ app.include_router(auth_router)
 app.include_router(themes_router)
 app.include_router(tasks_router)
 app.include_router(habits_router)
+app.include_router(stats_router)
 
 app.add_middleware(
     SessionMiddleware,
@@ -68,18 +70,3 @@ async def root(
     context.update({"tasks": tasks, "habits": habits, "current_page": "home"})
 
     return templates.TemplateResponse(request, "index.html", context)
-
-
-@app.get("/soon", response_class=HTMLResponse)
-async def soon(
-    request: Request, context: dict[str, Any] = Depends(get_template_context)
-):
-    context.update(
-        {
-            "request": request,
-            "message": "Скоро",
-            "details": "В разработке",
-            "message_type": "info",
-        }
-    )
-    return templates.TemplateResponse(request, "message.html", context)
