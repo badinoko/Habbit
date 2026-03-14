@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Any
 from urllib.parse import quote
 
 import httpx
@@ -16,9 +16,15 @@ from src.repositories import (
     TaskRepository,
     ThemeRepository,
 )
+from src.repositories.quote_batches import QuoteBatchRepository
+from src.repositories.quotes import QuoteRepository
+from src.schemas import Stats
 from src.schemas.auth import AuthUser
 from src.services import HabitService, StatisticsService, TaskService, ThemeService
 from src.services.auth import AuthService
+from src.services.quotes import QuoteService
+from src.services.zen_quote import ZenQuotesService
+from src.utils import build_template_context
 
 _AUTH_LOGIN_PATH = "/auth/login"
 
@@ -239,3 +245,72 @@ async def get_statistics_service(
         habit_service=habit_service,
         theme_service=theme_service,
     )
+
+
+async def get_stats(
+    task_service: TaskService = Depends(get_task_service),
+    habits_service: HabitService = Depends(get_habit_service),
+) -> Stats:
+    task_statistics = await task_service.get_task_statistics()
+    habit_statistics = await habits_service.get_habit_statistics()
+    return Stats(
+        total_tasks=task_statistics.total,
+        active_tasks=task_statistics.pending,
+        total_habits=habit_statistics.total,
+        success_rate=habit_statistics.success_rate,
+        active_habits=habit_statistics.active,
+        due_habits_today=habit_statistics.due_today,
+        completed_habits_today=habit_statistics.completed_today,
+    )
+
+
+async def get_template_context(
+    request: Request,
+    theme_service: ThemeService = Depends(get_theme_service),
+    statistics: Stats = Depends(get_stats),
+    current_user: Annotated[AuthUser | None, Depends(get_current_user)] = None,
+) -> dict[str, Any]:
+    return await build_template_context(
+        request,
+        theme_service=theme_service,
+        statistics=statistics,
+        current_user=current_user,
+    )
+
+
+def get_quote_repository(
+    session: AsyncSession = Depends(get_db),
+) -> QuoteRepository:
+    return QuoteRepository(session)
+
+
+def get_quote_batch_repository(
+    session: AsyncSession = Depends(get_db),
+) -> QuoteBatchRepository:
+    return QuoteBatchRepository(session)
+
+
+def get_zenquotes_service(
+    http_client: httpx.AsyncClient = Depends(get_http_client),
+) -> ZenQuotesService:
+    return ZenQuotesService(http_client)
+
+
+def get_quote_service(
+    quote_repository: QuoteRepository = Depends(get_quote_repository),
+    batch_repository: QuoteBatchRepository = Depends(get_quote_batch_repository),
+    zenquotes_service: ZenQuotesService = Depends(get_zenquotes_service),
+) -> QuoteService:
+    return QuoteService(
+        batch_repository=batch_repository,
+        quote_repository=quote_repository,
+        zenquotes_service=zenquotes_service,
+    )
+
+
+async def add_quote_to_context(
+    context: dict[str, Any] = Depends(get_template_context),
+    quote_service: QuoteService = Depends(get_quote_service),
+) -> dict[str, Any]:
+    context["quote"] = await quote_service.get_random_quote()
+    return context

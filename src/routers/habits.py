@@ -7,7 +7,11 @@ from pydantic import ValidationError
 from starlette.datastructures import FormData
 
 from src.csrf import csrf_error_message, require_csrf
-from src.dependencies import get_habit_service, get_user_habit_service
+from src.dependencies import (
+    get_habit_service,
+    get_template_context,
+    get_user_habit_service,
+)
 from src.exceptions import HabitNotFound
 from src.schemas import (
     HabitCompletionResult,
@@ -17,7 +21,7 @@ from src.schemas import (
 )
 from src.schemas.habits import HabitCreateAPI
 from src.services.habits import HabitService
-from src.utils import error_context_updater, get_template_context, templates
+from src.utils import error_context_updater, templates
 
 router = APIRouter(prefix="/habits", tags=["Habits"])
 _WRITE_ROUTE_DEPENDENCIES = [Depends(require_csrf)]

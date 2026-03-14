@@ -5,7 +5,11 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, sta
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from src.csrf import csrf_error_message, require_csrf
-from src.dependencies import get_task_service, get_user_task_service
+from src.dependencies import (
+    get_task_service,
+    get_template_context,
+    get_user_task_service,
+)
 from src.exceptions import TaskNotFound
 from src.schemas import Response
 from src.schemas.tasks import (
@@ -14,7 +18,7 @@ from src.schemas.tasks import (
     TaskUpdateAPI,
 )
 from src.services import TaskService
-from src.utils import error_context_updater, get_template_context, templates
+from src.utils import error_context_updater, templates
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 _WRITE_ROUTE_DEPENDENCIES = [Depends(require_csrf)]

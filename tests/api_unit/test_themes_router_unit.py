@@ -9,10 +9,15 @@ from fastapi import Request
 from httpx import ASGITransport, AsyncClient
 
 from src.csrf import require_csrf
-from src.dependencies import get_theme_service, get_user_theme_service, require_auth
+from src.dependencies import (
+    get_theme_service,
+    get_template_context,
+    get_user_theme_service,
+    require_auth,
+)
 from src.main import app
 from src.schemas.themes import ThemeCreate, ThemeInDB, ThemeUpdate
-from src.utils import ensure_csrf_token, get_template_context
+from src.utils import ensure_csrf_token
 from tests.api_unit.assertions import (
     assert_html_response,
     assert_json_detail,

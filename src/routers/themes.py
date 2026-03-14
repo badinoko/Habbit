@@ -4,11 +4,15 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, sta
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from src.csrf import csrf_error_message, require_csrf
-from src.dependencies import get_theme_service, get_user_theme_service
+from src.dependencies import (
+    get_template_context,
+    get_theme_service,
+    get_user_theme_service,
+)
 from src.schemas import ThemeCreate, ThemeUpdate
 from src.services import ThemeService
 from src.services.themes import THEME_COLORS
-from src.utils import get_template_context, templates
+from src.utils import templates
 
 router = APIRouter(prefix="/themes", tags=["Themes"])
 _WRITE_ROUTE_DEPENDENCIES = [Depends(require_csrf)]

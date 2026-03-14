@@ -26,6 +26,16 @@ from .habits import (
     HabitUpdate,
     HabitUpdateAPI,
 )
+from .quotes import (
+    QuoteAnswer,
+    QuoteBatch,
+    QuoteBatchInDB,
+    QuoteBatchUpdate,
+    QuoteCreate,
+    QuoteInDB,
+    QuoteUpdate,
+    ZenquoteAPI,
+)
 from .statistics import (
     HabitStatisticsPage,
     StatisticsPageData,
@@ -79,6 +89,13 @@ __all__ = [
     "HabitUpdate",
     "HabitUpdateAPI",
     "OAuthAccountRead",
+    "QuoteAnswer",
+    "QuoteBatch",
+    "QuoteBatchInDB",
+    "QuoteBatchUpdate",
+    "QuoteCreate",
+    "QuoteInDB",
+    "QuoteUpdate",
     "Response",
     "StatisticsPageData",
     "Stats",
@@ -103,4 +120,5 @@ __all__ = [
     "ThemeWithCountResponse",
     "UserCreate",
     "UserUpdate",
+    "ZenquoteAPI",
 ]

@@ -14,8 +14,8 @@ from .base import BaseModel
 
 class TaskStatus(PyEnum):
     pending = "pending"
-    ready = "ready"
-    failed = "failed"
+    active = "active"
+    inactive = "inactive"
 
 
 class QuoteBatch(BaseModel):
@@ -42,6 +42,6 @@ class Quote(BaseModel):
     )
     text = Column(String(256), nullable=False)
     author = Column(String(128))
-    lang = Column(String(64))
+    lang = Column(String(64), nullable=False)
 
     quote_batch = relationship("QuoteBatch", back_populates="quotes")

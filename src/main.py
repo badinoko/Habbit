@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.config import settings
-from src.dependencies import get_habit_service, get_task_service
+from src.dependencies import add_quote_to_context, get_habit_service, get_task_service
 from src.routers.auth import router as auth_router
 from src.routers.habits import router as habits_router
 from src.routers.stats import router as stats_router
@@ -16,7 +16,7 @@ from src.routers.tasks import router as tasks_router
 from src.routers.themes import router as themes_router
 from src.services.habits import HabitService
 from src.services.tasks import TaskService
-from src.utils import get_template_context, templates
+from src.utils import templates
 
 
 @asynccontextmanager
@@ -55,7 +55,7 @@ app.add_middleware(
 @app.get("/", response_class=HTMLResponse)
 async def root(
     request: Request,
-    context: dict[str, Any] = Depends(get_template_context),
+    context: dict[str, Any] = Depends(add_quote_to_context),
     task_service: TaskService = Depends(get_task_service),
     habit_service: HabitService = Depends(get_habit_service),
 ):
