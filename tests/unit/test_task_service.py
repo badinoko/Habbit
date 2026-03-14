@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 import pytest
 
 from src.exceptions import TaskNotFound
+from src.schemas.statistics import TaskStatisticsPage
 from src.schemas.tasks import TaskCreateAPI, TaskInDB, TaskResponse, TaskUpdateAPI
 from src.services.tasks import PRIORITY_IDS, TaskService
 
@@ -67,6 +68,7 @@ class DummyThemeRepo:
     def __init__(self) -> None:
         self.get_by_id_result = None
         self.get_by_name_result = None
+        self.list_result = []
 
     async def get_by_id(self, theme_id: UUID):
         return self.get_by_id_result
@@ -74,14 +76,18 @@ class DummyThemeRepo:
     async def get_by_name(self, name: str):
         return self.get_by_name_result
 
+    async def list(self, *args: object, **kwargs: object):
+        return list(self.list_result)
+
 
 def _mk_task(
     *,
     priority_id: UUID,
     completed_at: datetime | None,
     theme_id: UUID | None,
+    created_at: datetime | None = None,
 ) -> TaskInDB:
-    now = datetime(2026, 1, 1, 0, 0, 0)
+    now = created_at or datetime(2026, 1, 1, 0, 0, 0)
     return TaskInDB(
         id=uuid4(),
         name="t",
@@ -121,6 +127,12 @@ def _mk_task_response(
 class _ThemeObj:
     def __init__(self, theme_id: UUID) -> None:
         self.id = theme_id
+
+
+class _ThemeReadModel:
+    def __init__(self, theme_id: UUID, name: str) -> None:
+        self.id = theme_id
+        self.name = name
 
 
 @pytest.mark.asyncio
@@ -350,3 +362,158 @@ async def test_get_task_statistics_counts_and_groups():
     assert stats.by_priority["high"] == 1
     assert stats.by_priority["medium"] == 0
     assert stats.by_theme["No theme"] == 2
+
+
+@pytest.mark.asyncio
+async def test_get_task_page_statistics_returns_zero_completion_rate_for_empty_list():
+    task_repo = DummyTaskRepo()
+    theme_repo = DummyThemeRepo()
+    service = TaskService(task_repo=task_repo, theme_repo=theme_repo)
+
+    stats = await service.get_task_page_statistics(
+        now=datetime(2026, 1, 31, 12, 0, 0, tzinfo=UTC)
+    )
+
+    assert isinstance(stats, TaskStatisticsPage)
+    assert stats.total == 0
+    assert stats.active == 0
+    assert stats.completed == 0
+    assert stats.completion_rate == 0
+    assert stats.avg_completion_time_hours is None
+    assert stats.by_priority == {"low": 0, "medium": 0, "high": 0}
+    assert stats.by_theme == {}
+
+
+@pytest.mark.asyncio
+async def test_get_task_page_statistics_counts_completed_tasks_only_for_average_time():
+    now = datetime(2026, 1, 31, 12, 0, 0)
+    task_repo = DummyTaskRepo()
+    task_repo.list_result = [
+        _mk_task(
+            priority_id=PRIORITY_IDS["low"],
+            theme_id=None,
+            created_at=now - timedelta(hours=24),
+            completed_at=now,
+        ),
+        _mk_task(
+            priority_id=PRIORITY_IDS["medium"],
+            theme_id=None,
+            created_at=now - timedelta(hours=36),
+            completed_at=now,
+        ),
+        _mk_task(
+            priority_id=PRIORITY_IDS["high"],
+            theme_id=None,
+            created_at=now - timedelta(hours=12),
+            completed_at=None,
+        ),
+    ]
+    theme_repo = DummyThemeRepo()
+    service = TaskService(task_repo=task_repo, theme_repo=theme_repo)
+
+    stats = await service.get_task_page_statistics(now=now)
+
+    assert stats.completed == 2
+    assert stats.active == 1
+    assert stats.completion_rate == 67
+    assert stats.avg_completion_time_hours == 30.0
+
+
+@pytest.mark.asyncio
+async def test_get_task_page_statistics_uses_theme_names_and_falls_back_to_no_theme():
+    theme_id = uuid4()
+    task_repo = DummyTaskRepo()
+    task_repo.list_result = [
+        _mk_task(priority_id=PRIORITY_IDS["low"], completed_at=None, theme_id=None),
+        _mk_task(priority_id=PRIORITY_IDS["low"], completed_at=None, theme_id=theme_id),
+        _mk_task(priority_id=PRIORITY_IDS["high"], completed_at=None, theme_id=None),
+    ]
+    theme_repo = DummyThemeRepo()
+    theme_repo.list_result = [_ThemeReadModel(theme_id=theme_id, name="Работа")]
+    service = TaskService(task_repo=task_repo, theme_repo=theme_repo)
+
+    stats = await service.get_task_page_statistics(
+        now=datetime(2026, 1, 31, 12, 0, 0, tzinfo=UTC)
+    )
+
+    assert stats.by_theme == {"Без темы": 2, "Работа": 1}
+
+
+@pytest.mark.asyncio
+async def test_get_task_page_statistics_slices_created_and_completed_counters_by_range():
+    now = datetime(2026, 1, 31, 12, 0, 0, tzinfo=UTC)
+    task_repo = DummyTaskRepo()
+    task_repo.list_result = [
+        _mk_task(
+            priority_id=PRIORITY_IDS["low"],
+            theme_id=None,
+            created_at=now - timedelta(days=1),
+            completed_at=None,
+        ),
+        _mk_task(
+            priority_id=PRIORITY_IDS["medium"],
+            theme_id=None,
+            created_at=now - timedelta(days=7),
+            completed_at=now - timedelta(days=7),
+        ),
+        _mk_task(
+            priority_id=PRIORITY_IDS["high"],
+            theme_id=None,
+            created_at=now - timedelta(days=8),
+            completed_at=now - timedelta(days=8),
+        ),
+        _mk_task(
+            priority_id=PRIORITY_IDS["high"],
+            theme_id=None,
+            created_at=now - timedelta(days=31),
+            completed_at=now - timedelta(days=31),
+        ),
+    ]
+    theme_repo = DummyThemeRepo()
+    service = TaskService(task_repo=task_repo, theme_repo=theme_repo)
+
+    stats = await service.get_task_page_statistics(now=now)
+
+    assert stats.created_in_7d == 2
+    assert stats.created_in_30d == 3
+    assert stats.completed_in_7d == 1
+    assert stats.completed_in_30d == 2
+
+
+@pytest.mark.asyncio
+async def test_get_task_page_statistics_excludes_future_completions_from_all_completion_stats():
+    now = datetime(2026, 1, 31, 12, 0, 0, tzinfo=UTC)
+    task_repo = DummyTaskRepo()
+    task_repo.list_result = [
+        _mk_task(
+            priority_id=PRIORITY_IDS["low"],
+            theme_id=None,
+            created_at=now - timedelta(days=1),
+            completed_at=now - timedelta(hours=12),
+        ),
+        _mk_task(
+            priority_id=PRIORITY_IDS["medium"],
+            theme_id=None,
+            created_at=now + timedelta(days=1),
+            completed_at=None,
+        ),
+        _mk_task(
+            priority_id=PRIORITY_IDS["high"],
+            theme_id=None,
+            created_at=now - timedelta(days=2),
+            completed_at=now + timedelta(days=1),
+        ),
+    ]
+    theme_repo = DummyThemeRepo()
+    service = TaskService(task_repo=task_repo, theme_repo=theme_repo)
+
+    stats = await service.get_task_page_statistics(now=now)
+
+    assert stats.completed == 1
+    assert stats.active == 2
+    assert stats.completion_rate == 33
+    assert stats.avg_completion_time_hours == 12.0
+    assert stats.created_in_7d == 2
+    assert stats.created_in_30d == 2
+    assert stats.completed_in_7d == 1
+    assert stats.completed_in_30d == 1

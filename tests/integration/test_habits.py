@@ -359,6 +359,7 @@ async def create_habit_and_return_id(
     name: str,
     schedule_type="daily",
     schedule_config=None,
+    theme_id=None,
     starts_on=None,
     ends_on=None,
 ):
@@ -369,6 +370,7 @@ async def create_habit_and_return_id(
     habit = await habit_service.create_habit(
         HabitCreateAPI(
             name=name,
+            theme_id=theme_id,
             schedule_type=schedule_type,
             schedule_config=schedule_config if schedule_config is not None else {},
             starts_on=starts_on,

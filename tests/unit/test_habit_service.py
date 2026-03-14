@@ -23,17 +23,19 @@ def _dt(y: int, m: int, d: int) -> datetime:
 def _mk_habit(
     *,
     habit_id: UUID | None = None,
+    name: str = "habit",
     schedule_type: HabitScheduleType = "daily",
     schedule_config: dict[str, object] | None = None,
     theme_id: UUID | None = None,
     starts_on: date | None = None,
     ends_on: date | None = None,
     is_archived: bool = False,
+    created_at: datetime | None = None,
 ) -> HabitInDB:
-    now = _dt(2026, 1, 1)
+    now = created_at or _dt(2026, 1, 1)
     return HabitInDB(
         id=habit_id or uuid4(),
-        name="habit",
+        name=name,
         description=None,
         theme_id=theme_id,
         schedule_type=schedule_type,
@@ -138,6 +140,21 @@ class DummyHabitRepo:
             self.add_result = self.add_result.model_copy(update={"is_archived": True})
             archived_count += 1
 
+        updated_list_result: list[HabitInDB] = []
+        for habit in self.list_result:
+            if (
+                habit.ends_on is not None
+                and habit.ends_on < today
+                and not habit.is_archived
+            ):
+                updated_list_result.append(
+                    habit.model_copy(update={"is_archived": True})
+                )
+                archived_count += 1
+            else:
+                updated_list_result.append(habit)
+        self.list_result = updated_list_result
+
         return archived_count
 
 
@@ -153,11 +170,14 @@ class _ThemeObj:
 class DummyThemeRepo:
     def __init__(self) -> None:
         self.by_id = None
+        self.by_id_map: dict[UUID, object] = {}
         self.by_name = None
         self.get_by_id_calls = 0
 
     async def get_by_id(self, theme_id: UUID) -> object | None:
         self.get_by_id_calls += 1
+        if theme_id in self.by_id_map:
+            return self.by_id_map[theme_id]
         return self.by_id
 
     async def get_by_name(self, theme_name: str) -> object | None:
@@ -716,3 +736,198 @@ async def test_get_habit_statistics_uses_due_today_denominator(
     assert stats.due_today == 1
     assert stats.completed_today == 1
     assert stats.success_rate == 100
+
+
+@pytest.mark.asyncio
+async def test_get_habit_page_statistics_counts_period_success_by_due_occurrences(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    today = date(2026, 1, 7)
+    habit = _mk_habit(habit_id=uuid4(), name="Daily focus", is_archived=False)
+
+    habit_repo = DummyHabitRepo()
+    habit_repo.list_result = [habit]
+    habit_repo.completions[habit.id] = {
+        date(2026, 1, 1),
+        date(2026, 1, 3),
+        date(2026, 1, 7),
+    }
+
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    monkeypatch.setattr(service, "_today_utc", lambda: today)
+
+    stats = await service.get_habit_page_statistics("7d")
+
+    assert stats.success_rate_today == 100
+    assert stats.success_rate_7d == 43
+    assert stats.success_rate_30d == 43
+
+
+@pytest.mark.asyncio
+async def test_get_habit_page_statistics_keeps_habits_archived_today_in_historical_widgets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    today = date(2026, 1, 7)
+    expired_habit = _mk_habit(
+        habit_id=uuid4(),
+        name="Ended habit",
+        starts_on=date(2026, 1, 5),
+        ends_on=date(2026, 1, 6),
+        is_archived=False,
+    )
+
+    habit_repo = DummyHabitRepo()
+    habit_repo.list_result = [expired_habit]
+    habit_repo.completions[expired_habit.id] = {date(2026, 1, 6)}
+
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    monkeypatch.setattr(service, "_today_utc", lambda: today)
+
+    stats = await service.get_habit_page_statistics("7d")
+
+    assert stats.active == 0
+    assert stats.archived == 1
+    assert stats.due_today == 0
+    assert stats.completed_today == 0
+    assert stats.success_rate_today == 0
+    assert stats.success_rate_7d == 50
+    assert stats.success_rate_30d == 50
+    assert [item.value for item in stats.completions_by_day] == [0, 0, 0, 0, 0, 1, 0]
+
+
+@pytest.mark.asyncio
+async def test_get_habit_page_statistics_counts_interval_cycle_due_occurrences(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    today = date(2026, 1, 5)
+    habit = _mk_habit(
+        habit_id=uuid4(),
+        name="Cycle habit",
+        schedule_type="interval_cycle",
+        schedule_config={"active_days": 2, "break_days": 2},
+        starts_on=date(2026, 1, 1),
+    )
+
+    habit_repo = DummyHabitRepo()
+    habit_repo.list_result = [habit]
+    habit_repo.completions[habit.id] = {date(2026, 1, 1), date(2026, 1, 2)}
+
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    monkeypatch.setattr(service, "_today_utc", lambda: today)
+
+    stats = await service.get_habit_page_statistics("7d")
+
+    assert stats.due_today == 1
+    assert stats.completed_today == 0
+    assert stats.success_rate_today == 0
+    assert stats.success_rate_7d == 67
+    assert stats.success_rate_30d == 67
+    assert [item.value for item in stats.completions_by_day] == [0, 0, 1, 1, 0, 0, 0]
+
+
+@pytest.mark.asyncio
+async def test_get_habit_page_statistics_excludes_archived_habits_from_active_widgets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    today = date(2026, 1, 7)
+    active_theme_id = uuid4()
+    archived_theme_id = uuid4()
+    active_habit = _mk_habit(
+        habit_id=uuid4(),
+        name="Active habit",
+        theme_id=active_theme_id,
+        is_archived=False,
+    )
+    archived_habit = _mk_habit(
+        habit_id=uuid4(),
+        name="Archived habit",
+        theme_id=archived_theme_id,
+        is_archived=True,
+    )
+
+    habit_repo = DummyHabitRepo()
+    habit_repo.list_result = [active_habit, archived_habit]
+    habit_repo.completions[active_habit.id] = {today}
+    habit_repo.completions[archived_habit.id] = {today - timedelta(days=1), today}
+
+    theme_repo = DummyThemeRepo()
+    theme_repo.by_id_map = {
+        active_theme_id: _ThemeObj(active_theme_id, name="Work"),
+        archived_theme_id: _ThemeObj(archived_theme_id, name="Archive"),
+    }
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    monkeypatch.setattr(service, "_today_utc", lambda: today)
+
+    stats = await service.get_habit_page_statistics("7d")
+
+    assert stats.total == 2
+    assert stats.active == 1
+    assert stats.archived == 1
+    assert stats.due_today == 1
+    assert stats.completed_today == 1
+    assert stats.schedule_type_distribution == {"Ежедневно": 1}
+    assert [(item.label, item.value) for item in stats.top_streaks] == [
+        ("Active habit", 1)
+    ]
+    assert [(item.label, item.value) for item in stats.top_themes] == [("Work", 1)]
+
+
+@pytest.mark.asyncio
+async def test_get_habit_page_statistics_sorts_top_streaks_stably(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    today = date(2026, 1, 5)
+    top_habit = _mk_habit(habit_id=uuid4(), name="Workout")
+    alpha_habit = _mk_habit(habit_id=uuid4(), name="Alpha")
+    beta_habit = _mk_habit(habit_id=uuid4(), name="Beta")
+
+    habit_repo = DummyHabitRepo()
+    habit_repo.list_result = [beta_habit, alpha_habit, top_habit]
+    habit_repo.completions[top_habit.id] = {
+        date(2026, 1, 3),
+        date(2026, 1, 4),
+        date(2026, 1, 5),
+    }
+    habit_repo.completions[alpha_habit.id] = {date(2026, 1, 4), date(2026, 1, 5)}
+    habit_repo.completions[beta_habit.id] = {date(2026, 1, 4), date(2026, 1, 5)}
+
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    monkeypatch.setattr(service, "_today_utc", lambda: today)
+
+    stats = await service.get_habit_page_statistics("7d")
+
+    assert [item.label for item in stats.top_streaks] == ["Workout", "Alpha", "Beta"]
+    assert [item.value for item in stats.top_streaks] == [3, 2, 2]
+
+
+@pytest.mark.asyncio
+async def test_get_habit_page_statistics_fills_zero_value_days_in_trend(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    today = date(2026, 1, 7)
+    habit = _mk_habit(habit_id=uuid4(), name="Walk")
+
+    habit_repo = DummyHabitRepo()
+    habit_repo.list_result = [habit]
+    habit_repo.completions[habit.id] = {date(2026, 1, 2), date(2026, 1, 4)}
+
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    monkeypatch.setattr(service, "_today_utc", lambda: today)
+
+    stats = await service.get_habit_page_statistics("7d")
+
+    assert [item.label for item in stats.completions_by_day] == [
+        "01.01",
+        "02.01",
+        "03.01",
+        "04.01",
+        "05.01",
+        "06.01",
+        "07.01",
+    ]
+    assert [item.value for item in stats.completions_by_day] == [0, 1, 0, 1, 0, 0, 0]

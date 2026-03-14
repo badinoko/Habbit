@@ -22,7 +22,18 @@ from src.schemas.habits import (
     Weekday,
     normalize_schedule_config,
 )
+from src.schemas.statistics import HabitStatisticsPage, StatsBreakdownItem, StatsRange
 from src.schemas.themes import ThemeInDB
+
+NO_THEME_LABEL = "Без темы"
+SCHEDULE_TYPE_LABELS = {
+    "daily": "Ежедневно",
+    "weekly_days": "Дни недели",
+    "monthly_day": "День месяца",
+    "yearly_date": "Дата года",
+    "interval_cycle": "Интервально",
+}
+TOP_LIST_LIMIT = 5
 
 
 class HabitService:
@@ -267,8 +278,9 @@ class HabitService:
         today: date,
         completion_dates: set[date],
         completed_today: bool,
+        respect_archive: bool = True,
     ) -> bool:
-        if habit.is_archived or completed_today:
+        if (respect_archive and habit.is_archived) or completed_today:
             return False
 
         starts_on = habit.starts_on or habit.created_at.date()
@@ -375,6 +387,122 @@ class HabitService:
             due_today=due_today,
             completed_today=completed_today,
             success_rate=success_rate,
+        )
+
+    async def get_habit_page_statistics(
+        self, selected_range: StatsRange = "7d"
+    ) -> HabitStatisticsPage:
+        today = self._today_utc()
+        await self.habit_repo.archive_expired_habits(today)
+        habits = await self.habit_repo.list()
+        active_habits = [habit for habit in habits if not habit.is_archived]
+
+        completion_dates_by_habit: dict[UUID, set[date]] = {}
+        theme_cache: dict[UUID, ThemeInDB | None] = {}
+        schedule_type_counts = dict.fromkeys(SCHEDULE_TYPE_LABELS, 0)
+        top_theme_counts: dict[str, int] = {}
+        streak_candidates: list[tuple[int, str, datetime, UUID]] = []
+
+        selected_period_days = 30 if selected_range == "30d" else 7
+        trend_start = self._period_start(today, selected_period_days)
+        trend_counts = dict.fromkeys(self._iter_period_dates(trend_start, today), 0)
+
+        due_today = 0
+        completed_today = 0
+
+        for habit in habits:
+            completion_dates = await self.habit_repo.list_completion_dates(habit.id)
+            completion_dates_by_habit[habit.id] = completion_dates
+            for completed_on in completion_dates:
+                if trend_start <= completed_on <= today:
+                    trend_counts[completed_on] += 1
+
+        for habit in active_habits:
+            completion_dates = completion_dates_by_habit[habit.id]
+            schedule_type_counts[habit.schedule_type] += 1
+
+            is_completed_today = today in completion_dates
+            if is_completed_today:
+                completed_today += 1
+
+            if is_completed_today or self._is_habit_due_today(
+                habit,
+                today=today,
+                completion_dates=completion_dates,
+                completed_today=is_completed_today,
+            ):
+                due_today += 1
+
+            streak = await self._calculate_streak(
+                habit, completion_dates=completion_dates
+            )
+            if streak > 0:
+                streak_candidates.append(
+                    (
+                        streak,
+                        habit.name,
+                        self._to_utc_datetime(habit.created_at),
+                        habit.id,
+                    )
+                )
+
+            theme_label = await self._get_habit_theme_label(
+                habit, theme_cache=theme_cache
+            )
+            top_theme_counts[theme_label] = top_theme_counts.get(theme_label, 0) + 1
+
+        return HabitStatisticsPage(
+            total=len(habits),
+            active=len(active_habits),
+            archived=len(habits) - len(active_habits),
+            due_today=due_today,
+            completed_today=completed_today,
+            success_rate_today=self._calculate_success_rate(completed_today, due_today),
+            success_rate_7d=self._calculate_period_success_rate(
+                habits=habits,
+                completion_dates_by_habit=completion_dates_by_habit,
+                period_start=self._period_start(today, 7),
+                period_end=today,
+                respect_archive=False,
+            ),
+            success_rate_30d=self._calculate_period_success_rate(
+                habits=habits,
+                completion_dates_by_habit=completion_dates_by_habit,
+                period_start=self._period_start(today, 30),
+                period_end=today,
+                respect_archive=False,
+            ),
+            schedule_type_distribution={
+                SCHEDULE_TYPE_LABELS[schedule_type]: count
+                for schedule_type, count in schedule_type_counts.items()
+                if count > 0
+            },
+            completions_by_day=[
+                StatsBreakdownItem(
+                    label=current_day.strftime("%d.%m"),
+                    value=trend_counts[current_day],
+                )
+                for current_day in self._iter_period_dates(trend_start, today)
+            ],
+            top_streaks=[
+                StatsBreakdownItem(label=name, value=streak)
+                for streak, name, _, _ in sorted(
+                    streak_candidates,
+                    key=lambda item: (
+                        -item[0],
+                        item[1].lower(),
+                        item[2],
+                        str(item[3]),
+                    ),
+                )[:TOP_LIST_LIMIT]
+            ],
+            top_themes=[
+                StatsBreakdownItem(label=label, value=value)
+                for label, value in sorted(
+                    top_theme_counts.items(),
+                    key=lambda item: (-item[1], item[0].lower()),
+                )[:TOP_LIST_LIMIT]
+            ],
         )
 
     def _calculate_progress_percent(
@@ -487,6 +615,64 @@ class HabitService:
             for day_offset in range((period_end - period_start).days + 1)
             if day_offset % cycle_length < active_days
         )
+
+    def _period_start(self, period_end: date, days: int) -> date:
+        return period_end - timedelta(days=days - 1)
+
+    def _iter_period_dates(self, period_start: date, period_end: date) -> list[date]:
+        return [
+            period_start + timedelta(days=day_offset)
+            for day_offset in range((period_end - period_start).days + 1)
+        ]
+
+    def _calculate_success_rate(self, completed: int, due: int) -> int:
+        return round((completed / due) * 100) if due else 0
+
+    def _calculate_period_success_rate(
+        self,
+        *,
+        habits: list[HabitInDB],
+        completion_dates_by_habit: dict[UUID, set[date]],
+        period_start: date,
+        period_end: date,
+        respect_archive: bool = True,
+    ) -> int:
+        due_occurrences = 0
+        completed_occurrences = 0
+
+        for habit in habits:
+            completion_dates = completion_dates_by_habit.get(habit.id, set())
+            for current_day in self._iter_period_dates(period_start, period_end):
+                is_completed = current_day in completion_dates
+                if is_completed or self._is_habit_due_today(
+                    habit,
+                    today=current_day,
+                    completion_dates=completion_dates,
+                    completed_today=is_completed,
+                    respect_archive=respect_archive,
+                ):
+                    due_occurrences += 1
+                    if is_completed:
+                        completed_occurrences += 1
+
+        return self._calculate_success_rate(completed_occurrences, due_occurrences)
+
+    async def _get_habit_theme_label(
+        self,
+        habit: HabitInDB,
+        *,
+        theme_cache: dict[UUID, ThemeInDB | None],
+    ) -> str:
+        if habit.theme_id is None:
+            return NO_THEME_LABEL
+
+        theme = await self._get_theme_cached(theme_cache, habit.theme_id)
+        return theme.name if theme is not None else NO_THEME_LABEL
+
+    def _to_utc_datetime(self, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
+        return value.astimezone(UTC)
 
     async def _get_theme_cached(
         self, theme_cache: dict[UUID, ThemeInDB | None], theme_id: UUID

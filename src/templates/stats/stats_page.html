@@ -9,7 +9,7 @@
             <p class="stats-page-eyebrow">Statistics v2</p>
             <h1>Статистика</h1>
             <p class="stats-page-description">
-                Каркас страницы уже готов. Все поля контракта уже выведены, а реальные агрегаты будут подключаться в следующих PR.
+                Агрегаты по задачам и привычкам уже подключены. Темы и дополнительные инсайты будут расширяться в следующих PR.
             </p>
         </div>
         <div class="stats-range-filter" aria-label="Выбор периода статистики">
@@ -64,20 +64,36 @@
                     <strong>{{ page_data.tasks.completion_rate }}%</strong>
                 </div>
                 <div class="stats-summary-row">
-                    <span>Создано за 7 дней</span>
-                    <strong>{{ page_data.tasks.created_in_7d }}</strong>
+                    <span>
+                        {% if page_data.range == "30d" %}
+                            Создано за 30 дней
+                        {% else %}
+                            Создано за 7 дней
+                        {% endif %}
+                    </span>
+                    <strong>
+                        {% if page_data.range == "30d" %}
+                            {{ page_data.tasks.created_in_30d }}
+                        {% else %}
+                            {{ page_data.tasks.created_in_7d }}
+                        {% endif %}
+                    </strong>
                 </div>
                 <div class="stats-summary-row">
-                    <span>Создано за 30 дней</span>
-                    <strong>{{ page_data.tasks.created_in_30d }}</strong>
-                </div>
-                <div class="stats-summary-row">
-                    <span>Завершено за 7 дней</span>
-                    <strong>{{ page_data.tasks.completed_in_7d }}</strong>
-                </div>
-                <div class="stats-summary-row">
-                    <span>Завершено за 30 дней</span>
-                    <strong>{{ page_data.tasks.completed_in_30d }}</strong>
+                    <span>
+                        {% if page_data.range == "30d" %}
+                            Завершено за 30 дней
+                        {% else %}
+                            Завершено за 7 дней
+                        {% endif %}
+                    </span>
+                    <strong>
+                        {% if page_data.range == "30d" %}
+                            {{ page_data.tasks.completed_in_30d }}
+                        {% else %}
+                            {{ page_data.tasks.completed_in_7d }}
+                        {% endif %}
+                    </strong>
                 </div>
                 <div class="stats-summary-row">
                     <span>Среднее время до выполнения</span>

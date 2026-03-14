@@ -1,5 +1,5 @@
-from datetime import UTC, datetime
-from typing import Literal
+from datetime import UTC, datetime, timedelta
+from typing import Literal, overload
 from uuid import UUID
 
 from src.exceptions import TaskNotFound
@@ -9,6 +9,7 @@ from src.schemas import (
     TaskCreateAPI,
     TaskInDB,
     TaskResponse,
+    TaskStatisticsPage,
     TaskStats,
     TaskUpdate,
     TaskUpdateAPI,
@@ -28,6 +29,7 @@ PRIORITIES = {
     "medium": {"name": "средний", "weight": 2, "color": "#EAB308"},
     "high": {"name": "высокий", "weight": 3, "color": "#EF4444"},
 }
+NO_THEME_LABEL = "Без темы"
 
 
 Status = Literal["active", "completed"]
@@ -182,6 +184,93 @@ class TaskService:
             by_theme=by_theme,
         )
 
+    async def get_task_page_statistics(
+        self, now: datetime | None = None
+    ) -> TaskStatisticsPage:
+        """Получить расширенную статистику задач для страницы `/stats`."""
+        all_tasks = await self.task_repo.list()
+        theme_names = await self._get_theme_names()
+
+        reference_time = self._to_utc(now or datetime.now(UTC))
+        seven_day_cutoff = reference_time - timedelta(days=7)
+        thirty_day_cutoff = reference_time - timedelta(days=30)
+
+        total = len(all_tasks)
+        completed = 0
+        active = 0
+        created_in_7d = 0
+        created_in_30d = 0
+        completed_in_7d = 0
+        completed_in_30d = 0
+        by_priority = dict.fromkeys(PRIORITIES, 0)
+        by_theme: dict[str, int] = {}
+        completion_durations_hours: list[float] = []
+
+        for task in all_tasks:
+            created_at = self._to_utc(task.created_at)
+            completed_at = self._to_utc(task.completed_at)
+            is_completed = self._is_completed_by_reference(completed_at, reference_time)
+            created_hits = self._get_period_hits(
+                created_at,
+                reference_time,
+                seven_day_cutoff,
+                thirty_day_cutoff,
+            )
+            completed_hits = self._get_period_hits(
+                completed_at,
+                reference_time,
+                seven_day_cutoff,
+                thirty_day_cutoff,
+            )
+
+            if is_completed and completed_at:
+                completed += 1
+                duration_hours = self._get_completion_duration_hours(
+                    created_at, completed_at
+                )
+                if duration_hours >= 0:
+                    completion_durations_hours.append(duration_hours)
+            else:
+                active += 1
+
+            created_in_7d += created_hits[0]
+            created_in_30d += created_hits[1]
+            completed_in_7d += completed_hits[0]
+            completed_in_30d += completed_hits[1]
+
+            priority_key = ID_TO_PRIORITY.get(task.priority_id)
+            if priority_key in by_priority:
+                by_priority[priority_key] += 1
+
+            theme_label = self._get_theme_label(task.theme_id, theme_names)
+            by_theme[theme_label] = by_theme.get(theme_label, 0) + 1
+
+        avg_completion_time_hours = None
+        if completion_durations_hours:
+            avg_completion_time_hours = round(
+                sum(completion_durations_hours) / len(completion_durations_hours), 1
+            )
+
+        completion_rate = round((completed / total) * 100) if total else 0
+
+        sorted_by_theme = dict(
+            sorted(by_theme.items(), key=lambda item: (-item[1], item[0].lower()))
+        )
+
+        return TaskStatisticsPage(
+            total=total,
+            active=active,
+            completed=completed,
+            completion_rate=completion_rate,
+            by_priority=by_priority,
+            by_theme=sorted_by_theme,
+            created_in_7d=created_in_7d,
+            created_in_30d=created_in_30d,
+            completed_in_7d=completed_in_7d,
+            completed_in_30d=completed_in_30d,
+            avg_completion_time_hours=avg_completion_time_hours,
+        )
+
     def map_priority(self, priority: str | UUID) -> UUID:
         if isinstance(priority, str):
             if priority not in PRIORITY_IDS:
@@ -192,3 +281,51 @@ class TaskService:
                 raise ValueError(f"Invalid priority UUID: {priority}")
             return priority
         raise ValueError("Priority must be str or UUID")
+
+    async def _get_theme_names(self) -> dict[UUID, str]:
+        themes = await self.theme_repo.list(limit=None)
+        return {theme.id: theme.name for theme in themes}
+
+    @overload
+    def _to_utc(self, value: datetime) -> datetime: ...
+
+    @overload
+    def _to_utc(self, value: None) -> None: ...
+
+    def _to_utc(self, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            return value.replace(tzinfo=UTC)
+        return value.astimezone(UTC)
+
+    def _get_period_hits(
+        self,
+        value: datetime | None,
+        reference_time: datetime,
+        seven_day_cutoff: datetime,
+        thirty_day_cutoff: datetime,
+    ) -> tuple[int, int]:
+        if value is None or value > reference_time:
+            return (0, 0)
+        return (
+            int(value >= seven_day_cutoff),
+            int(value >= thirty_day_cutoff),
+        )
+
+    def _is_completed_by_reference(
+        self, completed_at: datetime | None, reference_time: datetime
+    ) -> bool:
+        return completed_at is not None and completed_at <= reference_time
+
+    def _get_completion_duration_hours(
+        self, created_at: datetime, completed_at: datetime
+    ) -> float:
+        return (completed_at - created_at).total_seconds() / 3600
+
+    def _get_theme_label(
+        self, theme_id: UUID | None, theme_names: dict[UUID, str]
+    ) -> str:
+        if theme_id is None:
+            return NO_THEME_LABEL
+        return theme_names.get(theme_id, NO_THEME_LABEL)
