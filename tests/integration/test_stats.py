@@ -31,6 +31,33 @@ async def test_get_stats_page_smoke(client: AsyncClient) -> None:
     assert 'class="stats-insight-list"' in response.text
 
 
+def _extract_sidebar_stat_value(html: str, element_id: str) -> int:
+    pattern = rf'id="{element_id}"[^>]*>\s*(\d+)(?:%|)\s*<'
+    match = re.search(pattern, html)
+    assert match is not None, f"Sidebar stat element not found: {element_id}"
+    return int(match.group(1))
+
+
+def _extract_sidebar_success_rate_payload(html: str) -> tuple[int, int, int]:
+    tag_match = re.search(r'<span[^>]*id="stat-success-rate"[^>]*>', html)
+    assert tag_match is not None, "Sidebar success rate element not found"
+    tag = tag_match.group(0)
+
+    due_match = re.search(r'data-due-habits-today="(\d+)"', tag)
+    completed_match = re.search(r'data-completed-habits-today="(\d+)"', tag)
+    value_match = re.search(r">(\d+)%<", html[tag_match.end() - 1 :])
+
+    assert due_match is not None, "Missing sidebar due-habits payload"
+    assert completed_match is not None, "Missing sidebar completed-habits payload"
+    assert value_match is not None, "Missing sidebar success-rate value"
+
+    return (
+        int(due_match.group(1)),
+        int(completed_match.group(1)),
+        int(value_match.group(1)),
+    )
+
+
 def _assert_task_stat_value(html: str, label: str, value: str) -> None:
     pattern = (
         r'<h2><i class="fas fa-tasks"></i> Задачи</h2>.*?'
@@ -171,10 +198,14 @@ async def test_stats_page_shows_owner_habit_history_only(
     )
 
     owner_habit_repo = HabitRepository(session=session, owner_id=owner_id)
-    await owner_habit_repo.add_completion(owner_daily_habit_id, today - timedelta(days=1))
+    await owner_habit_repo.add_completion(
+        owner_daily_habit_id, today - timedelta(days=1)
+    )
     await owner_habit_repo.add_completion(owner_daily_habit_id, today)
     await owner_habit_repo.add_completion(owner_weekly_habit_id, today)
-    await owner_habit_repo.add_completion(owner_archived_habit_id, today - timedelta(days=1))
+    await owner_habit_repo.add_completion(
+        owner_archived_habit_id, today - timedelta(days=1)
+    )
 
     foreign_habit_repo = HabitRepository(session=session, owner_id=secondary_owner_id)
     await foreign_habit_repo.add_completion(foreign_habit_id, today)
@@ -198,3 +229,78 @@ async def test_stats_page_shows_owner_habit_history_only(
     assert "stats-owner-weekly-habit" in response.text
     assert "Чужая привычка" not in response.text
     assert "stats-foreign-habit" not in response.text
+
+
+async def test_stats_page_sidebar_matches_home_sidebar_for_shared_metrics(
+    client: AsyncClient,
+    session: AsyncSession,
+    owner_id: UUID,
+) -> None:
+    today = datetime.now(UTC).date()
+
+    task_id = await create_task_and_return_id(
+        session,
+        owner_id=owner_id,
+        name="stats-shared-completed-task",
+    )
+    await create_task_and_return_id(
+        session,
+        owner_id=owner_id,
+        name="stats-shared-active-task",
+    )
+    await TaskRepository(session=session, owner_id=owner_id).update(
+        task_id,
+        TaskUpdate(completed_at=datetime.now(UTC)),
+    )
+
+    await create_habit_and_return_id(
+        session,
+        owner_id=owner_id,
+        name="stats-shared-due-habit",
+        starts_on=today - timedelta(days=2),
+    )
+    completed_habit_id = await create_habit_and_return_id(
+        session,
+        owner_id=owner_id,
+        name="stats-shared-completed-habit",
+        starts_on=today - timedelta(days=2),
+    )
+    archived_habit_id = await create_habit_and_return_id(
+        session,
+        owner_id=owner_id,
+        name="stats-shared-archived-habit",
+        starts_on=today - timedelta(days=3),
+        ends_on=today - timedelta(days=1),
+    )
+    habit_repo = HabitRepository(session=session, owner_id=owner_id)
+    await habit_repo.add_completion(completed_habit_id, today)
+    await habit_repo.add_completion(archived_habit_id, today - timedelta(days=1))
+    await session.commit()
+
+    home_response = await client.get("/")
+    stats_response = await client.get("/stats")
+
+    assert_html_response(home_response, status_code=200)
+    assert_html_response(stats_response, status_code=200)
+
+    shared_stat_ids = [
+        "stat-active-tasks",
+        "stat-total-habits",
+        "stat-active-habits",
+        "stat-due-habits-today",
+    ]
+    for stat_id in shared_stat_ids:
+        assert _extract_sidebar_stat_value(
+            stats_response.text,
+            stat_id,
+        ) == _extract_sidebar_stat_value(home_response.text, stat_id)
+
+    assert _extract_sidebar_success_rate_payload(
+        stats_response.text
+    ) == _extract_sidebar_success_rate_payload(home_response.text)
+    _assert_task_stat_value(stats_response.text, "Активные", "1")
+    _assert_habit_stat_value(stats_response.text, "Всего", "3")
+    _assert_habit_stat_value(stats_response.text, "Активные", "2")
+    _assert_habit_stat_value(stats_response.text, "На сегодня", "2")
+    _assert_habit_stat_value(stats_response.text, "Выполнено сегодня", "1")
+    _assert_habit_stat_value(stats_response.text, "Success rate сегодня", "50%")
