@@ -21,10 +21,14 @@ async def test_get_stats_page_smoke(client: AsyncClient) -> None:
     assert_html_response(response, status_code=200)
     assert "Statistics v2" in response.text
     assert "/stats?range=30d" in response.text
+    assert 'class="stats-kpi-grid"' in response.text
+    assert "Пульс задач" in response.text
+    assert "Фокус периода" in response.text
     assert "Создано за 7 дней" in response.text
     assert "Создано за 30 дней" not in response.text
     assert "Daily trend" in response.text
     assert "Топ тем по числу привычек" in response.text
+    assert 'class="stats-insight-list"' in response.text
 
 
 def _assert_task_stat_value(html: str, label: str, value: str) -> None:

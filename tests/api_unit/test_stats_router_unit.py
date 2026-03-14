@@ -165,10 +165,13 @@ async def test_get_stats_returns_html_and_sets_current_page(
 
     assert_html_response(response, status_code=200)
     assert "Statistics v2" in response.text
+    assert "Пульс задач" in response.text
+    assert "Фокус периода" in response.text
     assert "Создано за 7 дней" in response.text
     assert "Создано за 30 дней" not in response.text
     assert "Success rate 30d" in response.text
     assert "Самая загруженная тема" in response.text
+    assert 'class="stats-insight-list"' in response.text
     context = captured["context"]
     assert isinstance(context, dict)
     assert context["current_page"] == "stats"
@@ -201,6 +204,7 @@ async def test_get_stats_supports_30d_range(
     assert "Создано за 7 дней" not in response.text
     assert "Завершено за 30 дней" in response.text
     assert "Завершено за 7 дней" not in response.text
+    assert "Активный период: <strong>30 дней</strong>" in response.text
     context = captured["context"]
     assert isinstance(context, dict)
     assert isinstance(context["page_data"], StatisticsPageData)
