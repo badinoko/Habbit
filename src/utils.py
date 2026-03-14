@@ -15,6 +15,7 @@ from src.dependencies import (
 )
 from src.schemas import Stats, ThemeResponse
 from src.schemas.auth import AuthUser
+from src.schemas.statistics import StatisticsPageData
 from src.services import HabitService
 from src.services.tasks import TaskService
 from src.services.themes import ThemeService
@@ -65,11 +66,24 @@ async def get_stats(
     )
 
 
-async def get_template_context(
+def get_stats_from_page_data(page_data: StatisticsPageData) -> Stats:
+    return Stats(
+        total_tasks=page_data.tasks.total,
+        active_tasks=page_data.tasks.active,
+        total_habits=page_data.habits.total,
+        success_rate=page_data.habits.success_rate_today,
+        active_habits=page_data.habits.active,
+        due_habits_today=page_data.habits.due_today,
+        completed_habits_today=page_data.habits.completed_today,
+    )
+
+
+async def build_template_context(
     request: Request,
-    theme_service: ThemeService = Depends(get_theme_service),
-    statistics: Stats = Depends(get_stats),
-    current_user: Annotated[AuthUser | None, Depends(get_current_user)] = None,
+    *,
+    theme_service: ThemeService,
+    statistics: Stats,
+    current_user: AuthUser | None = None,
 ) -> dict[str, Any]:
     themes = await theme_service.list_themes(limit=None)
 
@@ -115,6 +129,20 @@ async def get_template_context(
         "current_user_display_name": get_user_display_name(current_user),
         "csrf_token": ensure_csrf_token(request),
     }
+
+
+async def get_template_context(
+    request: Request,
+    theme_service: ThemeService = Depends(get_theme_service),
+    statistics: Stats = Depends(get_stats),
+    current_user: Annotated[AuthUser | None, Depends(get_current_user)] = None,
+) -> dict[str, Any]:
+    return await build_template_context(
+        request,
+        theme_service=theme_service,
+        statistics=statistics,
+        current_user=current_user,
+    )
 
 
 def error_context_updater(context: dict[Any, Any], e: str) -> dict[Any, Any]:

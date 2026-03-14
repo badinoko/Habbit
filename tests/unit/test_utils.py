@@ -6,7 +6,12 @@ import pytest
 from starlette.requests import Request
 
 from src.schemas import Stats, ThemeResponse
-from src.utils import get_stats, get_template_context
+from src.schemas.statistics import (
+    HabitStatisticsPage,
+    StatisticsPageData,
+    TaskStatisticsPage,
+)
+from src.utils import get_stats, get_stats_from_page_data, get_template_context
 
 
 class _DummyTaskStats:
@@ -74,6 +79,32 @@ async def test_get_stats_maps_task_and_habit_stats() -> None:
         active_habits=5,
         due_habits_today=3,
         completed_habits_today=3,
+    )
+
+
+def test_get_stats_from_page_data_maps_sidebar_fields() -> None:
+    stats = get_stats_from_page_data(
+        StatisticsPageData(
+            range="7d",
+            tasks=TaskStatisticsPage(total=10, active=4),
+            habits=HabitStatisticsPage(
+                total=7,
+                active=5,
+                due_today=3,
+                completed_today=2,
+                success_rate_today=67,
+            ),
+        )
+    )
+
+    assert stats == Stats(
+        total_tasks=10,
+        active_tasks=4,
+        total_habits=7,
+        success_rate=67,
+        active_habits=5,
+        due_habits_today=3,
+        completed_habits_today=2,
     )
 
 

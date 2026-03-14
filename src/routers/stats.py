@@ -3,84 +3,38 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import HTMLResponse
 
-from src.dependencies import get_habit_service, get_task_service
-from src.schemas.statistics import (
-    HabitStatisticsPage,
-    StatisticsPageData,
-    StatsInsight,
-    StatsKpi,
-    StatsRange,
-    TaskStatisticsPage,
-    ThemeStatisticsPage,
+from src.dependencies import (
+    get_current_user,
+    get_statistics_service,
+    get_theme_service,
 )
-from src.services.habits import HabitService
-from src.services.tasks import TaskService
-from src.utils import get_template_context, templates
+from src.schemas.auth import AuthUser
+from src.schemas.statistics import StatisticsPageData, StatsRange
+from src.services.statistics import StatisticsService
+from src.services.themes import ThemeService
+from src.utils import build_template_context, get_stats_from_page_data, templates
 
 router = APIRouter(tags=["Statistics"])
 
 
-def _build_stats_page_data(
-    selected_range: StatsRange,
-    task_stats: TaskStatisticsPage,
-    habit_stats: HabitStatisticsPage,
+async def get_stats_page_data(
+    statistics_service: StatisticsService = Depends(get_statistics_service),
+    selected_range: Annotated[StatsRange, Query(alias="range")] = "7d",
 ) -> StatisticsPageData:
-    return StatisticsPageData(
-        range=selected_range,
-        kpis=[
-            StatsKpi(
-                key="active_tasks",
-                label="Активные задачи",
-                value=task_stats.active,
-                hint="Обновляется по реальным задачам пользователя.",
-            ),
-            StatsKpi(
-                key="completed_tasks",
-                label="Выполненные задачи",
-                value=task_stats.completed,
-                hint="Обновляется по реальным задачам пользователя.",
-            ),
-            StatsKpi(
-                key="total_habits",
-                label="Всего привычек",
-                value=habit_stats.total,
-                hint="Считает все привычки пользователя, включая архивные.",
-            ),
-            StatsKpi(
-                key="active_habits",
-                label="Активные привычки",
-                value=habit_stats.active,
-                hint="Показывает только текущие неархивные привычки.",
-            ),
-            StatsKpi(
-                key="due_today",
-                label="Привычки на сегодня",
-                value=habit_stats.due_today,
-                hint="Учитывает только привычки, которые еще актуальны сегодня.",
-            ),
-            StatsKpi(
-                key="completed_today",
-                label="Выполнено сегодня",
-                value=habit_stats.completed_today,
-                hint="Обновляется по истории выполнений привычек.",
-            ),
-            StatsKpi(
-                key="success_rate",
-                label="Success rate",
-                value=f"{habit_stats.success_rate_today}%",
-                hint="Текущий успех по обязательным привычкам на сегодня.",
-            ),
-        ],
-        tasks=task_stats,
-        habits=habit_stats,
-        themes=ThemeStatisticsPage(),
-        insights=[
-            StatsInsight(
-                title="Задачи и привычки подключены",
-                description="Страница `/stats` уже показывает реальные агрегаты по задачам и привычкам пользователя.",
-                severity="info",
-            )
-        ],
+    return await statistics_service.get_statistics_page_data(selected_range)
+
+
+async def get_stats_page_context(
+    request: Request,
+    page_data: StatisticsPageData = Depends(get_stats_page_data),
+    theme_service: ThemeService = Depends(get_theme_service),
+    current_user: Annotated[AuthUser | None, Depends(get_current_user)] = None,
+) -> dict[str, Any]:
+    return await build_template_context(
+        request,
+        theme_service=theme_service,
+        statistics=get_stats_from_page_data(page_data),
+        current_user=current_user,
     )
 
 
@@ -92,19 +46,13 @@ def _build_stats_page_data(
 )
 async def stats_page(
     request: Request,
-    context: dict[str, Any] = Depends(get_template_context),
-    task_service: TaskService = Depends(get_task_service),
-    habit_service: HabitService = Depends(get_habit_service),
-    selected_range: Annotated[StatsRange, Query(alias="range")] = "7d",
+    context: dict[str, Any] = Depends(get_stats_page_context),
+    page_data: StatisticsPageData = Depends(get_stats_page_data),
 ):
-    task_stats = await task_service.get_task_page_statistics()
-    habit_stats = await habit_service.get_habit_page_statistics(selected_range)
     context.update(
         {
             "current_page": "stats",
-            "page_data": _build_stats_page_data(
-                selected_range, task_stats, habit_stats
-            ),
+            "page_data": page_data,
         }
     )
     return templates.TemplateResponse(request, "stats/stats_page.html", context)

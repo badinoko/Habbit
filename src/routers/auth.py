@@ -110,11 +110,11 @@ def _build_redirect_with_next(path: str, *, next_url: str) -> str:
 
 def _render_google_oauth_error_template(
     request: Request,
+    details: str | None = None,
     *,
     next_url: str,
     title: str,
     message: str,
-    details: str,
     status_code: int,
 ) -> HTMLResponse:
     return templates.TemplateResponse(
@@ -208,8 +208,7 @@ async def google_callback(
             request,
             next_url=next_url,
             title="Вход через Google недоступен",
-            message="Не удалось завершить вход через Google.",
-            details="Интеграция Google OAuth сейчас недоступна. Попробуйте позже.",
+            message="Не удалось завершить вход через Google. Повторите попытку позже",
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         )
     except OAuthStateInvalidError:
@@ -218,7 +217,6 @@ async def google_callback(
             next_url=next_url,
             title="Сессия входа истекла",
             message="Не удалось подтвердить запрос на вход через Google.",
-            details="Начните вход заново: защитный токен state больше недействителен.",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
     except OAuthProviderRejectedError:

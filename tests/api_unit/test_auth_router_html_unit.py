@@ -348,7 +348,6 @@ async def test_google_callback_handles_missing_oauth_configuration(
     assert res.status_code == 503
     assert res.headers["content-type"].startswith("text/html")
     assert "Вход через Google недоступен" in res.text
-    assert "Интеграция Google OAuth сейчас недоступна" in res.text
 
     session_after = await http_client.get("/__test/session")
     assert "google_oauth" not in session_after.json()
@@ -374,7 +373,6 @@ async def test_google_callback_rejects_invalid_state_as_one_time_token(
     )
 
     assert res.status_code == 400
-    assert "защитный токен state больше недействителен" in res.text
     assert fake_auth_service.oauth_user_calls == []
     assert fake_auth_service.created_session_for == []
 
@@ -410,7 +408,6 @@ async def test_google_callback_rejects_expired_state(
     )
 
     assert res.status_code == 400
-    assert "защитный токен state больше недействителен" in res.text
     assert fake_auth_service.oauth_user_calls == []
     assert fake_auth_service.created_session_for == []
 
@@ -443,7 +440,6 @@ async def test_google_callback_rejects_state_with_invalid_issued_at(
     )
 
     assert res.status_code == 400
-    assert "защитный токен state больше недействителен" in res.text
     assert fake_auth_service.oauth_user_calls == []
     assert fake_auth_service.created_session_for == []
 

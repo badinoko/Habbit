@@ -128,6 +128,29 @@ class HabitRepository(
         dates = result.scalars().all()
         return set(dates)
 
+    async def list_completion_dates_by_habit(
+        self, habit_ids: list[UUID] | None = None
+    ) -> dict[UUID, set[date]]:
+        if habit_ids == []:
+            return {}
+
+        stmt = (
+            select(HabitCompletion.habit_id, HabitCompletion.completed_on)
+            .join(Habit, Habit.id == HabitCompletion.habit_id)
+            .where(self._owner_filter(Habit.owner_id))
+        )
+        if habit_ids is not None:
+            stmt = stmt.where(HabitCompletion.habit_id.in_(habit_ids))
+
+        result = await self._session.execute(stmt)
+        completion_dates_by_habit: dict[UUID, set[date]] = {}
+        for habit_id, completed_on in result.all():
+            if habit_id not in completion_dates_by_habit:
+                completion_dates_by_habit[habit_id] = set()
+            completion_dates_by_habit[habit_id].add(completed_on)
+
+        return completion_dates_by_habit
+
     async def add_completion(self, habit_id: UUID, completed_on: date) -> bool:
         habit_result = await self._session.execute(
             self._construct_owned_habit_stmt(habit_id)

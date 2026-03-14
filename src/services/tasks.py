@@ -152,9 +152,11 @@ class TaskService:
             order=order,
         )
 
-    async def get_task_statistics(self) -> TaskStats:
+    async def get_task_statistics(
+        self, tasks: list[TaskInDB] | None = None
+    ) -> TaskStats:
         """Получить статистику по задачам"""
-        all_tasks = await self.task_repo.list()
+        all_tasks = tasks if tasks is not None else await self.task_repo.list()
 
         total = len(all_tasks)
         completed = 0
@@ -185,11 +187,16 @@ class TaskService:
         )
 
     async def get_task_page_statistics(
-        self, now: datetime | None = None
+        self,
+        now: datetime | None = None,
+        tasks: list[TaskInDB] | None = None,
+        theme_names: dict[UUID, str] | None = None,
     ) -> TaskStatisticsPage:
         """Получить расширенную статистику задач для страницы `/stats`."""
-        all_tasks = await self.task_repo.list()
-        theme_names = await self._get_theme_names()
+        all_tasks = tasks if tasks is not None else await self.task_repo.list()
+        theme_names = (
+            theme_names if theme_names is not None else await self._get_theme_names()
+        )
 
         reference_time = self._to_utc(now or datetime.now(UTC))
         seven_day_cutoff = reference_time - timedelta(days=7)
@@ -270,6 +277,10 @@ class TaskService:
             completed_in_30d=completed_in_30d,
             avg_completion_time_hours=avg_completion_time_hours,
         )
+
+    async def get_tasks_for_statistics(self) -> list[TaskInDB]:
+        """Вернуть owner-scoped snapshot задач для page-level статистики."""
+        return await self.task_repo.list()
 
     def map_priority(self, priority: str | UUID) -> UUID:
         if isinstance(priority, str):

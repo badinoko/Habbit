@@ -57,6 +57,9 @@ class DummyHabitRepo:
         self.list_habits_last_kwargs: dict[str, object] | None = None
         self.completions: dict[UUID, set[date]] = {}
         self.archive_expired_calls = 0
+        self.archive_expired_dates: list[date] = []
+        self.list_completion_dates_calls = 0
+        self.list_completion_dates_by_habit_calls = 0
 
     async def add(self, data: HabitCreateAPI) -> HabitInDB:
         if self.add_result is not None:
@@ -101,7 +104,15 @@ class DummyHabitRepo:
         return list(self.list_result)
 
     async def list_completion_dates(self, habit_id: UUID) -> set[date]:
+        self.list_completion_dates_calls += 1
         return set(self.completions.get(habit_id, set()))
+
+    async def list_completion_dates_by_habit(
+        self, habit_ids: list[UUID] | None = None
+    ) -> dict[UUID, set[date]]:
+        self.list_completion_dates_by_habit_calls += 1
+        ids = list(self.completions) if habit_ids is None else habit_ids
+        return {habit_id: set(self.completions.get(habit_id, set())) for habit_id in ids}
 
     async def add_completion(self, habit_id: UUID, completed_on: date) -> bool:
         current = self.completions.setdefault(habit_id, set())
@@ -118,6 +129,7 @@ class DummyHabitRepo:
 
     async def archive_expired_habits(self, today: date) -> int:
         self.archive_expired_calls += 1
+        self.archive_expired_dates.append(today)
         archived_count = 0
 
         if (
@@ -701,6 +713,8 @@ async def test_get_habit_statistics_returns_total_and_success_rate(
     assert stats.due_today == 2
     assert stats.completed_today == 1
     assert stats.success_rate == 50
+    assert habit_repo.list_completion_dates_by_habit_calls == 1
+    assert habit_repo.list_completion_dates_calls == 0
 
 
 @pytest.mark.asyncio
@@ -762,6 +776,8 @@ async def test_get_habit_page_statistics_counts_period_success_by_due_occurrence
     assert stats.success_rate_today == 100
     assert stats.success_rate_7d == 43
     assert stats.success_rate_30d == 43
+    assert habit_repo.list_completion_dates_by_habit_calls == 1
+    assert habit_repo.list_completion_dates_calls == 0
 
 
 @pytest.mark.asyncio
@@ -931,3 +947,38 @@ async def test_get_habit_page_statistics_fills_zero_value_days_in_trend(
         "07.01",
     ]
     assert [item.value for item in stats.completions_by_day] == [0, 1, 0, 1, 0, 0, 0]
+
+
+@pytest.mark.asyncio
+async def test_get_habit_page_statistics_uses_explicit_reference_time(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    reference_time = datetime(2026, 3, 14, 23, 59, 59, tzinfo=UTC)
+    habit = _mk_habit(habit_id=uuid4(), name="Night habit")
+
+    habit_repo = DummyHabitRepo()
+    habit_repo.list_result = [habit]
+    habit_repo.completions[habit.id] = {date(2026, 3, 14)}
+
+    theme_repo = DummyThemeRepo()
+    service = HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+    monkeypatch.setattr(service, "_today_utc", lambda: date(2026, 3, 15))
+
+    stats = await service.get_habit_page_statistics(
+        "7d",
+        reference_time=reference_time,
+    )
+
+    assert habit_repo.archive_expired_dates == [date(2026, 3, 14)]
+    assert stats.due_today == 1
+    assert stats.completed_today == 1
+    assert [item.label for item in stats.completions_by_day] == [
+        "08.03",
+        "09.03",
+        "10.03",
+        "11.03",
+        "12.03",
+        "13.03",
+        "14.03",
+    ]
+    assert [item.value for item in stats.top_streaks] == [1]

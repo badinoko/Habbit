@@ -6,14 +6,19 @@ import pytest
 from fastapi import Request
 from httpx import ASGITransport, AsyncClient
 
-from src.dependencies import get_habit_service, get_task_service
+from src.dependencies import get_statistics_service
 from src.main import app
+from src.routers.stats import get_stats_page_context
 from src.schemas.statistics import (
     HabitStatisticsPage,
     StatisticsPageData,
+    StatsBreakdownItem,
+    StatsInsight,
+    StatsKpi,
     TaskStatisticsPage,
+    ThemeStatisticsPage,
 )
-from src.utils import ensure_csrf_token, get_template_context
+from src.utils import ensure_csrf_token
 from tests.api_unit.assertions import assert_html_response
 
 pytestmark = pytest.mark.asyncio
@@ -22,44 +27,108 @@ pytestmark = pytest.mark.asyncio
 @pytest.fixture
 async def stats_client() -> AsyncGenerator[tuple[AsyncClient, dict[str, object]], None]:
     captured: dict[str, object] = {}
-
-    class FakeTaskService:
-        async def get_task_page_statistics(self) -> TaskStatisticsPage:
-            return TaskStatisticsPage(
-                total=3,
-                active=2,
-                completed=1,
-                completion_rate=33,
-                by_priority={"low": 1, "medium": 1, "high": 1},
-                by_theme={"Без темы": 2, "Работа": 1},
-                created_in_7d=2,
-                created_in_30d=3,
-                completed_in_7d=1,
-                completed_in_30d=1,
-                avg_completion_time_hours=12.0,
+    page_data = StatisticsPageData(
+        range="7d",
+        kpis=[
+            StatsKpi(
+                key="active_tasks",
+                label="Активные задачи",
+                value=2,
+                hint="Обновляется по реальным задачам пользователя.",
+            ),
+            StatsKpi(
+                key="completed_tasks",
+                label="Выполненные задачи",
+                value=1,
+                hint="Обновляется по реальным задачам пользователя.",
+            ),
+            StatsKpi(
+                key="total_habits",
+                label="Всего привычек",
+                value=4,
+                hint="Считает все привычки пользователя, включая архивные.",
+            ),
+            StatsKpi(
+                key="active_habits",
+                label="Активные привычки",
+                value=3,
+                hint="Показывает только текущие неархивные привычки.",
+            ),
+            StatsKpi(
+                key="due_today",
+                label="Привычки на сегодня",
+                value=2,
+                hint="Учитывает только привычки, которые еще актуальны сегодня.",
+            ),
+            StatsKpi(
+                key="completed_today",
+                label="Выполнено сегодня",
+                value=1,
+                hint="Обновляется по истории выполнений привычек.",
+            ),
+            StatsKpi(
+                key="success_rate",
+                label="Success rate",
+                value="50%",
+                hint="Текущий успех по обязательным привычкам на сегодня.",
+            ),
+        ],
+        tasks=TaskStatisticsPage(
+            total=3,
+            active=2,
+            completed=1,
+            completion_rate=33,
+            by_priority={"low": 1, "medium": 1, "high": 1},
+            by_theme={"Без темы": 2, "Работа": 1},
+            created_in_7d=2,
+            created_in_30d=3,
+            completed_in_7d=1,
+            completed_in_30d=1,
+            avg_completion_time_hours=12.0,
+        ),
+        habits=HabitStatisticsPage(
+            total=4,
+            active=3,
+            archived=1,
+            due_today=2,
+            completed_today=1,
+            success_rate_today=50,
+            success_rate_7d=67,
+            success_rate_30d=72,
+            schedule_type_distribution={"Ежедневно": 2, "Дни недели": 1},
+            completions_by_day=[
+                {"label": "01.01", "value": 1},
+                {"label": "02.01", "value": 0},
+            ],
+            top_streaks=[{"label": "Morning walk", "value": 5}],
+            top_themes=[{"label": "Здоровье", "value": 2}],
+        ),
+        themes=ThemeStatisticsPage(
+            top_task_themes=[
+                StatsBreakdownItem(label="Без темы", value=2),
+                StatsBreakdownItem(label="Работа", value=1),
+            ],
+            top_habit_themes=[StatsBreakdownItem(label="Здоровье", value=2)],
+            busiest_theme=StatsBreakdownItem(label="Работа", value=1),
+        ),
+        insights=[
+            StatsInsight(
+                title="Осталось привычек на сегодня",
+                description="1 из 2",
+                severity="warning",
             )
+        ],
+    )
 
-    class FakeHabitService:
-        async def get_habit_page_statistics(
+    class FakeStatisticsService:
+        def __init__(self) -> None:
+            self.selected_range: str | None = None
+
+        async def get_statistics_page_data(
             self, selected_range: str = "7d"
-        ) -> HabitStatisticsPage:
-            return HabitStatisticsPage(
-                total=4,
-                active=3,
-                archived=1,
-                due_today=2,
-                completed_today=1,
-                success_rate_today=50,
-                success_rate_7d=67,
-                success_rate_30d=72,
-                schedule_type_distribution={"Ежедневно": 2, "Дни недели": 1},
-                completions_by_day=[
-                    {"label": "01.01", "value": 1},
-                    {"label": "02.01", "value": 0},
-                ],
-                top_streaks=[{"label": "Morning walk", "value": 5}],
-                top_themes=[{"label": "Здоровье", "value": 2}],
-            )
+        ) -> StatisticsPageData:
+            self.selected_range = selected_range
+            return page_data.model_copy(update={"range": selected_range})
 
     async def fake_template_context(request: Request) -> dict[str, object]:
         context = {
@@ -73,9 +142,12 @@ async def stats_client() -> AsyncGenerator[tuple[AsyncClient, dict[str, object]]
         captured["context"] = context
         return context
 
-    app.dependency_overrides[get_template_context] = fake_template_context
-    app.dependency_overrides[get_task_service] = lambda: FakeTaskService()
-    app.dependency_overrides[get_habit_service] = lambda: FakeHabitService()
+    fake_statistics_service = FakeStatisticsService()
+    app.dependency_overrides[get_stats_page_context] = fake_template_context
+    app.dependency_overrides[get_statistics_service] = (
+        lambda: fake_statistics_service
+    )
+    captured["statistics_service"] = fake_statistics_service
     transport = ASGITransport(app=app)
     try:
         async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -106,10 +178,15 @@ async def test_get_stats_returns_html_and_sets_current_page(
     assert context["page_data"].tasks.completed == 1
     assert context["page_data"].habits.total == 4
     assert context["page_data"].habits.success_rate_7d == 67
+    assert context["page_data"].themes.busiest_theme == StatsBreakdownItem(
+        label="Работа", value=1
+    )
+    assert context["page_data"].insights[0].title == "Осталось привычек на сегодня"
     assert context["page_data"].kpis[0].value == 2
     assert context["page_data"].kpis[1].value == 1
     assert context["page_data"].kpis[2].value == 4
     assert context["page_data"].kpis[6].value == "50%"
+    assert captured["statistics_service"].selected_range == "7d"
 
 
 async def test_get_stats_supports_30d_range(
@@ -128,6 +205,7 @@ async def test_get_stats_supports_30d_range(
     assert isinstance(context, dict)
     assert isinstance(context["page_data"], StatisticsPageData)
     assert context["page_data"].range == "30d"
+    assert captured["statistics_service"].selected_range == "30d"
 
 
 async def test_get_stats_rejects_invalid_range(

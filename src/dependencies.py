@@ -17,7 +17,7 @@ from src.repositories import (
     ThemeRepository,
 )
 from src.schemas.auth import AuthUser
-from src.services import HabitService, TaskService, ThemeService
+from src.services import HabitService, StatisticsService, TaskService, ThemeService
 from src.services.auth import AuthService
 
 _AUTH_LOGIN_PATH = "/auth/login"
@@ -226,3 +226,16 @@ async def get_user_habit_service(
 ) -> HabitService:
     """Провайдер для сервиса привычек с обязательной авторизацией."""
     return HabitService(habit_repo=habit_repo, theme_repo=theme_repo)
+
+
+async def get_statistics_service(
+    task_service: TaskService = Depends(get_task_service),
+    habit_service: HabitService = Depends(get_habit_service),
+    theme_service: ThemeService = Depends(get_theme_service),
+) -> StatisticsService:
+    """Провайдер для page-level статистики `/stats`."""
+    return StatisticsService(
+        task_service=task_service,
+        habit_service=habit_service,
+        theme_service=theme_service,
+    )

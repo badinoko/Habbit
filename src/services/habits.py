@@ -364,11 +364,14 @@ class HabitService:
         total = len(habits)
         active_habits = [habit for habit in habits if not habit.is_archived]
         active = len(active_habits)
+        completion_dates_by_habit = await self._get_completion_dates_by_habit(
+            active_habits
+        )
 
         due_today = 0
         completed_today = 0
         for habit in active_habits:
-            completion_dates = await self.habit_repo.list_completion_dates(habit.id)
+            completion_dates = completion_dates_by_habit[habit.id]
             is_completed_today = today in completion_dates
             if is_completed_today:
                 completed_today += 1
@@ -390,14 +393,17 @@ class HabitService:
         )
 
     async def get_habit_page_statistics(
-        self, selected_range: StatsRange = "7d"
+        self,
+        selected_range: StatsRange = "7d",
+        *,
+        reference_time: datetime | None = None,
     ) -> HabitStatisticsPage:
-        today = self._today_utc()
+        today = self._resolve_reference_date(reference_time)
         await self.habit_repo.archive_expired_habits(today)
         habits = await self.habit_repo.list()
         active_habits = [habit for habit in habits if not habit.is_archived]
 
-        completion_dates_by_habit: dict[UUID, set[date]] = {}
+        completion_dates_by_habit = await self._get_completion_dates_by_habit(habits)
         theme_cache: dict[UUID, ThemeInDB | None] = {}
         schedule_type_counts = dict.fromkeys(SCHEDULE_TYPE_LABELS, 0)
         top_theme_counts: dict[str, int] = {}
@@ -411,8 +417,7 @@ class HabitService:
         completed_today = 0
 
         for habit in habits:
-            completion_dates = await self.habit_repo.list_completion_dates(habit.id)
-            completion_dates_by_habit[habit.id] = completion_dates
+            completion_dates = completion_dates_by_habit[habit.id]
             for completed_on in completion_dates:
                 if trend_start <= completed_on <= today:
                     trend_counts[completed_on] += 1
@@ -434,7 +439,9 @@ class HabitService:
                 due_today += 1
 
             streak = await self._calculate_streak(
-                habit, completion_dates=completion_dates
+                habit,
+                completion_dates=completion_dates,
+                reference_date=today,
             )
             if streak > 0:
                 streak_candidates.append(
@@ -504,6 +511,18 @@ class HabitService:
                 )[:TOP_LIST_LIMIT]
             ],
         )
+
+    async def _get_completion_dates_by_habit(
+        self, habits: list[HabitInDB]
+    ) -> dict[UUID, set[date]]:
+        habit_ids = [habit.id for habit in habits]
+        completion_dates_by_habit = (
+            await self.habit_repo.list_completion_dates_by_habit(habit_ids)
+        )
+        return {
+            habit.id: set(completion_dates_by_habit.get(habit.id, set()))
+            for habit in habits
+        }
 
     def _calculate_progress_percent(
         self, habit: HabitInDB, completion_dates: set[date], today: date
@@ -674,6 +693,11 @@ class HabitService:
             return value.replace(tzinfo=UTC)
         return value.astimezone(UTC)
 
+    def _resolve_reference_date(self, reference_time: datetime | None) -> date:
+        if reference_time is None:
+            return self._today_utc()
+        return self._to_utc_datetime(reference_time).date()
+
     async def _get_theme_cached(
         self, theme_cache: dict[UUID, ThemeInDB | None], theme_id: UUID
     ) -> ThemeInDB | None:
@@ -747,7 +771,11 @@ class HabitService:
         )
 
     async def _calculate_streak(
-        self, habit: HabitInDB, completion_dates: set[date] | None = None
+        self,
+        habit: HabitInDB,
+        completion_dates: set[date] | None = None,
+        *,
+        reference_date: date | None = None,
     ) -> int:
         completion_dates = (
             completion_dates
@@ -759,7 +787,7 @@ class HabitService:
 
         schedule_type = habit.schedule_type
         schedule_config = habit.schedule_config
-        reference_date = self._today_utc()
+        reference_date = reference_date or self._today_utc()
         anchor_date = self._schedule_anchor_date(habit)
         if reference_date < anchor_date:
             return 0
