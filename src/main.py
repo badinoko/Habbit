@@ -1,29 +1,80 @@
+import logging
 from contextlib import asynccontextmanager
 from typing import Any
 
 import httpx
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.config import settings
+from src.database.connection import AsyncSessionLocal
 from src.dependencies import add_quote_to_context, get_habit_service, get_task_service
+from src.repositories.quote_batches import QuoteBatchRepository
+from src.repositories.quotes import QuoteRepository
 from src.routers.auth import router as auth_router
 from src.routers.habits import router as habits_router
 from src.routers.stats import router as stats_router
 from src.routers.tasks import router as tasks_router
 from src.routers.themes import router as themes_router
 from src.services.habits import HabitService
+from src.services.quotes import QuoteService
 from src.services.tasks import TaskService
+from src.services.zen_quote import ZenQuotesService
 from src.utils import templates
+
+logger = logging.getLogger(__name__)
+
+
+async def refresh_quotes_job(app: FastAPI) -> None:
+    try:
+        async with AsyncSessionLocal() as session:
+            batch_repository = QuoteBatchRepository(session)
+            quote_repository = QuoteRepository(session)
+            zenquotes_service = ZenQuotesService(app.state.http_client)
+
+            quote_service = QuoteService(
+                batch_repository=batch_repository,
+                quote_repository=quote_repository,
+                zenquotes_service=zenquotes_service,
+            )
+
+            await quote_service.refresh_quotes_batch()
+            await session.commit()
+
+            logger.info("Quotes batch refreshed successfully")
+
+    except Exception:
+        logger.exception("Failed to refresh quotes batch")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with httpx.AsyncClient() as http_client:
         app.state.http_client = http_client
-        yield
+
+        scheduler = AsyncIOScheduler()
+        app.state.scheduler = scheduler
+
+        scheduler.add_job(
+            refresh_quotes_job,
+            trigger="interval",
+            hours=6,
+            kwargs={"app": app},
+            id="refresh_quotes_job",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
+
+        scheduler.start()
+
+        try:
+            yield
+        finally:
+            scheduler.shutdown(wait=False)
 
 
 app = FastAPI(

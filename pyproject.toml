@@ -21,7 +21,8 @@ dependencies = [
     "python-multipart (>=0.0.20,<0.0.21)",
     "itsdangerous (>=2.2.0,<3.0.0)",
     "argon2-cffi (>=25.1.0,<26.0.0)",
-    "email-validator (>=2.3.0,<3.0.0)"
+    "email-validator (>=2.3.0,<3.0.0)",
+    "apscheduler (>=3.11.2,<4.0.0)"
 ]
 
 
@@ -130,3 +131,7 @@ disable_error_code = ["no-untyped-def"]
 [[tool.mypy.overrides]]
 module = "src.main"
 disable_error_code = ["no-untyped-def"]
+
+[[tool.mypy.overrides]]
+module = "apscheduler.*"
+ignore_missing_imports = true
