@@ -28,6 +28,12 @@ from src.utils import templates
 logger = logging.getLogger(__name__)
 
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+)
+
+
 async def refresh_quotes_job(app: FastAPI) -> None:
     try:
         async with AsyncSessionLocal() as session:
@@ -70,6 +76,9 @@ async def lifespan(app: FastAPI):
         )
 
         scheduler.start()
+
+        # первый запуск сразу
+        await refresh_quotes_job(app)
 
         try:
             yield

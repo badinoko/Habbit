@@ -125,21 +125,19 @@
             </div>
         </div>
 
-        <!-- Быстрые действия -->
+        <!-- Цитата дня -->
         <div class="card">
             <div class="card-header">
-                <h2><i class="fas fa-plus"></i> Быстрые действия</h2>
             </div>
-            <div class="quick-actions">
-                <button class="btn-primary" onclick="window.location.href='/tasks/new'">
-                    <i class="fas fa-plus"></i> Новая задача
-                </button>
-                <button class="btn-secondary" onclick="window.location.href='/habits/new'">
-                    <i class="fas fa-sync-alt"></i> Новая привычка
-                </button>
-                <button class="btn-outline" onclick="window.location.href='/stats'">
-                    <i class="fas fa-chart-pie"></i> Статистика
-                </button>
+            <div class="quote-card">
+                {% if quote %}
+                <blockquote class="quote-card-text">
+                    {{ quote.text }}
+                </blockquote>
+                <p class="quote-card-author">{{ quote.author }}</p>
+                {% else %}
+                <p class="quote-card-empty">Цитата появится здесь чуть позже.</p>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -30,6 +30,7 @@ class QuoteRepository(
                 batch_id=batch_id,
                 text=quote.text,
                 author=quote.author,
+                lang="en",
             )
             for quote in quotes
         ]

@@ -392,10 +392,56 @@ body {
     opacity: 0.8;
 }
 
-.quick-actions {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
+.quote-card {
+    position: relative;
+    padding: 1.75rem;
+    border-radius: 20px;
+    background:
+        radial-gradient(circle at top right, rgba(246, 196, 83, 0.2), transparent 35%),
+        linear-gradient(135deg, #fff8e8 0%, #ffffff 100%);
+    border: 1px solid rgba(212, 175, 55, 0.18);
+    box-shadow: 0 16px 32px rgba(31, 41, 55, 0.08);
+    overflow: hidden;
+}
+
+.quote-card::before {
+    content: "\201C";
+    position: absolute;
+    top: 0.5rem;
+    left: 1rem;
+    font-size: 4.5rem;
+    line-height: 1;
+    color: rgba(212, 175, 55, 0.2);
+    font-family: Georgia, serif;
+}
+
+.quote-card-text {
+    position: relative;
+    margin: 0;
+    padding-left: 1.25rem;
+    color: #2f3640;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    font-style: italic;
+}
+
+.quote-card-author {
+    margin: 1rem 0 0;
+    color: #8c6a1a;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.quote-card-author::before {
+    content: "\2014  ";
+}
+
+.quote-card-empty {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 1rem;
 }
 
 /* Адаптивность */
@@ -2132,13 +2178,13 @@ body {
         margin-top: 0.75rem;
     }
 
-    .quick-actions {
-        flex-direction: column;
+    .quote-card {
+        padding: 1.5rem 1.25rem;
     }
 
-    .quick-actions .btn {
-        width: 100%;
-        justify-content: center;
+    .quote-card-text {
+        padding-left: 0.75rem;
+        font-size: 1rem;
     }
 }
 
