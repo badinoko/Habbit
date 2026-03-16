@@ -26,6 +26,7 @@ from tests.api_unit.assertions import (
     assert_redirect,
 )
 from tests.helpers import make_auth_user, with_csrf_form
+from src.utils import PUBLIC_ERRORS
 
 pytestmark = pytest.mark.asyncio
 
@@ -301,7 +302,7 @@ async def test_complete_habit_rejects_missing_csrf_token(client: AsyncClient) ->
 
     res = await client.patch(f"/habits/{uuid4()}/complete")
 
-    assert_json_detail(res, status_code=403, detail="CSRF token is missing")
+    assert_json_detail(res, status_code=403, detail=PUBLIC_ERRORS[403])
 
 
 @pytest.mark.parametrize("path_suffix", ["complete", "incomplete"])
@@ -317,24 +318,24 @@ async def test_habit_toggle_rejects_invalid_uuid_with_422(
 @pytest.mark.parametrize(
     ("path_suffix", "service_kwargs", "expected_status", "expected_detail"),
     [
-        ("complete", {"complete_error": ValueError("bad complete")}, 400, "bad complete"),
+        ("complete", {"complete_error": ValueError("bad complete")}, 400, PUBLIC_ERRORS[400]),
         (
             "complete",
             {"complete_error": RuntimeError("boom")},
             500,
-            "Internal server error",
+            PUBLIC_ERRORS[500],
         ),
         (
             "incomplete",
             {"incomplete_error": ValueError("bad incomplete")},
             400,
-            "bad incomplete",
+            PUBLIC_ERRORS[400],
         ),
         (
             "incomplete",
             {"incomplete_error": RuntimeError("boom")},
             500,
-            "Internal server error",
+            PUBLIC_ERRORS[500],
         ),
     ],
 )

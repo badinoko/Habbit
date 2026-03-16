@@ -17,7 +17,7 @@ from src.dependencies import (
 )
 from src.main import app
 from src.schemas.themes import ThemeCreate, ThemeInDB, ThemeUpdate
-from src.utils import ensure_csrf_token
+from src.utils import PUBLIC_ERRORS, ensure_csrf_token
 from tests.api_unit.assertions import (
     assert_html_response,
     assert_json_detail,
@@ -147,9 +147,9 @@ async def test_update_theme_returns_success_payload(client: AsyncClient) -> None
         (
             {"update_error": ValueError("Theme with this name already exists")},
             400,
-            "Theme with this name already exists",
+            PUBLIC_ERRORS[400],
         ),
-        ({"update_returns_none": True}, 500, "Internal server error"),
+        ({"update_returns_none": True}, 500, PUBLIC_ERRORS[500]),
     ],
 )
 async def test_update_theme_returns_expected_json_error(
@@ -234,7 +234,7 @@ async def test_update_theme_rejects_missing_csrf_token(client: AsyncClient) -> N
 
     res = await client.put("/themes/Hobby", json={"color": "#FFFFFF"})
 
-    assert_json_detail(res, status_code=403, detail="CSRF token is missing")
+    assert_json_detail(res, status_code=403, detail=PUBLIC_ERRORS[403])
 
 
 @pytest.mark.parametrize(

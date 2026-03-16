@@ -19,7 +19,7 @@ from src.exceptions import TaskNotFound
 from src.main import app
 from src.schemas.tasks import TaskInDB
 from src.services.tasks import PRIORITY_IDS
-from src.utils import ensure_csrf_token
+from src.utils import PUBLIC_ERRORS, ensure_csrf_token
 from tests.api_unit.assertions import (
     assert_html_response,
     assert_json_detail,
@@ -184,7 +184,7 @@ async def test_task_toggle_returns_500_on_unexpected_error(
 
     res = await client.patch(f"/tasks/{uuid4()}/{path_suffix}")
 
-    assert_json_detail(res, status_code=500, detail="Internal server error")
+    assert_json_detail(res, status_code=500, detail=PUBLIC_ERRORS[500])
 
 
 async def test_create_task_returns_redirect_on_success(client: AsyncClient) -> None:
@@ -236,7 +236,7 @@ async def test_complete_task_rejects_missing_csrf_token(client: AsyncClient) -> 
 
     res = await client.patch(f"/tasks/{uuid4()}/complete")
 
-    assert_json_detail(res, status_code=403, detail="CSRF token is missing")
+    assert_json_detail(res, status_code=403, detail=PUBLIC_ERRORS[403])
 
 
 async def test_create_task_accepts_valid_csrf_token(client: AsyncClient) -> None:
@@ -308,4 +308,4 @@ async def test_delete_task_returns_500_when_runtime_error(client: AsyncClient) -
 
     res = await client.delete(f"/tasks/{uuid4()}")
 
-    assert_json_detail(res, status_code=500, detail="Internal server error")
+    assert_json_detail(res, status_code=500, detail=PUBLIC_ERRORS[500])
