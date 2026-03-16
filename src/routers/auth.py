@@ -1,9 +1,14 @@
+import hashlib
+import json
+from typing import Any, cast
 from urllib.parse import urlencode, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi_limiter.depends import RateLimiter
 from pydantic import ValidationError
+from pyrate_limiter import Duration, Limiter, Rate  # type: ignore[attr-defined]
 
 from src.config import settings
 from src.csrf import csrf_error_message, read_request_payload, validate_csrf
@@ -23,7 +28,169 @@ from src.schemas import AuthLogin, AuthRegister, AuthUser
 from src.services.auth import AuthService
 from src.utils import ensure_csrf_token, get_user_display_name, templates
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+# ---------- helpers ----------
+
+
+def _sha256(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+async def get_client_ip(request: Request) -> str:
+    """
+    Берем IP только из request.client.host.
+    Если Uvicorn/FastAPI запущены за trusted reverse proxy с proxy headers,
+    request.client уже будет нормализован middleware/сервером.
+    """
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+async def get_parsed_auth_payload(request: Request) -> dict[str, Any]:
+    """
+    Унифицированно читает login/register payload для:
+    - application/json
+    - application/x-www-form-urlencoded
+    - multipart/form-data
+
+    Результат кэшируется в request.state, чтобы не парсить тело повторно.
+    """
+    cached = getattr(request.state, "_auth_payload", None)
+    if cached is not None:
+        return cast(dict[str, Any], cached)
+
+    content_type = (request.headers.get("content-type") or "").lower()
+    payload: dict[str, Any] = {}
+
+    try:
+        if "application/json" in content_type:
+            body = await request.body()
+            parsed_payload = json.loads(body.decode("utf-8")) if body else {}
+            payload = parsed_payload if isinstance(parsed_payload, dict) else {}
+
+        elif (
+            "application/x-www-form-urlencoded" in content_type
+            or "multipart/form-data" in content_type
+        ):
+            async with request.form() as form:
+                payload = dict(form)
+
+        else:
+            # fallback: пробуем body как JSON, если клиент прислал странный content-type
+            body = await request.body()
+            if body:
+                try:
+                    parsed_payload = json.loads(body.decode("utf-8"))
+                    payload = parsed_payload if isinstance(parsed_payload, dict) else {}
+                except json.JSONDecodeError:
+                    payload = {}
+    except Exception:
+        payload = {}
+
+    request.state._auth_payload = payload
+    return payload
+
+
+async def login_account_identifier(request: Request) -> str:
+    """
+    Лимит по аккаунту для /login:
+    prefer email, fallback username.
+    """
+    payload = await get_parsed_auth_payload(request)
+    raw = payload.get("email") or payload.get("username") or payload.get("login") or ""
+    principal = str(raw).strip().lower()
+    principal_hash = _sha256(principal) if principal else "empty"
+    return f"login:acct:{principal_hash}"
+
+
+async def register_account_identifier(request: Request) -> str:
+    """
+    Лимит по аккаунту для /register.
+    """
+    payload = await get_parsed_auth_payload(request)
+    raw = payload.get("email") or ""
+    principal = str(raw).strip().lower()
+    principal_hash = _sha256(principal) if principal else "empty"
+    return f"register:acct:{principal_hash}"
+
+
+async def ip_identifier_factory(prefix: str, request: Request) -> str:
+    ip = await get_client_ip(request)
+    return f"{prefix}:ip:{ip}"
+
+
+async def login_ip_identifier(request: Request) -> str:
+    return await ip_identifier_factory("login", request)
+
+
+async def register_ip_identifier(request: Request) -> str:
+    return await ip_identifier_factory("register", request)
+
+
+async def oauth_start_ip_identifier(request: Request) -> str:
+    return await ip_identifier_factory("oauth:start", request)
+
+
+async def oauth_callback_ip_identifier(request: Request) -> str:
+    return await ip_identifier_factory("oauth:callback", request)
+
+
+# ---------- limiter configs ----------
+# Подберите цифры под свой трафик; это стартовый пример.
+
+login_limiters = [
+    Depends(
+        RateLimiter(
+            limiter=Limiter(Rate(20, Duration.MINUTE)),
+            identifier=login_ip_identifier,
+        )
+    ),
+    Depends(
+        RateLimiter(
+            limiter=Limiter(Rate(5, Duration.MINUTE)),
+            identifier=login_account_identifier,
+        )
+    ),
+]
+
+register_limiters = [
+    Depends(
+        RateLimiter(
+            limiter=Limiter(Rate(10, Duration.MINUTE)),
+            identifier=register_ip_identifier,
+        )
+    ),
+    Depends(
+        RateLimiter(
+            limiter=Limiter(Rate(3, Duration.HOUR)),
+            identifier=register_account_identifier,
+        )
+    ),
+]
+
+oauth_start_limiters = [
+    Depends(
+        RateLimiter(
+            limiter=Limiter(Rate(30, Duration.MINUTE)),
+            identifier=oauth_start_ip_identifier,
+        )
+    ),
+]
+
+oauth_callback_limiters = [
+    Depends(
+        RateLimiter(
+            limiter=Limiter(Rate(60, Duration.MINUTE)),
+            identifier=oauth_callback_ip_identifier,
+        )
+    ),
+]
+
+
+router = APIRouter(
+    prefix="/auth",
+    tags=["auth"],
+)
 _DEFAULT_REDIRECT_PATH = "/"
 _GOOGLE_OAUTH_UI_SESSION_KEY = "google_oauth"
 
@@ -161,7 +328,7 @@ def _clear_auth_cookie(response: Response) -> None:
     )
 
 
-@router.get("/google/start")
+@router.get("/google/start", dependencies=oauth_start_limiters)
 async def google_start(
     request: Request,
     auth_service: AuthService = Depends(get_auth_service),
@@ -186,7 +353,7 @@ async def google_start(
     )
 
 
-@router.get("/google/callback")
+@router.get("/google/callback", dependencies=oauth_callback_limiters)
 async def google_callback(
     request: Request,
     auth_service: AuthService = Depends(get_auth_service),
@@ -318,6 +485,7 @@ async def register_page(
     "/register",
     response_model=AuthUser,
     status_code=status.HTTP_201_CREATED,
+    dependencies=register_limiters,
 )
 async def register(
     request: Request,
@@ -394,7 +562,7 @@ async def register(
     return user
 
 
-@router.post("/login", response_model=AuthUser)
+@router.post("/login", response_model=AuthUser, dependencies=login_limiters)
 async def login(
     request: Request,
     response: Response,

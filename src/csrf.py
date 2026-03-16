@@ -57,7 +57,15 @@ async def read_request_payload(request: Request) -> tuple[str, dict[str, object]
 
     if media_type in _FORM_CONTENT_TYPES:
         form = await request.form()
-        return "form", dict(form)
+        raw = dict(form)
+        # Нормализация: в некоторых средах значения формы приходят списками
+        normalized: dict[str, object] = {}
+        for key, value in raw.items():
+            if isinstance(value, list):
+                normalized[key] = value[0] if value else ""
+            else:
+                normalized[key] = value
+        return "form", normalized
 
     raise HTTPException(
         status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,

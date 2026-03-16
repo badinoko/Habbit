@@ -109,3 +109,29 @@ async def build_template_context(
 def error_context_updater(context: dict[Any, Any], e: str) -> dict[Any, Any]:
     context.update({"message_type": "error", "title": "Ошибка", "message": str(e)})
     return context
+
+
+def get_public_error_message(status_code: int, detail: object = None) -> str:
+    messages = {
+        400: "Некорректный запрос.",
+        401: "Необходимо войти в систему.",
+        403: "У вас нет доступа к этой странице.",
+        404: "Страница не найдена.",
+        405: "Метод запроса не поддерживается.",
+        408: "Время ожидания ответа истекло.",
+        409: "Конфликт данных.",
+        422: "Некорректно заполнены данные.",
+        429: "Слишком много запросов. Попробуйте позже.",
+        500: "Что-то пошло не так. Попробуйте ещё раз позже.",
+        502: "Сервис временно недоступен.",
+        503: "Сервис временно недоступен.",
+        504: "Сервис не ответил вовремя.",
+    }
+
+    if status_code in messages:
+        return messages[status_code]
+
+    if 400 <= status_code < 500:
+        return "Ошибка запроса."
+
+    return "Что-то пошло не так. Попробуйте ещё раз позже."

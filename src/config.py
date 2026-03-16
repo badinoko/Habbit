@@ -40,7 +40,8 @@ class Settings(BaseSettings):
     REFILL_INTERVAL_HOURS: int
 
     API_KEY: str
-    DEBUG: bool
+    DEBUG: bool = False
+    TESTING: bool = False
 
     @property
     def google_oauth_enabled(self) -> bool:

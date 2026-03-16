@@ -6,7 +6,7 @@ authors = [
     {name = "Amir",email = "zamnatov2004@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<4"
 dependencies = [
     "fastapi (>=0.118.0,<0.119.0)",
     "sqlalchemy (>=2.0.43,<3.0.0)",
@@ -22,7 +22,8 @@ dependencies = [
     "itsdangerous (>=2.2.0,<3.0.0)",
     "argon2-cffi (>=25.1.0,<26.0.0)",
     "email-validator (>=2.3.0,<3.0.0)",
-    "apscheduler (>=3.11.2,<4.0.0)"
+    "apscheduler (>=3.11.2,<4.0.0)",
+    "fastapi-limiter (>=0.2.0,<0.3.0)"
 ]
 
 

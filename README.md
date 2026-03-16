@@ -115,7 +115,7 @@ cp .env.docker.example .env.docker
 ### 3. Запуск через Docker (рекомендуется)
 
 ```bash
-make restart
+make compose-up
 # или вручную
 docker compose up -d --build
 ```
@@ -173,14 +173,24 @@ poetry run uvicorn src.main:app --reload --port 8001
 
 ## Команды Makefile
 
-- `make run` — локальный запуск FastAPI (uvicorn + reload).
-- `make test` — запуск тестов.
+- `make run` — локальный запуск FastAPI (uvicorn, порт из `APP_PORT`, `--reload` включается при `DEBUG=true`).
+- `make test` — запуск тестов с coverage и порогом `80%`.
 - `make lint` — проверка Ruff.
 - `make format` — форматирование Ruff + autofix.
 - `make typecheck` — проверка mypy.
 - `make pre-commit` — запуск pre-commit.
-- `make check` — format + lint + typecheck + test.
-- `make restart` — пересобрать и поднять контейнеры.
+- `make check` — `format` + `lint` + `typecheck` + `test`.
+- `make infra-up` — поднять только инфраструктуру (`postgres`, `redis`).
+- `make infra-down` — остановить инфраструктуру (`postgres`, `redis`).
+- `make infra-restart` — перезапустить контейнеры `postgres` и `redis`.
+- `make infra-logs` — посмотреть логи `postgres` и `redis`.
+- `make app-up` — поднять только приложение `app` (при уже запущенной инфраструктуре).
+- `make app-down` — остановить только приложение `app`.
+- `make app-restart` — перезапустить приложение `app`.
+- `make app-logs` — посмотреть логи приложения `app`.
+- `make compose-up` — пересобрать и поднять все контейнеры (`docker compose up -d --build`).
+- `make compose-down` — остановить и удалить все контейнеры (`docker compose down`).
+- `make compose-logs` — посмотреть логи всех контейнеров.
 - `make migration` — применить миграции в app-контейнере.
 - `make psql` — подключиться к PostgreSQL в контейнере.
 
@@ -196,7 +206,7 @@ make test
 poetry run pytest -v
 ```
 
-`make test` запускает pytest с coverage для `src` и порогом `75%`.
+`make test` запускает pytest с coverage для `src` и порогом `80%`.
 Integration-тесты поднимают временные контейнеры PostgreSQL и Redis через Docker, поэтому для полного прогона нужен работающий Docker daemon.
 
 Основные группы тестов:

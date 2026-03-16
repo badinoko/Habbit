@@ -2,6 +2,7 @@ from collections.abc import AsyncGenerator, Iterator
 from contextlib import asynccontextmanager
 import os
 import socket
+from typing import Any
 import time
 from uuid import uuid4
 
@@ -82,6 +83,9 @@ SAFE_TEST_ENV = {
     "API_KEY": "test-api-key",
     "CONTAINER_APP_PORT": "8000",
     "APP_PORT": "8000",
+    "ZENQUOTES_API_URL": "http://test.invalid/api/random",
+    "REFILL_INTERVAL_HOURS": "6",
+    "UI_SESSION_SECRET_KEY": "test-ui-session-secret",
     "POSTGRES_HOST": config.host,
     "POSTGRES_PORT": str(config.port),
     "POSTGRES_USER": config.user,
@@ -104,6 +108,17 @@ def _set_safe_test_env() -> None:
         os.environ[key] = value
 
 
+def _reload_runtime_settings() -> None:
+    from src.config import Settings, settings
+
+    fresh_settings = Settings()
+    for field_name in Settings.model_fields:
+        setattr(settings, field_name, getattr(fresh_settings, field_name))
+
+    # Drop cached values so test env changes are reflected everywhere.
+    settings.__dict__.pop("session_secret_key", None)
+
+
 def _restore_env(snapshot: dict[str, str | None]) -> None:
     for key, value in snapshot.items():
         if value is None:
@@ -115,13 +130,48 @@ def _restore_env(snapshot: dict[str, str | None]) -> None:
 _ORIGINAL_TEST_ENV = {key: os.environ.get(key) for key in SAFE_TEST_ENV}
 # Применяем env до импорта тестовых модулей: часть тестов импортирует app на этапе коллекции.
 _set_safe_test_env()
+_reload_runtime_settings()
+
+
+def _clear_auth_rate_limiters() -> None:
+    from src.routers.auth import (
+        login_limiters,
+        oauth_callback_limiters,
+        oauth_start_limiters,
+        register_limiters,
+    )
+
+    limiter_groups = (
+        login_limiters,
+        register_limiters,
+        oauth_start_limiters,
+        oauth_callback_limiters,
+    )
+
+    for group in limiter_groups:
+        for dependency in group:
+            limiter = getattr(dependency.dependency, "limiter", None)
+            bucket_factory = getattr(limiter, "bucket_factory", None)
+            bucket: Any = getattr(bucket_factory, "bucket", None)
+            if hasattr(bucket, "flush"):
+                bucket.flush()
 
 
 @pytest.fixture(scope="session", autouse=True)
 def safe_test_env() -> Iterator[None]:
     _set_safe_test_env()
+    _reload_runtime_settings()
     yield
     _restore_env(_ORIGINAL_TEST_ENV)
+
+
+@pytest.fixture(autouse=True)
+def refresh_test_runtime() -> Iterator[None]:
+    _set_safe_test_env()
+    _reload_runtime_settings()
+    _clear_auth_rate_limiters()
+    yield
+    _clear_auth_rate_limiters()
 
 
 def get_db_connection(dbname=None) -> pg_connection:
