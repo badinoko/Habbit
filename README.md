@@ -1,3 +1,4 @@
+[![CI](https://github.com/Qwertyil/HabitFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/Qwertyil/HabitFlow/actions/workflows/ci.yml)
 # HabitFlow
 
 HabitFlow — веб-приложение для управления задачами, привычками и пользовательскими сессиями.
