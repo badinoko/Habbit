@@ -1,4 +1,17 @@
 [![CI](https://github.com/Qwertyil/HabitFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/Qwertyil/HabitFlow/actions/workflows/ci.yml)
+
+![Python](https://img.shields.io/badge/Python-3.13-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.118-009688)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791)
+![Redis](https://img.shields.io/badge/Redis-7-DC382D)
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00)
+![Alembic](https://img.shields.io/badge/Alembic-migrations-black)
+![Poetry](https://img.shields.io/badge/Poetry-deps-60A5FA)
+![Pytest](https://img.shields.io/badge/Pytest-tests-0A9EDC)
+![Mypy](https://img.shields.io/badge/Mypy-types-2A6DB2)
+![Ruff](https://img.shields.io/badge/Ruff-linting-D7FF64)
+![Docker](https://img.shields.io/badge/Docker-containerized-2496ED)
+
 # HabitFlow
 
 HabitFlow — веб-приложение для управления задачами, привычками и пользовательскими сессиями.
