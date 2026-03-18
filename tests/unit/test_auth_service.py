@@ -22,7 +22,7 @@ from src.exceptions import (
     ProviderAccountAlreadyLinkedError,
 )
 from src.schemas.auth import AuthLogin, AuthRegister, AuthUser
-from src.services.auth import AuthService
+from src.services.auth import LoginService, OAuthService, RegistrationService
 
 
 class DummySessionStore:
@@ -257,26 +257,26 @@ def _mk_user_model(
 
 def test_hash_password_and_verify_password_success() -> None:
     repo = DummyAuthRepo()
-    service = AuthService(auth_repo=repo)
+    login_service = LoginService(auth_repo=repo)
 
-    encoded = service.hash_password("strong-pass-123")
+    encoded = login_service.hash_password("strong-pass-123")
     assert encoded.startswith("$argon2")
-    assert service.verify_password("strong-pass-123", encoded) is True
+    assert login_service.verify_password("strong-pass-123", encoded) is True
 
 
 def test_verify_password_returns_false_for_wrong_password() -> None:
     repo = DummyAuthRepo()
-    service = AuthService(auth_repo=repo)
+    login_service = LoginService(auth_repo=repo)
 
-    encoded = service.hash_password("strong-pass-123")
-    assert service.verify_password("wrong-pass", encoded) is False
+    encoded = login_service.hash_password("strong-pass-123")
+    assert login_service.verify_password("wrong-pass", encoded) is False
 
 
 def test_verify_password_returns_false_for_malformed_hash() -> None:
     repo = DummyAuthRepo()
-    service = AuthService(auth_repo=repo)
+    login_service = LoginService(auth_repo=repo)
 
-    ans = service.verify_password("strong-pass-123", "bad-hash")
+    ans = login_service.verify_password("strong-pass-123", "bad-hash")
 
     assert not ans
 
@@ -287,10 +287,10 @@ def test_verify_password_returns_false_for_invalid_hash_error() -> None:
             raise InvalidHashError
 
     repo = DummyAuthRepo()
-    service = AuthService(auth_repo=repo)
-    service.ph = BrokenHasher()  # type: ignore[assignment]
+    login_service = LoginService(auth_repo=repo)
+    login_service.ph = BrokenHasher()  # type: ignore[assignment]
 
-    assert service.verify_password("strong-pass-123", "$argon2$broken") is False
+    assert login_service.verify_password("strong-pass-123", "$argon2$broken") is False
 
 
 def test_start_google_oauth_login_builds_authorize_url_and_session_payload() -> None:
@@ -299,14 +299,15 @@ def test_start_google_oauth_login_builds_authorize_url_and_session_payload() -> 
         get_authorization_url=lambda state: f"https://google.test/auth?state={state}"
     )
     fixed_now = datetime(2026, 3, 8, 12, 0, tzinfo=UTC)
-    service = AuthService(
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,
         auth_repo=repo,
         google_oauth_client_factory=lambda: fake_client,
         state_token_provider=lambda: "state-123",
         now_provider=lambda: fixed_now,
     )
 
-    flow = service.start_google_oauth_login(next_url="https://evil.example")
+    flow = oauth_service.start_google_oauth_login(next_url="https://evil.example")
 
     assert flow.authorization_url == "https://google.test/auth?state=state-123"
     assert flow.session_payload == {
@@ -318,7 +319,8 @@ def test_start_google_oauth_login_builds_authorize_url_and_session_payload() -> 
 
 def test_start_google_oauth_login_requires_configuration() -> None:
     repo = DummyAuthRepo()
-    service = AuthService(auth_repo=repo)
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo)
     original_client_id = settings.GOOGLE_OAUTH_CLIENT_ID
     original_client_secret = settings.GOOGLE_OAUTH_CLIENT_SECRET
     original_redirect_uri = settings.GOOGLE_OAUTH_REDIRECT_URI
@@ -328,7 +330,7 @@ def test_start_google_oauth_login_requires_configuration() -> None:
 
     try:
         with pytest.raises(OAuthConfigurationError):
-            service.start_google_oauth_login(next_url="/tasks")
+            oauth_service.start_google_oauth_login(next_url="/tasks")
     finally:
         settings.GOOGLE_OAUTH_CLIENT_ID = original_client_id
         settings.GOOGLE_OAUTH_CLIENT_SECRET = original_client_secret
@@ -353,14 +355,15 @@ async def test_complete_google_oauth_login_creates_local_session() -> None:
 
     fake_client.authenticate = authenticate
     fixed_now = datetime(2026, 3, 8, 12, 0, tzinfo=UTC)
-    service = AuthService(
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,
         auth_repo=repo,
         session_store=store,
         google_oauth_client_factory=lambda: fake_client,
         now_provider=lambda: fixed_now,
     )
 
-    result = await service.complete_google_oauth_login(
+    result = await oauth_service.complete_google_oauth_login(
         oauth_session={
             "state": "expected-state",
             "next": "/tasks",
@@ -384,10 +387,11 @@ async def test_complete_google_oauth_login_creates_local_session() -> None:
 @pytest.mark.asyncio
 async def test_complete_google_oauth_login_rejects_invalid_state() -> None:
     repo = DummyAuthRepo()
-    service = AuthService(auth_repo=repo, now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC))
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo, now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC))
 
     with pytest.raises(OAuthStateInvalidError):
-        await service.complete_google_oauth_login(
+        await oauth_service.complete_google_oauth_login(
             oauth_session={
                 "state": "expected-state",
                 "next": "/tasks",
@@ -402,14 +406,15 @@ async def test_complete_google_oauth_login_rejects_invalid_state() -> None:
 @pytest.mark.asyncio
 async def test_complete_google_oauth_login_rejects_expired_state() -> None:
     repo = DummyAuthRepo()
-    service = AuthService(
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,
         auth_repo=repo,
         google_oauth_state_ttl_seconds=60,
         now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
     )
 
     with pytest.raises(OAuthStateInvalidError):
-        await service.complete_google_oauth_login(
+        await oauth_service.complete_google_oauth_login(
             oauth_session={
                 "state": "expected-state",
                 "next": "/tasks",
@@ -424,13 +429,14 @@ async def test_complete_google_oauth_login_rejects_expired_state() -> None:
 @pytest.mark.asyncio
 async def test_complete_google_oauth_login_rejects_provider_error() -> None:
     repo = DummyAuthRepo()
-    service = AuthService(
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,
         auth_repo=repo,
         now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
     )
 
     with pytest.raises(OAuthProviderRejectedError):
-        await service.complete_google_oauth_login(
+        await oauth_service.complete_google_oauth_login(
             oauth_session={
                 "state": "expected-state",
                 "next": "/tasks",
@@ -445,13 +451,14 @@ async def test_complete_google_oauth_login_rejects_provider_error() -> None:
 @pytest.mark.asyncio
 async def test_complete_google_oauth_login_requires_code() -> None:
     repo = DummyAuthRepo()
-    service = AuthService(
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,
         auth_repo=repo,
         now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
     )
 
     with pytest.raises(OAuthAuthorizationCodeMissingError):
-        await service.complete_google_oauth_login(
+        await oauth_service.complete_google_oauth_login(
             oauth_session={
                 "state": "expected-state",
                 "next": "/tasks",
@@ -472,14 +479,15 @@ async def test_complete_google_oauth_login_converts_provider_failures() -> None:
         raise GoogleOauthError("boom")
 
     fake_client.authenticate = authenticate
-    service = AuthService(
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,
         auth_repo=repo,
         google_oauth_client_factory=lambda: fake_client,
         now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
     )
 
     with pytest.raises(OAuthProviderUnavailableError):
-        await service.complete_google_oauth_login(
+        await oauth_service.complete_google_oauth_login(
             oauth_session={
                 "state": "expected-state",
                 "next": "/tasks",
@@ -504,14 +512,15 @@ async def test_complete_google_oauth_login_rejects_unverified_email() -> None:
         )
 
     fake_client.authenticate = authenticate
-    service = AuthService(
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,
         auth_repo=repo,
         google_oauth_client_factory=lambda: fake_client,
         now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
     )
 
     with pytest.raises(OAuthEmailNotVerifiedError):
-        await service.complete_google_oauth_login(
+        await oauth_service.complete_google_oauth_login(
             oauth_session={
                 "state": "expected-state",
                 "next": "/tasks",
@@ -542,14 +551,114 @@ async def test_complete_google_oauth_login_propagates_domain_errors() -> None:
         )
 
     fake_client.authenticate = authenticate
-    service = AuthService(
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,
         auth_repo=repo,
         google_oauth_client_factory=lambda: fake_client,
         now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
     )
 
     with pytest.raises(EmailAlreadyExistsError):
-        await service.complete_google_oauth_login(
+        await oauth_service.complete_google_oauth_login(
+            oauth_session={
+                "state": "expected-state",
+                "next": "/tasks",
+                "issued_at": "2026-03-08T11:55:00Z",
+            },
+            provided_state="expected-state",
+            provider_error=None,
+            code="oauth-code",
+        )
+
+
+@pytest.mark.asyncio
+async def test_oauth_service_uses_default_session_ttl_from_settings() -> None:
+    """
+    Проверяет, что OAuthService использует AUTH_SESSION_MAX_AGE из settings,
+    когда session_ttl_seconds не указан явно.
+
+    Это регрессионный тест для бага, когда OAuthService создавал LoginService
+    с session_ttl_seconds=0, что вызывало ValueError при создании сессии.
+    """
+    from src.config import settings
+
+    repo = DummyAuthRepo()
+    store = DummySessionStore()
+    repo.create_user_with_oauth_account_result = (
+        _mk_auth_user(email="oauth@example.com"),
+        SimpleNamespace(),
+    )
+    fake_client = SimpleNamespace()
+
+    async def authenticate(code: str):
+        return SimpleNamespace(
+            email="oauth@example.com",
+            email_verified=True,
+            provider_user_id="google-user-1",
+        )
+
+    fake_client.authenticate = authenticate
+
+    # НЕ передаем session_ttl_seconds явно - должен использоваться settings.AUTH_SESSION_MAX_AGE
+    oauth_service = OAuthService(
+        auth_repo=repo,
+        session_store=store,
+        google_oauth_client_factory=lambda: fake_client,
+        now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
+    )
+
+    # Должно работать без ValueError
+    result = await oauth_service.complete_google_oauth_login(
+        oauth_session={
+            "state": "expected-state",
+            "next": "/tasks",
+            "issued_at": "2026-03-08T11:55:00Z",
+        },
+        provided_state="expected-state",
+        provider_error=None,
+        code="oauth-code",
+    )
+
+    # Проверяем, что сессия создана с правильным TTL
+    assert result.session_id in store.sessions
+    session_payload = store.sessions[result.session_id]
+    assert "expires_at" in session_payload
+
+
+@pytest.mark.asyncio
+async def test_oauth_service_rejects_zero_session_ttl() -> None:
+    """
+    Проверяет, что OAuthService с session_ttl_seconds=0 вызывает ValueError
+    при попытке создания сессии.
+    """
+    repo = DummyAuthRepo()
+    store = DummySessionStore()
+    repo.create_user_with_oauth_account_result = (
+        _mk_auth_user(email="oauth@example.com"),
+        SimpleNamespace(),
+    )
+    fake_client = SimpleNamespace()
+
+    async def authenticate(code: str):
+        return SimpleNamespace(
+            email="oauth@example.com",
+            email_verified=True,
+            provider_user_id="google-user-1",
+        )
+
+    fake_client.authenticate = authenticate
+
+    # Явно передаем session_ttl_seconds=0 - должен быть ValueError
+    oauth_service = OAuthService(
+        auth_repo=repo,
+        session_store=store,
+        session_ttl_seconds=0,  # Недопустимое значение
+        google_oauth_client_factory=lambda: fake_client,
+        now_provider=lambda: datetime(2026, 3, 8, 12, 0, tzinfo=UTC),
+    )
+
+    with pytest.raises(ValueError, match="session_ttl_seconds must be greater than zero"):
+        await oauth_service.complete_google_oauth_login(
             oauth_session={
                 "state": "expected-state",
                 "next": "/tasks",
@@ -565,28 +674,28 @@ async def test_complete_google_oauth_login_propagates_domain_errors() -> None:
 async def test_register_creates_user_with_hashed_password() -> None:
     repo = DummyAuthRepo()
     repo.created_user = _mk_auth_user(email="user@example.com")
-    service = AuthService(auth_repo=repo)
+    registration_service = RegistrationService(auth_repo=repo)
 
     payload = AuthRegister(email="  USER@Example.com ", password="strong-pass-123")
-    created = await service.register(payload)
+    created = await registration_service.register(payload)
 
     assert created == repo.created_user
     assert repo.create_user_called_with is not None
     email, encoded = repo.create_user_called_with
     assert email == "user@example.com"
     assert encoded != payload.password
-    assert service.verify_password(payload.password, encoded) is True
+    assert registration_service.verify_password(payload.password, encoded) is True
 
 
 @pytest.mark.asyncio
 async def test_register_rejects_duplicate_email() -> None:
     repo = DummyAuthRepo()
     repo.user_by_email = _mk_user_model(email="user@example.com", password_hash="x")
-    service = AuthService(auth_repo=repo)
+    registration_service = RegistrationService(auth_repo=repo)
 
     payload = AuthRegister(email="user@example.com", password="strong-pass-123")
     with pytest.raises(EmailAlreadyExistsError):
-        await service.register(payload)
+        await registration_service.register(payload)
 
 
 @pytest.mark.asyncio
@@ -597,72 +706,90 @@ async def test_register_converts_integrity_error_to_duplicate_message() -> None:
         params={},
         orig=Exception("duplicate"),
     )
-    service = AuthService(auth_repo=repo)
+    registration_service = RegistrationService(auth_repo=repo)
 
     payload = AuthRegister(email="user@example.com", password="strong-pass-123")
     with pytest.raises(EmailAlreadyExistsError):
-        await service.register(payload)
+        await registration_service.register(payload)
 
 
 @pytest.mark.asyncio
 async def test_authenticate_returns_none_for_missing_or_invalid_user() -> None:
     repo = DummyAuthRepo()
-    service = AuthService(auth_repo=repo)
+    login_service = LoginService(auth_repo=repo)
 
     payload = AuthLogin(email="user@example.com", password="strong-pass-123")
-    assert await service.authenticate(payload) is None
+    assert await login_service.authenticate(payload) is None
 
     repo.user_by_email = _mk_user_model(
         email="user@example.com",
         is_active=False,
-        password_hash=service.hash_password("strong-pass-123"),
+        password_hash=login_service.hash_password("strong-pass-123"),
     )
-    assert await service.authenticate(payload) is None
+    assert await login_service.authenticate(payload) is None
 
     repo.user_by_email = _mk_user_model(
         email="user@example.com",
         is_active=True,
         password_hash=None,
     )
-    assert await service.authenticate(payload) is None
+    assert await login_service.authenticate(payload) is None
 
     repo.user_by_email = _mk_user_model(
         email="user@example.com",
         is_active=True,
-        password_hash=service.hash_password("another-password"),
+        password_hash=login_service.hash_password("another-password"),
     )
-    assert await service.authenticate(payload) is None
+    assert await login_service.authenticate(payload) is None
 
     repo.user_by_email = _mk_user_model(
         email="user@example.com",
         is_active=True,
         password_hash="bad-hash",
     )
-    assert await service.authenticate(payload) is None
+    assert await login_service.authenticate(payload) is None
 
 
 @pytest.mark.asyncio
 async def test_set_password_hashes_valid_password_and_calls_repo() -> None:
     repo = DummyAuthRepo()
-    service = AuthService(auth_repo=repo)
+    registration_service = RegistrationService(auth_repo=repo)
     user_id = uuid4()
 
-    await service.set_password(user_id, "strong-pass-123")
+    await registration_service.set_password(user_id, "strong-pass-123")
 
     assert repo.set_password_called_with is not None
     saved_user_id, encoded = repo.set_password_called_with
     assert saved_user_id == user_id
     assert encoded != "strong-pass-123"
-    assert service.verify_password("strong-pass-123", encoded) is True
+    assert registration_service.verify_password("strong-pass-123", encoded) is True
+
+
+@pytest.mark.asyncio
+async def test_registration_service_uses_default_session_ttl_from_settings() -> None:
+    """
+    Проверяет, что RegistrationService использует AUTH_SESSION_MAX_AGE из settings,
+    когда session_ttl_seconds не указан явно.
+    """
+    from src.config import settings
+
+    repo = DummyAuthRepo()
+
+    # НЕ передаем session_ttl_seconds явно
+    registration_service = RegistrationService(auth_repo=repo)
+
+    # Проверяем, что сервис инициализирован корректно
+    assert registration_service._session_ttl_seconds == settings.AUTH_SESSION_MAX_AGE
+    assert registration_service._session_ttl_seconds > 0
 
 
 @pytest.mark.asyncio
 async def test_set_password_rejects_password_that_breaks_policy() -> None:
     repo = DummyAuthRepo()
-    service = AuthService(auth_repo=repo)
+    registration_service = RegistrationService(auth_repo=repo)
 
     with pytest.raises(ValueError, match="password must be between 8 and 256 characters"):
-        await service.set_password(uuid4(), "short")
+        await registration_service.set_password(uuid4(), "short")
 
     assert repo.set_password_called_with is None
 
@@ -670,9 +797,9 @@ async def test_set_password_rejects_password_that_breaks_policy() -> None:
 @pytest.mark.asyncio
 async def test_authenticate_returns_user_for_valid_credentials() -> None:
     repo = DummyAuthRepo()
-    service = AuthService(auth_repo=repo)
+    login_service = LoginService(auth_repo=repo)
 
-    hashed = service.hash_password("strong-pass-123")
+    hashed = login_service.hash_password("strong-pass-123")
     db_user = _mk_user_model(
         email="user@example.com",
         is_active=True,
@@ -681,7 +808,7 @@ async def test_authenticate_returns_user_for_valid_credentials() -> None:
     repo.user_by_email = db_user
 
     payload = AuthLogin(email="user@example.com", password="strong-pass-123")
-    user = await service.authenticate(payload)
+    user = await login_service.authenticate(payload)
     assert user is not None
     assert user.id == db_user.id
     assert user.email == "user@example.com"
@@ -693,9 +820,10 @@ async def test_get_or_create_oauth_user_returns_existing_linked_user() -> None:
     linked_user = _mk_auth_user(email="user@example.com")
     repo.oauth_account = SimpleNamespace(user_id=linked_user.id)
     repo.user_by_id = linked_user
-    service = AuthService(auth_repo=repo)
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo)
 
-    result = await service.get_or_create_oauth_user(
+    result = await oauth_service.get_or_create_oauth_user(
         email="user@example.com",
         provider="google",
         provider_user_id="google-1",
@@ -714,10 +842,11 @@ async def test_get_or_create_oauth_user_rejects_existing_email_for_unlinked_oaut
         orig=Exception("duplicate"),
     )
     repo.user_by_email = _mk_user_model(email="user@example.com", password_hash=None)
-    service = AuthService(auth_repo=repo)
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo)
 
     with pytest.raises(EmailAlreadyExistsError):
-        await service.get_or_create_oauth_user(
+        await oauth_service.get_or_create_oauth_user(
             email="user@example.com",
             provider="google",
             provider_user_id="google-2",
@@ -731,9 +860,10 @@ async def test_get_or_create_oauth_user_creates_new_user_when_missing() -> None:
     repo = DummyAuthRepo()
     created_user = _mk_auth_user(email="new@example.com")
     repo.create_user_with_oauth_account_result = (created_user, SimpleNamespace())
-    service = AuthService(auth_repo=repo)
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo)
 
-    result = await service.get_or_create_oauth_user(
+    result = await oauth_service.get_or_create_oauth_user(
         email="new@example.com",
         provider="google",
         provider_user_id="google-3",
@@ -758,9 +888,10 @@ async def test_get_or_create_oauth_user_recovers_from_integrity_race() -> None:
     linked_user = _mk_auth_user(email="new@example.com")
     repo.oauth_account_responses = [None, SimpleNamespace(user_id=linked_user.id)]
     repo.user_by_id = linked_user
-    service = AuthService(auth_repo=repo)
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo)
 
-    result = await service.get_or_create_oauth_user(
+    result = await oauth_service.get_or_create_oauth_user(
         email="new@example.com",
         provider="google",
         provider_user_id="google-race",
@@ -780,10 +911,11 @@ async def test_get_or_create_oauth_user_rejects_integrity_race_for_another_user(
     linked_user = _mk_auth_user(email="other@example.com")
     repo.oauth_account_responses = [None, SimpleNamespace(user_id=linked_user.id)]
     repo.user_by_id = linked_user
-    service = AuthService(auth_repo=repo)
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo)
 
     with pytest.raises(OAuthIdentityAlreadyLinkedToAnotherUserError):
-        await service.get_or_create_oauth_user(
+        await oauth_service.get_or_create_oauth_user(
             email="new@example.com",
             provider="google",
             provider_user_id="google-race",
@@ -799,10 +931,11 @@ async def test_get_or_create_oauth_user_converts_email_integrity_race_to_domain_
         orig=Exception("duplicate"),
     )
     repo.user_by_email = _mk_user_model(email="new@example.com", password_hash=None)
-    service = AuthService(auth_repo=repo)
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo)
 
     with pytest.raises(EmailAlreadyExistsError):
-        await service.get_or_create_oauth_user(
+        await oauth_service.get_or_create_oauth_user(
             email="new@example.com",
             provider="google",
             provider_user_id="google-email-race",
@@ -812,10 +945,11 @@ async def test_get_or_create_oauth_user_converts_email_integrity_race_to_domain_
 @pytest.mark.asyncio
 async def test_link_oauth_account_for_user_creates_new_link() -> None:
     repo = DummyAuthRepo()
-    service = AuthService(auth_repo=repo)
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo)
     user_id = uuid4()
 
-    created = await service.link_oauth_account_for_user(
+    created = await oauth_service.link_oauth_account_for_user(
         user_id=user_id,
         provider="google",
         provider_user_id="google-10",
@@ -841,9 +975,10 @@ async def test_link_oauth_account_for_user_returns_existing_link_for_same_user()
         provider_user_id="google-11",
     )
     repo.oauth_account = existing
-    service = AuthService(auth_repo=repo)
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo)
 
-    result = await service.link_oauth_account_for_user(
+    result = await oauth_service.link_oauth_account_for_user(
         user_id=user_id,
         provider="google",
         provider_user_id="google-11",
@@ -861,10 +996,11 @@ async def test_link_oauth_account_for_user_rejects_identity_linked_to_other_user
         provider="google",
         provider_user_id="google-12",
     )
-    service = AuthService(auth_repo=repo)
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo)
 
     with pytest.raises(OAuthIdentityAlreadyLinkedToAnotherUserError):
-        await service.link_oauth_account_for_user(
+        await oauth_service.link_oauth_account_for_user(
             user_id=uuid4(),
             provider="google",
             provider_user_id="google-12",
@@ -880,10 +1016,11 @@ async def test_link_oauth_account_for_user_rejects_second_account_for_provider()
         provider="google",
         provider_user_id="google-old",
     )
-    service = AuthService(auth_repo=repo)
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo)
 
     with pytest.raises(ProviderAccountAlreadyLinkedError):
-        await service.link_oauth_account_for_user(
+        await oauth_service.link_oauth_account_for_user(
             user_id=user_id,
             provider="google",
             provider_user_id="google-new",
@@ -905,9 +1042,10 @@ async def test_link_oauth_account_for_user_recovers_from_integrity_race() -> Non
         provider_user_id="google-13",
     )
     repo.oauth_account_responses = [None, existing]
-    service = AuthService(auth_repo=repo)
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo)
 
-    result = await service.link_oauth_account_for_user(
+    result = await oauth_service.link_oauth_account_for_user(
         user_id=user_id,
         provider="google",
         provider_user_id="google-13",
@@ -933,10 +1071,11 @@ async def test_link_oauth_account_for_user_rejects_integrity_race_for_other_user
             provider_user_id="google-14",
         ),
     ]
-    service = AuthService(auth_repo=repo)
+    oauth_service = OAuthService(
+        session_ttl_seconds=3600,auth_repo=repo)
 
     with pytest.raises(OAuthIdentityAlreadyLinkedToAnotherUserError):
-        await service.link_oauth_account_for_user(
+        await oauth_service.link_oauth_account_for_user(
             user_id=user_id,
             provider="google",
             provider_user_id="google-14",
@@ -948,7 +1087,7 @@ async def test_login_create_session_creates_payload_and_returns_session_id() -> 
     repo = DummyAuthRepo()
     store = DummySessionStore()
     fixed_now = datetime(2026, 3, 8, 12, 0, tzinfo=UTC)
-    service = AuthService(
+    login_service = LoginService(
         auth_repo=repo,
         session_store=store,
         session_ttl_seconds=600,
@@ -956,7 +1095,7 @@ async def test_login_create_session_creates_payload_and_returns_session_id() -> 
     )
     user_id = uuid4()
 
-    session_id = await service.login_create_session(user_id=user_id)
+    session_id = await login_service.create_session(user_id=user_id)
 
     assert session_id in store.sessions
     assert store.sessions[session_id]["user_id"] == str(user_id)
@@ -965,15 +1104,65 @@ async def test_login_create_session_creates_payload_and_returns_session_id() -> 
 
 
 @pytest.mark.asyncio
+async def test_login_service_uses_default_session_ttl_from_settings() -> None:
+    """
+    Проверяет, что LoginService использует AUTH_SESSION_MAX_AGE из settings,
+    когда session_ttl_seconds не указан явно.
+    """
+    from src.config import settings
+
+    repo = DummyAuthRepo()
+    store = DummySessionStore()
+    fixed_now = datetime(2026, 3, 8, 12, 0, tzinfo=UTC)
+
+    # НЕ передаем session_ttl_seconds явно
+    login_service = LoginService(
+        auth_repo=repo,
+        session_store=store,
+        now_provider=lambda: fixed_now,
+    )
+    user_id = uuid4()
+
+    session_id = await login_service.create_session(user_id=user_id)
+
+    assert session_id in store.sessions
+    # Проверяем, что expires_at рассчитан с использованием settings.AUTH_SESSION_MAX_AGE
+    expected_expires = fixed_now.replace(microsecond=0)
+    from datetime import timedelta
+    expected_expires = expected_expires + timedelta(seconds=settings.AUTH_SESSION_MAX_AGE)
+    assert store.sessions[session_id]["expires_at"] == expected_expires.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+@pytest.mark.asyncio
+async def test_login_service_rejects_zero_session_ttl() -> None:
+    """
+    Проверяет, что LoginService с session_ttl_seconds=0 вызывает ValueError
+    при попытке создания сессии.
+    """
+    repo = DummyAuthRepo()
+    store = DummySessionStore()
+
+    login_service = LoginService(
+        auth_repo=repo,
+        session_store=store,
+        session_ttl_seconds=0,  # Недопустимое значение
+    )
+    user_id = uuid4()
+
+    with pytest.raises(ValueError, match="session_ttl_seconds must be greater than zero"):
+        await login_service.create_session(user_id=user_id)
+
+
+@pytest.mark.asyncio
 async def test_logout_deletes_single_session() -> None:
     repo = DummyAuthRepo()
     store = DummySessionStore()
-    service = AuthService(auth_repo=repo, session_store=store)
+    login_service = LoginService(auth_repo=repo, session_store=store)
     session_id = "sess-logout"
     user_id = uuid4()
     store.sessions[session_id] = {"user_id": str(user_id)}
 
-    await service.logout(session_id=session_id, user_id=user_id)
+    await login_service.logout(session_id=session_id, user_id=user_id)
 
     assert session_id not in store.sessions
     assert session_id in store.deleted_sessions
@@ -983,11 +1172,11 @@ async def test_logout_deletes_single_session() -> None:
 async def test_logout_does_not_delete_other_users_session() -> None:
     repo = DummyAuthRepo()
     store = DummySessionStore()
-    service = AuthService(auth_repo=repo, session_store=store)
+    login_service = LoginService(auth_repo=repo, session_store=store)
     session_id = "sess-foreign"
     store.sessions[session_id] = {"user_id": str(uuid4())}
 
-    await service.logout(session_id=session_id, user_id=uuid4())
+    await login_service.logout(session_id=session_id, user_id=uuid4())
 
     assert session_id in store.sessions
     assert session_id not in store.deleted_sessions
@@ -997,7 +1186,7 @@ async def test_logout_does_not_delete_other_users_session() -> None:
 async def test_logout_all_deletes_all_user_sessions() -> None:
     repo = DummyAuthRepo()
     store = DummySessionStore()
-    service = AuthService(auth_repo=repo, session_store=store)
+    login_service = LoginService(auth_repo=repo, session_store=store)
     user_id = uuid4()
     other_user_id = uuid4()
     store.user_sessions[str(user_id)] = {"sess-1", "sess-2"}
@@ -1006,7 +1195,7 @@ async def test_logout_all_deletes_all_user_sessions() -> None:
     store.sessions["sess-2"] = {"user_id": str(user_id)}
     store.sessions["sess-3"] = {"user_id": str(other_user_id)}
 
-    await service.logout_all(user_id=user_id)
+    await login_service.logout_all(user_id=user_id)
 
     assert "sess-1" not in store.sessions
     assert "sess-2" not in store.sessions
@@ -1020,7 +1209,7 @@ async def test_resolve_user_returns_user_for_valid_session() -> None:
     repo = DummyAuthRepo()
     store = DummySessionStore()
     fixed_now = datetime(2026, 3, 8, 12, 0, tzinfo=UTC)
-    service = AuthService(
+    login_service = LoginService(
         auth_repo=repo,
         session_store=store,
         now_provider=lambda: fixed_now,
@@ -1034,7 +1223,7 @@ async def test_resolve_user_returns_user_for_valid_session() -> None:
         "expires_at": "2026-03-08T12:30:00Z",
     }
 
-    resolved = await service.resolve_user(session_id=session_id)
+    resolved = await login_service.resolve_user(session_id=session_id)
 
     assert resolved == user
 
@@ -1043,9 +1232,9 @@ async def test_resolve_user_returns_user_for_valid_session() -> None:
 async def test_resolve_user_returns_none_for_missing_session() -> None:
     repo = DummyAuthRepo()
     store = DummySessionStore()
-    service = AuthService(auth_repo=repo, session_store=store)
+    login_service = LoginService(auth_repo=repo, session_store=store)
 
-    assert await service.resolve_user(session_id="sess-missing") is None
+    assert await login_service.resolve_user(session_id="sess-missing") is None
 
 
 @pytest.mark.asyncio
@@ -1053,7 +1242,7 @@ async def test_resolve_user_returns_none_and_revokes_expired_session() -> None:
     repo = DummyAuthRepo()
     store = DummySessionStore()
     fixed_now = datetime(2026, 3, 8, 12, 0, tzinfo=UTC)
-    service = AuthService(
+    login_service = LoginService(
         auth_repo=repo,
         session_store=store,
         now_provider=lambda: fixed_now,
@@ -1067,7 +1256,7 @@ async def test_resolve_user_returns_none_and_revokes_expired_session() -> None:
         "expires_at": "2026-03-08T11:59:59Z",
     }
 
-    resolved = await service.resolve_user(session_id=session_id)
+    resolved = await login_service.resolve_user(session_id=session_id)
 
     assert resolved is None
     assert session_id in store.deleted_sessions
@@ -1078,7 +1267,7 @@ async def test_resolve_user_returns_none_and_revokes_expired_session() -> None:
 async def test_resolve_user_returns_none_and_revokes_revoked_session() -> None:
     repo = DummyAuthRepo()
     store = DummySessionStore()
-    service = AuthService(auth_repo=repo, session_store=store)
+    login_service = LoginService(auth_repo=repo, session_store=store)
     session_id = "sess-revoked"
     store.sessions[session_id] = {
         "user_id": str(uuid4()),
@@ -1087,7 +1276,7 @@ async def test_resolve_user_returns_none_and_revokes_revoked_session() -> None:
         "revoked_at": "2026-03-08T11:00:00Z",
     }
 
-    resolved = await service.resolve_user(session_id=session_id)
+    resolved = await login_service.resolve_user(session_id=session_id)
 
     assert resolved is None
     assert session_id in store.deleted_sessions

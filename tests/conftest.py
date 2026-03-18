@@ -448,13 +448,13 @@ def secondary_owner_id(secondary_authenticated_user):
 async def auth_session_id(session, authenticated_user, redis_db_cleanup) -> str:
     from src.dependencies import get_redis_adapter
     from src.repositories import AuthRepository, RedisSessionStore
-    from src.services.auth import AuthService
+    from src.services.auth import LoginService
 
-    auth_service = AuthService(
+    login_service = LoginService(
         auth_repo=AuthRepository(session=session),
         session_store=RedisSessionStore(redis_adapter=get_redis_adapter()),
     )
-    session_id = await auth_service.login_create_session(authenticated_user.id)
+    session_id = await login_service.create_session(authenticated_user.id)
     await session.commit()
     return session_id
 
@@ -465,13 +465,13 @@ async def secondary_auth_session_id(
 ) -> str:
     from src.dependencies import get_redis_adapter
     from src.repositories import AuthRepository, RedisSessionStore
-    from src.services.auth import AuthService
+    from src.services.auth import LoginService
 
-    auth_service = AuthService(
+    login_service = LoginService(
         auth_repo=AuthRepository(session=session),
         session_store=RedisSessionStore(redis_adapter=get_redis_adapter()),
     )
-    session_id = await auth_service.login_create_session(secondary_authenticated_user.id)
+    session_id = await login_service.create_session(secondary_authenticated_user.id)
     await session.commit()
     return session_id
 

@@ -12,7 +12,13 @@ from pyrate_limiter import Duration, Limiter, Rate  # type: ignore[attr-defined]
 
 from src.config import settings
 from src.csrf import csrf_error_message, read_request_payload, validate_csrf
-from src.dependencies import get_auth_service, get_current_user, require_auth
+from src.dependencies import (
+    get_current_user,
+    get_login_service,
+    get_oauth_service,
+    get_registration_service,
+    require_auth,
+)
 from src.exceptions import (
     EmailAlreadyExistsError,
     OAuthAuthorizationCodeMissingError,
@@ -25,7 +31,7 @@ from src.exceptions import (
     UserIsInactiveError,
 )
 from src.schemas import AuthLogin, AuthRegister, AuthUser
-from src.services.auth import AuthService
+from src.services.auth import LoginService, OAuthService, RegistrationService
 from src.utils import ensure_csrf_token, get_user_display_name, templates
 
 # ---------- helpers ----------
@@ -331,7 +337,7 @@ def _clear_auth_cookie(response: Response) -> None:
 @router.get("/google/start", dependencies=oauth_start_limiters)
 async def google_start(
     request: Request,
-    auth_service: AuthService = Depends(get_auth_service),
+    oauth_service: OAuthService = Depends(get_oauth_service),
     current_user: AuthUser | None = Depends(get_current_user),
 ):
     next_url = _normalize_next(request.query_params.get("next"))
@@ -339,7 +345,7 @@ async def google_start(
         return RedirectResponse(url=next_url, status_code=status.HTTP_303_SEE_OTHER)
 
     try:
-        flow = auth_service.start_google_oauth_login(next_url=next_url)
+        flow = oauth_service.start_google_oauth_login(next_url=next_url)
     except OAuthConfigurationError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -356,7 +362,7 @@ async def google_start(
 @router.get("/google/callback", dependencies=oauth_callback_limiters)
 async def google_callback(
     request: Request,
-    auth_service: AuthService = Depends(get_auth_service),
+    oauth_service: OAuthService = Depends(get_oauth_service),
 ):
     oauth_session = request.session.pop(_GOOGLE_OAUTH_UI_SESSION_KEY, None)
     next_url = _DEFAULT_REDIRECT_PATH
@@ -364,7 +370,7 @@ async def google_callback(
         next_url = _normalize_next(oauth_session.get("next"))
 
     try:
-        result = await auth_service.complete_google_oauth_login(
+        result = await oauth_service.complete_google_oauth_login(
             oauth_session=oauth_session,
             provided_state=request.query_params.get("state"),
             provider_error=request.query_params.get("error"),
@@ -490,7 +496,8 @@ async def register_page(
 async def register(
     request: Request,
     response: Response,
-    auth_service: AuthService = Depends(get_auth_service),
+    login_service: LoginService = Depends(get_login_service),
+    registration_service: RegistrationService = Depends(get_registration_service),
     current_user: AuthUser | None = Depends(get_current_user),
 ):
     next_url = _normalize_next(request.query_params.get("next"))
@@ -533,7 +540,7 @@ async def register(
         )
 
     try:
-        user = await auth_service.register(payload)
+        user = await registration_service.register(payload)
     except EmailAlreadyExistsError:
         if source == "json":
             raise HTTPException(
@@ -550,7 +557,7 @@ async def register(
             status_code=status.HTTP_409_CONFLICT,
         )
 
-    session_id = await auth_service.login_create_session(user.id)
+    session_id = await login_service.create_session(user.id)
     if source == "form":
         redirect = RedirectResponse(
             url=_normalize_next(raw_payload.get("next")),
@@ -566,7 +573,7 @@ async def register(
 async def login(
     request: Request,
     response: Response,
-    auth_service: AuthService = Depends(get_auth_service),
+    login_service: LoginService = Depends(get_login_service),
     current_user: AuthUser | None = Depends(get_current_user),
 ):
     next_url = _normalize_next(request.query_params.get("next"))
@@ -608,7 +615,7 @@ async def login(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    user = await auth_service.authenticate(payload)
+    user = await login_service.authenticate(payload)
     if user is None:
         if source == "json":
             raise HTTPException(
@@ -625,7 +632,7 @@ async def login(
             status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
-    session_id = await auth_service.login_create_session(user.id)
+    session_id = await login_service.create_session(user.id)
 
     if source == "form":
         redirect = RedirectResponse(
@@ -646,7 +653,7 @@ async def logout(
     request: Request,
     response: Response,
     current_user: AuthUser = Depends(require_auth),
-    auth_service: AuthService = Depends(get_auth_service),
+    login_service: LoginService = Depends(get_login_service),
 ):
     source, payload = await read_request_payload(request)
     if source == "form":
@@ -661,7 +668,7 @@ async def logout(
 
     session_id = request.cookies.get(settings.AUTH_SESSION_COOKIE_NAME)
     if session_id and current_user is not None:
-        await auth_service.logout(session_id=session_id, user_id=current_user.id)
+        await login_service.logout(session_id=session_id, user_id=current_user.id)
 
     if source == "form":
         redirect = RedirectResponse(

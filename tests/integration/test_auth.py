@@ -11,7 +11,7 @@ from src.database.connection import get_db
 from src.dependencies import get_redis_adapter, require_auth
 from src.repositories import AuthRepository, RedisSessionStore
 from src.schemas.auth import AuthLogin, AuthRegister, AuthUser
-from src.services.auth import AuthService
+from src.services.auth import LoginService, RegistrationService
 
 pytestmark = pytest.mark.asyncio
 
@@ -66,25 +66,26 @@ async def test_auth_full_flow_login_resolve_logout_then_unauthorized(
 ) -> None:
     auth_repo = AuthRepository(session=session)
     session_store = RedisSessionStore(redis_adapter=get_redis_adapter())
-    auth_service = AuthService(auth_repo=auth_repo, session_store=session_store)
+    registration_service = RegistrationService(auth_repo=auth_repo, session_store=session_store)
+    login_service = LoginService(auth_repo=auth_repo, session_store=session_store)
 
     email = f"full-flow-{uuid4().hex[:12]}@example.com"
     password = "strong-pass-123"
 
-    created_user = await auth_service.register(
+    created_user = await registration_service.register(
         AuthRegister(email=email, password=password)
     )
     await session.commit()
 
-    authenticated_user = await auth_service.authenticate(
+    authenticated_user = await login_service.authenticate(
         AuthLogin(email=email, password=password)
     )
     assert authenticated_user is not None
     assert authenticated_user.id == created_user.id
 
-    session_id = await auth_service.login_create_session(user_id=authenticated_user.id)
+    session_id = await login_service.create_session(user_id=authenticated_user.id)
 
-    resolved_user = await auth_service.resolve_user(session_id=session_id)
+    resolved_user = await login_service.resolve_user(session_id=session_id)
     assert resolved_user is not None
     assert resolved_user.id == authenticated_user.id
 
@@ -96,8 +97,8 @@ async def test_auth_full_flow_login_resolve_logout_then_unauthorized(
     assert authorized_response.headers["content-type"].startswith("application/json")
     assert authorized_response.json()["user_id"] == str(authenticated_user.id)
 
-    await auth_service.logout(session_id=session_id, user_id=authenticated_user.id)
-    assert await auth_service.resolve_user(session_id=session_id) is None
+    await login_service.logout(session_id=session_id, user_id=authenticated_user.id)
+    assert await login_service.resolve_user(session_id=session_id) is None
 
     unauthorized_response = await protected_client.get(
         "/protected",

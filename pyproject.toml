@@ -1,7 +1,7 @@
 [project]
 name = "habitflow"
 version = "0.1.0"
-description = ""
+description = "HabitFlow - task and habit management app that tracks your activity and helps you set and achieve goals."
 authors = [
     {name = "Amir",email = "zamnatov2004@gmail.com"}
 ]
@@ -95,8 +95,8 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"src/routers/*.py" = ["ANN201"]
-"src/main.py" = ["ANN201"]
+"src/routers/*.py" = ["ANN201"]  # отсутствие возвращаемого типа в роутах
+"src/main.py" = ["ANN201"]  # отсутствие возвращаемого типа в роутах
 "src/redis.py" = [
     "ANN401",  # allow Any in this file
 ]

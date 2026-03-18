@@ -10,8 +10,8 @@ from httpx import ASGITransport, AsyncClient
 from src.config import settings
 from src.database.connection import get_db
 from src.dependencies import (
-    get_auth_service,
     get_habit_service,
+    get_login_service,
     get_task_service,
     get_theme_service,
     optional_user,
@@ -25,7 +25,7 @@ from tests.helpers import make_auth_user
 pytestmark = pytest.mark.asyncio
 
 
-class _FakeAuthService:
+class _FakeLoginService:
     def __init__(self) -> None:
         self.resolved_user: AuthUser | None = None
         self.resolve_calls: list[str] = []
@@ -36,11 +36,11 @@ class _FakeAuthService:
 
 
 @pytest.fixture
-async def client() -> AsyncGenerator[tuple[AsyncClient, _FakeAuthService], None]:
+async def client() -> AsyncGenerator[tuple[AsyncClient, _FakeLoginService], None]:
     app = FastAPI()
-    fake_auth_service = _FakeAuthService()
+    fake_login_service = _FakeLoginService()
 
-    app.dependency_overrides[get_auth_service] = lambda: fake_auth_service
+    app.dependency_overrides[get_login_service] = lambda: fake_login_service
 
     @app.get("/protected-json")
     async def protected_json(current_user: AuthUser = Depends(require_auth)) -> dict[str, str]:
@@ -57,27 +57,27 @@ async def client() -> AsyncGenerator[tuple[AsyncClient, _FakeAuthService], None]
     transport = ASGITransport(app=app)
     try:
         async with AsyncClient(transport=transport, base_url="http://test") as http_client:
-            yield http_client, fake_auth_service
+            yield http_client, fake_login_service
     finally:
         app.dependency_overrides.clear()
 
 
 async def test_require_auth_returns_401_for_api_request_without_cookie(
-    client: tuple[AsyncClient, _FakeAuthService],
+    client: tuple[AsyncClient, _FakeLoginService],
 ) -> None:
-    http_client, fake_auth_service = client
+    http_client, fake_login_service = client
 
     res = await http_client.get("/protected-json", headers={"Accept": "application/json"})
 
     assert_json_response(res, status_code=401)
     assert res.json()["detail"] == "Authentication required"
-    assert fake_auth_service.resolve_calls == []
+    assert fake_login_service.resolve_calls == []
 
 
 async def test_require_auth_redirects_html_request_to_login(
-    client: tuple[AsyncClient, _FakeAuthService],
+    client: tuple[AsyncClient, _FakeLoginService],
 ) -> None:
-    http_client, fake_auth_service = client
+    http_client, fake_login_service = client
 
     res = await http_client.get(
         "/protected-html?foo=bar",
@@ -86,14 +86,14 @@ async def test_require_auth_redirects_html_request_to_login(
     )
 
     assert_redirect(res, location="/auth/login?next=%2Fprotected-html%3Ffoo%3Dbar")
-    assert fake_auth_service.resolve_calls == []
+    assert fake_login_service.resolve_calls == []
 
 
 async def test_optional_user_resolves_user_by_auth_cookie(
-    client: tuple[AsyncClient, _FakeAuthService],
+    client: tuple[AsyncClient, _FakeLoginService],
 ) -> None:
-    http_client, fake_auth_service = client
-    fake_auth_service.resolved_user = make_auth_user()
+    http_client, fake_login_service = client
+    fake_login_service.resolved_user = make_auth_user()
 
     res = await http_client.get(
         "/optional",
@@ -102,14 +102,14 @@ async def test_optional_user_resolves_user_by_auth_cookie(
 
     assert_json_response(res, status_code=200)
     assert res.json() == {"authenticated": True}
-    assert fake_auth_service.resolve_calls == ["sess-123"]
+    assert fake_login_service.resolve_calls == ["sess-123"]
 
 
 async def test_require_auth_returns_user_when_cookie_session_is_valid(
-    client: tuple[AsyncClient, _FakeAuthService],
+    client: tuple[AsyncClient, _FakeLoginService],
 ) -> None:
-    http_client, fake_auth_service = client
-    fake_auth_service.resolved_user = make_auth_user()
+    http_client, fake_login_service = client
+    fake_login_service.resolved_user = make_auth_user()
 
     res = await http_client.get(
         "/protected-json",
@@ -117,8 +117,8 @@ async def test_require_auth_returns_user_when_cookie_session_is_valid(
     )
 
     assert_json_response(res, status_code=200)
-    assert res.json()["user_id"] == str(fake_auth_service.resolved_user.id)
-    assert fake_auth_service.resolve_calls == ["sess-valid"]
+    assert res.json()["user_id"] == str(fake_login_service.resolved_user.id)
+    assert fake_login_service.resolve_calls == ["sess-valid"]
 
 
 async def test_public_service_providers_do_not_require_authentication() -> None:

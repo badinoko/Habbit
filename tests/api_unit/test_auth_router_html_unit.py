@@ -12,7 +12,7 @@ from httpx import ASGITransport, AsyncClient
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.config import settings
-from src.dependencies import _is_html_request, get_auth_service, get_current_user
+from src.dependencies import _is_html_request, get_current_user, get_login_service, get_oauth_service, get_registration_service
 from src.exceptions import (
     EmailAlreadyExistsError,
     OAuthAuthorizationCodeMissingError,
@@ -26,9 +26,12 @@ from src.routers import auth as auth_module
 from src.routers.auth import _normalize_next, router as auth_router
 from src.schemas.auth import AuthUser
 from tests.api_unit.auth_router_shared import (  # noqa: F401
+    _FakeAuthService,
+    _FakeLoginService,
+    _FakeOAuthService,
+    _FakeRegistrationService,
     _extract_form,
     _extract_google_oauth_href,
-    _FakeAuthService,
     configure_google_oauth,
 )
 from tests.helpers import extract_csrf_token, make_auth_user
@@ -83,11 +86,17 @@ async def test_is_html_request_detects_browser_requests(
 
 @pytest.fixture
 async def client() -> AsyncGenerator[
-    tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
     None,
 ]:
     app = FastAPI()
+    fake_login_service = _FakeLoginService()
+    fake_registration_service = _FakeRegistrationService()
+    fake_oauth_service = _FakeOAuthService()
     fake_auth_service = _FakeAuthService()
+    fake_auth_service.login_service = fake_login_service
+    fake_auth_service.registration_service = fake_registration_service
+    fake_auth_service.oauth_service = fake_oauth_service
     current_user_state = {"value": None}
 
     app.add_middleware(
@@ -114,22 +123,24 @@ async def client() -> AsyncGenerator[
     async def override_current_user() -> AuthUser | None:
         return current_user_state["value"]
 
-    app.dependency_overrides[get_auth_service] = lambda: fake_auth_service
+    app.dependency_overrides[get_login_service] = lambda: fake_login_service
+    app.dependency_overrides[get_registration_service] = lambda: fake_registration_service
+    app.dependency_overrides[get_oauth_service] = lambda: fake_oauth_service
     app.dependency_overrides[get_current_user] = override_current_user
     app.state.current_user_state = current_user_state
 
     transport = ASGITransport(app=app)
     try:
         async with AsyncClient(transport=transport, base_url="http://test") as http_client:
-            yield http_client, fake_auth_service, current_user_state
+            yield http_client, fake_auth_service, fake_login_service, fake_registration_service, fake_oauth_service, current_user_state
     finally:
         app.dependency_overrides.clear()
 
 
 async def test_login_page_renders_csrf_and_normalizes_unsafe_next(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     res = await http_client.get(
         "/auth/login?next=https://evil.example",
@@ -146,9 +157,9 @@ async def test_login_page_renders_csrf_and_normalizes_unsafe_next(
 
 
 async def test_login_page_renders_google_oauth_link_with_next(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     res = await http_client.get(
         "/auth/login?next=/tasks?filter=today",
@@ -163,9 +174,9 @@ async def test_login_page_renders_google_oauth_link_with_next(
 
 
 async def test_login_page_hides_google_oauth_when_not_configured(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
     settings.GOOGLE_OAUTH_CLIENT_ID = None
     settings.GOOGLE_OAUTH_CLIENT_SECRET = None
     settings.GOOGLE_OAUTH_REDIRECT_URI = None
@@ -180,9 +191,9 @@ async def test_login_page_hides_google_oauth_when_not_configured(
 
 
 async def test_login_page_redirects_authenticated_user_to_safe_next(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, current_user_state = client
+    http_client, _, _, _, _, current_user_state = client
     current_user_state["value"] = make_auth_user()
 
     res = await http_client.get(
@@ -196,9 +207,9 @@ async def test_login_page_redirects_authenticated_user_to_safe_next(
 
 
 async def test_google_start_redirects_to_google_and_stores_state_in_ui_session(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
 
     res = await http_client.get(
         "/auth/google/start?next=https://evil.example",
@@ -225,9 +236,9 @@ async def test_google_start_redirects_to_google_and_stores_state_in_ui_session(
 
 
 async def test_google_start_redirects_authenticated_user_to_safe_next(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, current_user_state = client
+    http_client, _, _, _, _, current_user_state = client
     current_user_state["value"] = make_auth_user()
 
     res = await http_client.get(
@@ -241,9 +252,9 @@ async def test_google_start_redirects_authenticated_user_to_safe_next(
 
 
 async def test_google_callback_creates_local_session_and_redirects_to_saved_next(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
 
     start_res = await http_client.get(
         "/auth/google/start?next=/tasks",
@@ -290,9 +301,9 @@ async def test_google_callback_creates_local_session_and_redirects_to_saved_next
 
 
 async def test_google_callback_returns_html_error_and_consumes_state_on_provider_error(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.google_callback_error = OAuthProviderRejectedError()
 
     start_res = await http_client.get(
@@ -322,9 +333,9 @@ async def test_google_callback_returns_html_error_and_consumes_state_on_provider
 
 
 async def test_google_callback_handles_missing_oauth_configuration(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.google_callback_error = OAuthConfigurationError(
         "Google OAuth is not configured"
     )
@@ -354,9 +365,9 @@ async def test_google_callback_handles_missing_oauth_configuration(
 
 
 async def test_google_callback_rejects_invalid_state_as_one_time_token(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.google_callback_error = OAuthStateInvalidError()
 
     start_res = await http_client.get(
@@ -381,9 +392,9 @@ async def test_google_callback_rejects_invalid_state_as_one_time_token(
 
 
 async def test_google_callback_rejects_expired_state(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.google_callback_error = OAuthStateInvalidError()
 
     start_res = await http_client.get(
@@ -416,9 +427,9 @@ async def test_google_callback_rejects_expired_state(
 
 
 async def test_google_callback_rejects_state_with_invalid_issued_at(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.google_callback_error = OAuthStateInvalidError()
 
     start_res = await http_client.get(
@@ -448,9 +459,9 @@ async def test_google_callback_rejects_state_with_invalid_issued_at(
 
 
 async def test_google_callback_rejects_missing_code(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.google_callback_error = OAuthAuthorizationCodeMissingError()
 
     await http_client.get(
@@ -470,9 +481,9 @@ async def test_google_callback_rejects_missing_code(
 
 
 async def test_google_callback_rejects_unverified_email(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.google_callback_error = OAuthEmailNotVerifiedError()
 
     await http_client.get(
@@ -492,9 +503,9 @@ async def test_google_callback_rejects_unverified_email(
 
 
 async def test_google_callback_handles_provider_unavailable(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.google_callback_error = OAuthProviderUnavailableError()
 
     await http_client.get(
@@ -513,9 +524,9 @@ async def test_google_callback_handles_provider_unavailable(
     assert "Google временно недоступен" in res.text
 
 async def test_register_page_redirects_authenticated_user(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, current_user_state = client
+    http_client, _, _, _, _, current_user_state = client
     current_user_state["value"] = make_auth_user()
 
     res = await http_client.get(
@@ -529,9 +540,9 @@ async def test_register_page_redirects_authenticated_user(
 
 
 async def test_register_page_renders_google_oauth_link_with_next(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     res = await http_client.get(
         "/auth/register?next=/habits?page=2",
@@ -549,9 +560,9 @@ async def test_register_page_renders_google_oauth_link_with_next(
 
 
 async def test_register_page_hides_google_oauth_when_not_configured(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
     settings.GOOGLE_OAUTH_CLIENT_ID = None
     settings.GOOGLE_OAUTH_CLIENT_SECRET = None
     settings.GOOGLE_OAUTH_REDIRECT_URI = None
@@ -566,9 +577,9 @@ async def test_register_page_hides_google_oauth_when_not_configured(
 
 
 async def test_login_form_rejects_missing_csrf_token(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     res = await http_client.post(
         "/auth/login",
@@ -583,9 +594,9 @@ async def test_login_form_rejects_missing_csrf_token(
 
 
 async def test_login_form_rejects_invalid_csrf_token(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     page = await http_client.get("/auth/login", headers={"Accept": "text/html"})
     assert extract_csrf_token(page.text)
@@ -608,9 +619,9 @@ async def test_login_form_rejects_invalid_csrf_token(
 
 
 async def test_register_form_rejects_invalid_csrf_token_with_html_error(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     page = await http_client.get("/auth/register", headers={"Accept": "text/html"})
     assert extract_csrf_token(page.text)
@@ -633,9 +644,9 @@ async def test_register_form_rejects_invalid_csrf_token_with_html_error(
 
 
 async def test_login_form_redirects_after_success(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.authenticate_result = make_auth_user()
 
     page = await http_client.get("/auth/login?next=/tasks", headers={"Accept": "text/html"})
@@ -659,9 +670,9 @@ async def test_login_form_redirects_after_success(
 
 
 async def test_login_json_returns_user_and_sets_cookie(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.authenticate_result = make_auth_user()
 
     res = await http_client.post(
@@ -676,9 +687,9 @@ async def test_login_json_returns_user_and_sets_cookie(
 
 
 async def test_login_json_returns_409_for_authenticated_user_without_auth_attempt(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, current_user_state = client
+    http_client, fake_auth_service, _, _, _, current_user_state = client
     current_user_state["value"] = make_auth_user()
 
     res = await http_client.post(
@@ -709,13 +720,13 @@ async def test_login_json_returns_409_for_authenticated_user_without_auth_attemp
     ],
 )
 async def test_json_auth_endpoints_do_not_render_html_templates(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
     monkeypatch: pytest.MonkeyPatch,
     path: str,
     payload: dict[str, str],
     prepare_service: Callable[[_FakeAuthService], None],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     prepare_service(fake_auth_service)
 
     def fail_on_render(*args, **kwargs) -> Never:  # noqa: ANN002, ANN003
@@ -730,9 +741,9 @@ async def test_json_auth_endpoints_do_not_render_html_templates(
 
 
 async def test_login_json_rejects_invalid_credentials(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.authenticate_result = None
 
     res = await http_client.post(
@@ -746,9 +757,9 @@ async def test_login_json_rejects_invalid_credentials(
 
 
 async def test_login_json_rejects_invalid_payload_with_422(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     res = await http_client.post(
         "/auth/login",
@@ -760,9 +771,9 @@ async def test_login_json_rejects_invalid_payload_with_422(
 
 
 async def test_login_json_rejects_malformed_json_body(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     res = await http_client.post(
         "/auth/login",
@@ -775,9 +786,9 @@ async def test_login_json_rejects_malformed_json_body(
 
 
 async def test_login_rejects_unsupported_media_type_with_415(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     res = await http_client.post(
         "/auth/login",
@@ -791,9 +802,9 @@ async def test_login_rejects_unsupported_media_type_with_415(
 
 
 async def test_login_form_returns_generic_error_on_invalid_credentials(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.authenticate_result = None
 
     page = await http_client.get("/auth/login", headers={"Accept": "text/html"})
@@ -816,9 +827,9 @@ async def test_login_form_returns_generic_error_on_invalid_credentials(
 
 
 async def test_login_form_returns_validation_error_for_invalid_payload(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     page = await http_client.get("/auth/login", headers={"Accept": "text/html"})
     csrf_token = extract_csrf_token(page.text)
@@ -840,9 +851,9 @@ async def test_login_form_returns_validation_error_for_invalid_payload(
 
 
 async def test_register_form_returns_validation_error_and_preserves_email(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     page = await http_client.get("/auth/register", headers={"Accept": "text/html"})
     csrf_token = extract_csrf_token(page.text)
@@ -864,9 +875,9 @@ async def test_register_form_returns_validation_error_and_preserves_email(
 
 
 async def test_register_form_redirects_after_success(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.register_result = make_auth_user("new@example.com")
 
     page = await http_client.get("/auth/register?next=/tasks", headers={"Accept": "text/html"})
@@ -890,9 +901,9 @@ async def test_register_form_redirects_after_success(
 
 
 async def test_register_form_returns_conflict_error_when_email_exists(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.register_error = EmailAlreadyExistsError()
 
     page = await http_client.get("/auth/register", headers={"Accept": "text/html"})
@@ -914,9 +925,9 @@ async def test_register_form_returns_conflict_error_when_email_exists(
 
 
 async def test_register_json_returns_user_and_sets_cookie(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.register_result = make_auth_user("new@example.com")
 
     res = await http_client.post(
@@ -931,9 +942,9 @@ async def test_register_json_returns_user_and_sets_cookie(
 
 
 async def test_register_json_returns_409_for_authenticated_user_without_register_attempt(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, current_user_state = client
+    http_client, fake_auth_service, _, _, _, current_user_state = client
     current_user_state["value"] = make_auth_user()
 
     res = await http_client.post(
@@ -949,9 +960,9 @@ async def test_register_json_returns_409_for_authenticated_user_without_register
 
 
 async def test_register_json_rejects_invalid_payload_with_422(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     res = await http_client.post(
         "/auth/register",
@@ -963,9 +974,9 @@ async def test_register_json_rejects_invalid_payload_with_422(
 
 
 async def test_register_json_returns_conflict_when_email_exists(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
     fake_auth_service.register_error = EmailAlreadyExistsError()
 
     res = await http_client.post(
@@ -979,9 +990,9 @@ async def test_register_json_returns_conflict_when_email_exists(
 
 
 async def test_register_json_rejects_malformed_json_body(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     res = await http_client.post(
         "/auth/register",
@@ -994,9 +1005,9 @@ async def test_register_json_rejects_malformed_json_body(
 
 
 async def test_register_json_rejects_non_object_json_body(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     res = await http_client.post(
         "/auth/register",
@@ -1009,9 +1020,9 @@ async def test_register_json_rejects_non_object_json_body(
 
 
 async def test_register_rejects_unsupported_media_type_with_415(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, _, _state = client
+    http_client, _, _, _, _, _state = client
 
     res = await http_client.post(
         "/auth/register",
@@ -1025,9 +1036,9 @@ async def test_register_rejects_unsupported_media_type_with_415(
 
 
 async def test_logout_form_clears_cookie_and_redirects_home(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, current_user_state = client
+    http_client, fake_auth_service, _, _, _, current_user_state = client
     page = await http_client.get("/auth/login", headers={"Accept": "text/html"})
     csrf_token = extract_csrf_token(page.text)
 
@@ -1049,9 +1060,9 @@ async def test_logout_form_clears_cookie_and_redirects_home(
 
 
 async def test_logout_form_normalizes_unsafe_next_target(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, current_user_state = client
+    http_client, fake_auth_service, _, _, _, current_user_state = client
     page = await http_client.get("/auth/login", headers={"Accept": "text/html"})
     csrf_token = extract_csrf_token(page.text)
 
@@ -1072,9 +1083,9 @@ async def test_logout_form_normalizes_unsafe_next_target(
 
 
 async def test_logout_form_rejects_invalid_csrf_token_with_html_error(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, current_user_state = client
+    http_client, fake_auth_service, _, _, _, current_user_state = client
     page = await http_client.get("/auth/login", headers={"Accept": "text/html"})
     assert extract_csrf_token(page.text)
 
@@ -1094,9 +1105,9 @@ async def test_logout_form_rejects_invalid_csrf_token_with_html_error(
 
 
 async def test_logout_json_logs_out_and_clears_cookie(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, current_user_state = client
+    http_client, fake_auth_service, _, _, _, current_user_state = client
     current_user = make_auth_user()
     current_user_state["value"] = current_user
     http_client.cookies.set(settings.AUTH_SESSION_COOKIE_NAME, "session-json")
@@ -1111,9 +1122,9 @@ async def test_logout_json_logs_out_and_clears_cookie(
 
 
 async def test_logout_json_without_user_or_session_skips_service_call(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, _state = client
+    http_client, fake_auth_service, _, _, _, _state = client
 
     res = await http_client.post("/auth/logout", json={})
 
@@ -1123,9 +1134,9 @@ async def test_logout_json_without_user_or_session_skips_service_call(
 
 
 async def test_logout_rejects_unsupported_media_type_with_415(
-    client: tuple[AsyncClient, _FakeAuthService, dict[str, AuthUser | None]],
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
-    http_client, fake_auth_service, current_user_state = client
+    http_client, fake_auth_service, _, _, _, current_user_state = client
     current_user_state["value"] = make_auth_user()
 
     res = await http_client.post(

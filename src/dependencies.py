@@ -21,7 +21,7 @@ from src.repositories.quotes import QuoteRepository
 from src.schemas import Stats
 from src.schemas.auth import AuthUser
 from src.services import HabitService, StatisticsService, TaskService, ThemeService
-from src.services.auth import AuthService
+from src.services.auth import LoginService, OAuthService, RegistrationService
 from src.services.quotes import QuoteService
 from src.services.zen_quote import ZenQuotesService
 from src.utils import build_template_context
@@ -75,13 +75,39 @@ async def get_http_client(request: Request) -> httpx.AsyncClient | None:
     return http_client if isinstance(http_client, httpx.AsyncClient) else None
 
 
-async def get_auth_service(
+async def get_login_service(
     auth_repo: AuthRepository = Depends(get_auth_repository),
     session_store: RedisSessionStore = Depends(get_session_store),
     http_client: httpx.AsyncClient | None = Depends(get_http_client),
-) -> AuthService:
-    """Провайдер для auth-сервиса."""
-    return AuthService(
+) -> LoginService:
+    """Провайдер для LoginService."""
+    return LoginService(
+        auth_repo=auth_repo,
+        session_store=session_store,
+        http_client=http_client,
+    )
+
+
+async def get_registration_service(
+    auth_repo: AuthRepository = Depends(get_auth_repository),
+    session_store: RedisSessionStore = Depends(get_session_store),
+    http_client: httpx.AsyncClient | None = Depends(get_http_client),
+) -> RegistrationService:
+    """Провайдер для RegistrationService."""
+    return RegistrationService(
+        auth_repo=auth_repo,
+        session_store=session_store,
+        http_client=http_client,
+    )
+
+
+async def get_oauth_service(
+    auth_repo: AuthRepository = Depends(get_auth_repository),
+    session_store: RedisSessionStore = Depends(get_session_store),
+    http_client: httpx.AsyncClient | None = Depends(get_http_client),
+) -> OAuthService:
+    """Провайдер для OAuthService."""
+    return OAuthService(
         auth_repo=auth_repo,
         session_store=session_store,
         http_client=http_client,
@@ -90,7 +116,7 @@ async def get_auth_service(
 
 async def get_current_user(
     request: Request,
-    auth_service: AuthService = Depends(get_auth_service),
+    login_service: LoginService = Depends(get_login_service),
 ) -> AuthUser | None:
     """Достать пользователя по session-id из cookie через Redis и БД."""
     session_id = request.cookies.get(settings.AUTH_SESSION_COOKIE_NAME)
@@ -101,7 +127,7 @@ async def get_current_user(
     if not normalized_session_id:
         return None
 
-    return await auth_service.resolve_user(session_id=normalized_session_id)
+    return await login_service.resolve_user(session_id=normalized_session_id)
 
 
 async def optional_user(
