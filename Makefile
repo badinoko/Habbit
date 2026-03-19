@@ -1,7 +1,7 @@
 include .env
 export
 
-.PHONY: run test lint format typecheck pre-commit check \
+.PHONY: run test test-pre-push lint format typecheck pre-commit check \
 	infra-up infra-down infra-restart infra-logs \
 	app-up app-down app-restart app-logs \
 	compose-up compose-down compose-logs \
@@ -17,6 +17,9 @@ run:
 
 test:
 	PYTHONPATH=. poetry run pytest -x tests -v --junitxml=junit.xml --cov=src --cov-branch --cov-report=term --cov-report=xml:coverage.xml --cov-report=html:htmlcov --cov-fail-under=80
+
+test-pre-push:
+	PYTHONPATH=. poetry run pytest -x tests -v --cov=src --cov-branch --cov-report=term --cov-fail-under=80
 
 lint:
 	poetry run ruff check . --force-exclude

@@ -2,3 +2,6 @@
 .env.docker
 .coverage
 __pycache__/
+coverage.xml
+junit.xml
+htmlcov/

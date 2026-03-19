@@ -34,7 +34,7 @@ repos:
         pass_filenames: false
       - id: tests-pre-push
         name: tests-pre-push
-        entry: make test
+        entry: make test-pre-push
         language: system
         pass_filenames: false
         always_run: true
