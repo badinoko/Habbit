@@ -185,6 +185,9 @@ jobs:
       - name: Install dependencies
         run: poetry install --no-interaction --no-root
 
+      - name: Install export plugin
+        run: poetry self add poetry-plugin-export
+
       - name: Export requirements
         run: poetry export --without-hashes --format=requirements.txt -o requirements.txt
 

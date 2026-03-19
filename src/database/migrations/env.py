@@ -4,10 +4,9 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from sqlalchemy.engine import make_url
 
 from alembic import context
-
-from src.config import settings
 
 from src.database.models import *  # noqa
 from src.database.models.base import BaseModel
@@ -20,9 +19,29 @@ if config.config_file_name is not None:
 
 target_metadata = BaseModel.metadata
 
-if not os.getenv("TESTING"):
-    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL_psycopg2)
-db_url = config.get_main_option("sqlalchemy.url")
+
+def _normalize_sync_database_url(raw_url: str) -> str:
+    url = make_url(raw_url)
+
+    if url.drivername == "postgresql+asyncpg":
+        url = url.set(drivername="postgresql+psycopg2")
+
+    return str(url)
+
+
+def _resolve_database_url() -> str:
+    explicit_url = os.getenv("DATABASE_URL") or config.get_main_option(
+        "sqlalchemy.url"
+    )
+    if explicit_url and not explicit_url.startswith("driver://"):
+        return _normalize_sync_database_url(explicit_url)
+
+    from src.config import settings
+
+    return settings.DATABASE_URL_psycopg2
+
+
+config.set_main_option("sqlalchemy.url", _resolve_database_url())
 
 
 def run_migrations_offline() -> None:

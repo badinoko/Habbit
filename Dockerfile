@@ -2,21 +2,20 @@ FROM python:3.12.3-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    APP_HOST=0.0.0.0 \
-    APP_PORT=8000 \
-    DEBUG=false
+    POETRY_VERSION=2.1.3 \
+    POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_CREATE=false
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
     build-essential \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir "poetry==$POETRY_VERSION"
+RUN pip install --no-cache-dir "poetry==2.1.3"
 
-COPY pyproject.toml poetry.lock* README.md ./
-
+COPY pyproject.toml poetry.lock* ./
 RUN poetry install --no-ansi --no-root --without dev
 
 COPY . .
@@ -27,7 +26,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     APP_HOST=0.0.0.0 \
     APP_PORT=8000 \
-    APP_RELOAD=false
+    DEBUG=false
 
 WORKDIR /app
 
@@ -35,15 +34,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd -r app && useradd -r -g app -d /app -s /usr/sbin/nologin app
+RUN addgroup --system app && adduser --system --ingroup app --home /app app
 
-COPY --from=builder /usr/local /usr/local
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /app /app
 
-RUN chown -R app:app /app
-
-COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh && chown -R app:app /app
 
 USER app
 
