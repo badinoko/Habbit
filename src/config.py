@@ -69,7 +69,7 @@ class Settings(BaseSettings):
         if self.UI_SESSION_SECRET_KEY:
             return self.UI_SESSION_SECRET_KEY
         if not self.DEBUG:
-            raise ValueError("SECRET_KEY must be set when DEBUG=False")
+            raise ValueError("UI_SESSION_SECRET_KEY must be set when DEBUG=False")
         return secrets.token_urlsafe(32)
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
