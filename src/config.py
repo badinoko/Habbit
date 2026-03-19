@@ -39,7 +39,6 @@ class Settings(BaseSettings):
     ZENQUOTES_API_URL: str
     REFILL_INTERVAL_HOURS: int
 
-    API_KEY: str
     DEBUG: bool = False
     TESTING: bool = False
 

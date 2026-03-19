@@ -80,7 +80,6 @@ REDIS_TEST_PORT = _find_free_tcp_port()
 SAFE_TEST_ENV = {
     "DEBUG": "true",
     "TESTING": "true",
-    "API_KEY": "test-api-key",
     "CONTAINER_APP_PORT": "8000",
     "APP_PORT": "8000",
     "ZENQUOTES_API_URL": "http://test.invalid/api/random",

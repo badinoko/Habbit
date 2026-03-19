@@ -115,8 +115,8 @@ jobs:
       - name: Load image
         run: gunzip -c app-image.tar.gz | docker load
 
-      - name: Smoke test container
-        run: docker run --rm app:${{ github.sha }} python --version
+      - name: Smoke test image
+        run: docker run --rm --entrypoint python app:${{ github.sha }} --version
 
   migration-smoke:
     name: Migration smoke test
