@@ -305,7 +305,7 @@ async def test_delete_theme_deletes_when_theme_exists():
     repo.get_by_name_result = old
     service = ThemeService(theme_repo=repo)
 
-    await service.delete_theme("Hobby")
+    await service.delete_theme(old.id)
     assert repo.delete_called_with == old.id
 
 

@@ -23,10 +23,10 @@
                 <span class="stat">{{ theme.habits_count }} {{ plural.pluralize(theme.habits_count, 'привычка', 'привычки', 'привычек') }}</span>
             </div>
             <div class="theme-actions">
-                <button class="btn btn-outline btn-sm" onclick='editTheme({{ theme.name|tojson }})'>
+                <button class="btn btn-outline btn-sm" onclick='editTheme({{ theme.id|string|tojson }})'>
                     <i class="fas fa-edit"></i> Изменить
                 </button>
-                <button class="btn btn-danger btn-sm" onclick='deleteTheme({{ theme.name|tojson }})'>
+                <button class="btn btn-danger btn-sm" onclick='deleteTheme({{ theme.id|string|tojson }})'>
                     <i class="fas fa-trash"></i> Удалить
                 </button>
             </div>

@@ -1,17 +1,17 @@
 // Функция для редактирования темы (перенаправление на страницу редактирования)
-function editTheme(themeName) {
+function editTheme(themeId) {
     // Перенаправляем на страницу редактирования темы
-    window.location.href = `/themes/${encodeURIComponent(themeName)}`;
+    window.location.href = `/themes/${encodeURIComponent(themeId)}`;
 }
 
 // Функция для удаления темы
-async function deleteTheme(themeName) {
+async function deleteTheme(themeId) {
     if (!confirm('Вы уверены, что хотите удалить эту тему? Все задачи с этой темой будут перемещены в "Без темы".')) {
         return;
     }
 
     try {
-        const response = await fetch(`/themes/${encodeURIComponent(themeName)}`, {
+        const response = await fetch(`/themes/${encodeURIComponent(themeId)}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
@@ -23,13 +23,16 @@ async function deleteTheme(themeName) {
             showNotification('Тема удалена', 'success');
 
             // Удаляем элемент из DOM
-            const themeElement = findThemeCardByName(themeName);
+            const themeElement = findThemeCardById(themeId);
             if (themeElement) {
+                const themeName = themeElement.dataset.themeName;
                 themeElement.remove();
-            }
 
-            // Обновляем список тем в сайдбаре если есть
-            updateSidebarThemes(themeName);
+                // Обновляем список тем в сайдбаре если есть (там фильтр по имени)
+                if (themeName) {
+                    updateSidebarThemes(themeName);
+                }
+            }
 
             // Перезагружаем страницу через 1 секунду
             setTimeout(() => {
@@ -59,7 +62,7 @@ function updateSidebarThemes(deletedThemeName) {
     });
 }
 
-function findThemeCardByName(themeName) {
-    const cards = document.querySelectorAll('.theme-card[data-theme-name]');
-    return Array.from(cards).find(card => card.dataset.themeName === themeName) || null;
+function findThemeCardById(themeId) {
+    const cards = document.querySelectorAll('.theme-card[data-theme-id]');
+    return Array.from(cards).find(card => card.dataset.themeId === themeId) || null;
 }

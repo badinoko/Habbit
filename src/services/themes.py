@@ -1,5 +1,6 @@
 import hashlib
 import random
+from uuid import UUID
 
 from src.repositories import ThemeRepository
 from src.schemas import (
@@ -50,6 +51,9 @@ class ThemeService:
     async def get_theme_by_name(self, theme_name: str) -> ThemeInDB | None:
         return await self.theme_repo.get_by_name(theme_name)
 
+    async def get_theme_by_id(self, theme_id: UUID) -> ThemeInDB | None:
+        return await self.theme_repo.get_by_id(theme_id)
+
     async def update_theme(
         self, old_theme: ThemeInDB, theme_data: ThemeUpdate
     ) -> ThemeInDB | None:
@@ -89,11 +93,8 @@ class ThemeService:
         updated_theme = ThemeUpdate(**update_dict)
         return await self.theme_repo.update(old_theme.id, updated_theme)
 
-    async def delete_theme(self, theme: str) -> bool:
-        theme_obj = await self.theme_repo.get_by_name(theme)
-        if theme_obj:
-            return await self.theme_repo.delete(theme_obj.id)
-        return False
+    async def delete_theme(self, theme_id: UUID) -> bool:
+        return await self.theme_repo.delete(theme_id)
 
     async def list_themes(
         self, skip: int = 0, limit: int | None = 100

@@ -1,3 +1,5 @@
+import re
+
 import pytest
 from sqlalchemy.exc import IntegrityError
 
@@ -37,6 +39,26 @@ async def delete_theme(client, id):
         f"/themes/{id}",
         headers=await with_csrf_headers(client),
     )
+
+
+async def get_theme_id_by_name(client, name: str) -> str:
+    response = await client.get("/themes/")
+    assert response.status_code == 200
+
+    # theme-card содержит атрибуты data-theme-id и data-theme-name
+    pattern = (
+        r'data-theme-id="(?P<id>[^"]+)"[^>]*data-theme-name="'
+        + re.escape(name)
+        + r'"'
+    )
+    match = re.search(pattern, response.text)
+    assert match, f"Theme id not found for name={name!r}"
+    theme_id = match.group("id").strip()
+    # Важно: роуты ожидают валидный UUID, иначе будет 422
+    import uuid
+
+    uuid.UUID(theme_id)
+    return theme_id
 
 
 @pytest.mark.asyncio
@@ -104,8 +126,9 @@ async def test_create_theme_without_name_error(client):
 @pytest.mark.asyncio
 async def test_update_theme(client):
     await create_theme(client=client, name=NAME)
+    theme_id = await get_theme_id_by_name(client, NAME)
     response = await update_theme(
-        client=client, id=NAME, name="Новое название", color="#FFFFFF"
+        client=client, id=theme_id, name="Новое название", color="#FFFFFF"
     )
     assert response.status_code == 200
     assert response.headers["content-type"].startswith("application/json")
@@ -131,7 +154,8 @@ async def test_get_themes_list_page(client):
 @pytest.mark.asyncio
 async def test_delete_theme(client):
     await create_theme(client=client, name=NAME)
-    response = await delete_theme(client=client, id=NAME)
+    theme_id = await get_theme_id_by_name(client, NAME)
+    response = await delete_theme(client=client, id=theme_id)
     assert response.status_code == 204
 
     response = await client.get("/themes/")
@@ -142,7 +166,8 @@ async def test_delete_theme(client):
 @pytest.mark.asyncio
 async def test_get_update_theme_page(client):
     await create_theme(client=client, name=NAME)
-    response = await client.get(f"/themes/{NAME}")
+    theme_id = await get_theme_id_by_name(client, NAME)
+    response = await client.get(f"/themes/{theme_id}")
     assert response.status_code == 200
     assert NAME in response.text
 
@@ -173,26 +198,27 @@ async def test_theme_owner_scope_hides_foreign_theme_and_blocks_mutations(
 
     create_response = await create_theme(client=secondary_client, name=foreign_theme_name)
     assert create_response.status_code == 303
+    foreign_theme_id = await get_theme_id_by_name(secondary_client, foreign_theme_name)
 
     list_response = await client.get("/themes/")
     assert list_response.status_code == 200
     assert foreign_theme_name not in list_response.text
 
-    detail_response = await client.get(f"/themes/{foreign_theme_name}")
+    detail_response = await client.get(f"/themes/{foreign_theme_id}")
     assert detail_response.status_code == 404
     assert "Тема не найдена" in detail_response.text
 
     update_response = await update_theme(
         client=client,
-        id=foreign_theme_name,
-        name="Попытка чужого обновления",
+        id=foreign_theme_id,
+        name="Чужое обновление",
     )
     assert update_response.status_code == 404
 
-    delete_response = await delete_theme(client=client, id=foreign_theme_name)
+    delete_response = await delete_theme(client=client, id=foreign_theme_id)
     assert delete_response.status_code == 404
 
-    owner_detail_response = await secondary_client.get(f"/themes/{foreign_theme_name}")
+    owner_detail_response = await secondary_client.get(f"/themes/{foreign_theme_id}")
     assert owner_detail_response.status_code == 200
     assert foreign_theme_name in owner_detail_response.text
 
