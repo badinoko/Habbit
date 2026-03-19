@@ -90,10 +90,15 @@ class OwnedRepository(
         return self._convert_model_to_read(record)
 
     async def delete(self, id: IdType) -> bool:
-        stmt = sa_delete(self._model).where(
-            self._model.id == id,
-            self._owner_filter(self._model.owner_id),
+        stmt = (
+            sa_delete(self._model)
+            .where(
+                self._model.id == id,
+                self._owner_filter(self._model.owner_id),
+            )
+            .returning(self._model.id)
         )
         result = await self._session.execute(stmt)
+        deleted_id = result.scalar_one_or_none()
         await self._session.flush()
-        return result.rowcount > 0
+        return deleted_id is not None
