@@ -1,270 +1,339 @@
-[![CI](https://github.com/Qwertyil/HabitFlow/actions/workflows/ci.yml/badge.svg)](https://github.com/Qwertyil/HabitFlow/actions/workflows/ci.yml)
-
-![Python](https://img.shields.io/badge/Python-3.12%2B-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.118-009688)
-![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-db-336791)
-![Redis](https://img.shields.io/badge/Redis-cache-DC382D)
-![Alembic](https://img.shields.io/badge/Alembic-migrations-black)
-![Pytest](https://img.shields.io/badge/Pytest-8.4-0A9EDC)
-![Mypy](https://img.shields.io/badge/Mypy-1.19-2A6DB2)
-![Ruff](https://img.shields.io/badge/Ruff-0.15-D7FF64)
-![Poetry](https://img.shields.io/badge/Poetry-managed-60A5FA)
-![Docker](https://img.shields.io/badge/Docker-compose-2496ED)
-
 # HabitFlow
 
-HabitFlow — веб-приложение для управления задачами, привычками и пользовательскими сессиями.
+HabitFlow is a backend-first web application for managing themes, tasks, and habits.
 
-Проект развивается в формате **web-first**:
-- основной интерфейс — серверные веб-роуты (`HTML + Redirect + AJAX JSON`);
-- JSON API под `/api/*` — дополнительный слой.
+This project is meant to showcase Python backend engineering skills: layered FastAPI architecture, PostgreSQL data modeling, Redis-backed sessions, authentication, CSRF protection, statistics aggregation, scheduled background jobs, and automated testing across multiple levels.
 
-<div align="center">
-  <img src="assets/main_page.png"
-       alt="Главная страница"
-       width="800"
-       loading="lazy"
-       style="border-radius: 12px;
-              box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-              border: 1px solid #eaeef2;">
-  <p><em>Главная страница</em></p>
-</div>
-<div align="center">
-  <img src="assets/tasks_list.png"
-       alt="Список задач"
-       width="800"
-       loading="lazy"
-       style="border-radius: 12px;
-              box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-              border: 1px solid #eaeef2;">
-  <p><em>Страница со списком задач</em></p>
-</div>
-<div align="center">
-  <img src="assets/habits_list.png"
-       alt="Список привычек"
-       width="800"
-       loading="lazy"
-       style="border-radius: 12px;
-              box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-              border: 1px solid #eaeef2;">
-  <p><em>Страница со списком привычек</em></p>
-</div>
-<div align="center">
-  <img src="assets/themes_list.png"
-       alt="Список тем"
-       width="800"
-       loading="lazy"
-       style="border-radius: 12px;
-              box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-              border: 1px solid #eaeef2;">
-  <p><em>Страница с темами</em></p>
-</div>
+## Backend Highlights
 
-## Стек технологий
+- Layered architecture: `routers -> services -> repositories -> models/schemas`
+- Async FastAPI + SQLAlchemy 2.x + PostgreSQL
+- Cookie-based auth with Redis-backed session storage
+- CSRF protection for state-changing requests
+- Owner-scoped access to user data across themes, tasks, habits, and stats
+- Habit scheduling engine with multiple recurrence types
+- Aggregated statistics page with period-based calculations
+- Google OAuth login flow
+- Background quote refresh job on application startup and scheduled intervals
+- Unit, API-unit, and integration tests
+- Strict static checks with Ruff and mypy
 
-- **Backend**: Python 3.12, FastAPI, SQLAlchemy 2.0, Alembic
-- **Хранилища**: PostgreSQL (asyncpg), Redis (хранилище auth-сессий)
-- **Фронтенд**: Jinja2, HTML, CSS, JavaScript
-- **Инфраструктура**: Docker, Docker Compose
-- **Инструменты**: Poetry, pre-commit, Ruff, mypy, pytest
+## Engineering Problems Solved
 
-## Что реализовано
+### Authentication and Sessions
 
-- CRUD для `themes`, `tasks`, `habits`
-- web-first интерфейс на серверных шаблонах
-- sidebar-статистика по задачам и привычкам
-- auth v1: регистрация, логин, logout, cookie-based сессии
-- хранение auth-сессий в Redis
-- owner-scoped доступ к данным пользователя
-- CSRF-защита для state-changing действий
-- Google OAuth login flow при заданных `GOOGLE_OAUTH_*` переменных
+- Implemented registration, login, logout, and session resolution.
+- Stored auth sessions in Redis instead of in-memory state.
+- Added optional Google OAuth flow.
+- Separated UI session middleware from auth session cookie handling.
 
-## Структура проекта
+### Data Ownership and Security
+
+- Applied owner-scoped data access so users only work with their own records.
+- Added CSRF protection for state-changing operations.
+- Added rate limiting for auth-related routes.
+- Centralized error handling for HTML and JSON responses.
+
+### Domain Logic
+
+- Implemented task priorities and status transitions.
+- Built habit scheduling for daily, weekly, monthly, yearly, and interval-based routines.
+- Added completion tracking, streak logic, and date-aware filtering.
+- Calculated aggregated statistics across tasks, habits, and themes.
+
+### Reliability and Maintainability
+
+- Added Alembic migrations for schema evolution.
+- Structured code into clear service and repository boundaries.
+- Covered behavior with unit, API-unit, and integration tests.
+- Enforced quality gates with Ruff, mypy, and pytest coverage.
+
+## Key Engineering Decisions
+
+- **FastAPI** for explicit request handling, dependency injection, and async support.
+- **PostgreSQL** as the primary relational store for application data and reporting queries.
+- **Redis** for session-backed authentication state.
+- **APScheduler** for lightweight recurring background jobs without adding a queue broker.
+- **Layered architecture** to keep transport, business logic, and persistence concerns separated.
+
+## Architecture
+
+```text
+Browser
+  -> FastAPI routers
+     -> services
+        -> repositories
+           -> PostgreSQL
+           -> Redis
+
+APScheduler
+  -> services
+     -> ZenQuotes API
+     -> PostgreSQL
+```
+
+### Request Flow
+
+1. Router validates HTTP input and resolves dependencies.
+2. Service applies business rules and coordinates use cases.
+3. Repository reads or writes PostgreSQL or Redis.
+4. Router returns HTML, redirect, or JSON depending on the route.
+
+### Project Structure
 
 ```text
 .
-├── docker-compose.yml         # Запуск app + postgres + redis
-├── Dockerfile                 # Сборка образа приложения
-├── Makefile                   # Команды разработки
-├── .env.example               # Пример переменных для локального запуска
-├── .env.docker.example        # Переопределения env для app-контейнера
-├── docs/                      # Проектная документация
-│   ├── overview.mdc
-│   ├── backend_roadmap.mdc
-│   ├── api_contract.mdc
-│   ├── session_contract.mdc
-│   └── testing_strategy.mdc
-├── src/                       # Исходный код приложения
-└── tests/                     # Тесты
+├── src/
+│   ├── routers/        # HTTP and web routes
+│   ├── services/       # business logic
+│   ├── repositories/   # database and Redis access
+│   ├── database/       # SQLAlchemy models and Alembic migrations
+│   ├── schemas/        # Pydantic contracts
+│   ├── templates/      # Jinja2 templates
+│   └── static/         # CSS and JavaScript
+├── tests/              # unit, api_unit, integration
+├── docs/               # internal contracts and architecture notes
+├── Dockerfile
+├── docker-compose.yml
+├── Makefile
+├── pyproject.toml
+└── .env.example
 ```
 
-## Требования
+## Product Scope
 
-- **Python** 3.12+
-- **Poetry**
-- **Docker** и **Docker Compose**
-- **Make** (опционально)
+- Themes with related entity counters
+- Tasks with priorities `low`, `medium`, `high`
+- Habits with multiple recurrence modes: daily, weekly, monthly, yearly, and interval-based
+- Registration, login, logout, and optional Google OAuth
+- Server-rendered web UI with FastAPI + Jinja2
 
-## Быстрый старт
+## Tech Stack
 
-### 1. Клонирование репозитория
+- Python 3.12
+- FastAPI
+- SQLAlchemy 2.x
+- Alembic
+- PostgreSQL
+- Redis
+- Jinja2
+- Vanilla JavaScript
+- Poetry
+- pytest
+- Ruff
+- mypy
+- Docker
+- Docker Compose
+
+## Run
+
+### Option 1. Docker
 
 ```bash
 git clone https://github.com/Qwertyil/HabitFlow.git
 cd HabitFlow
-```
-
-### 2. Подготовка переменных окружения
-
-```bash
 cp .env.example .env
-cp .env.docker.example .env.docker
 ```
 
-- `.env` используется локальным запуском (например, `POSTGRES_HOST=localhost`, `REDIS_HOST=localhost`).
-- `.env.docker` подмешивается в `app`-контейнер и переопределяет хосты для сети compose (`postgres`, `redis`).
-- `GOOGLE_OAUTH_*` можно оставить пустыми: тогда вход через Google будет отключен.
+Create `.env.docker`:
 
-### 3. Запуск через Docker (рекомендуется)
+```env
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+REDIS_HOST=redis
+REDIS_PORT=6379
+```
+
+Then run:
 
 ```bash
 make compose-up
-# или вручную
-docker compose up -d --build
-```
-
-Поднимутся сервисы: `app`, `postgres`, `redis`.
-
-### 4. Миграции
-
-```bash
 make migration
-# или вручную
-docker compose exec app alembic upgrade head
 ```
 
-### 5. Проверка
+Application URL: `http://localhost:8000`
+PostgreSQL: `localhost:5430`
+Redis: `localhost:6370`
 
-Приложение доступно на `http://localhost:8000` (порт задаётся `CONTAINER_APP_PORT`, по умолчанию `8000`).
+### Option 2. Local Development
 
-Основные страницы:
-- `/` — главная
-- `/themes/` — темы
-- `/tasks/` — задачи
-- `/habits/` — привычки
-- `/auth/login` и `/auth/register` — auth UI
-
-## Локальный запуск (без app-контейнера)
-
-1. Установить зависимости:
+Install dependencies:
 
 ```bash
 poetry install
 ```
 
-2. Поднять только инфраструктуру:
+Start infrastructure only:
 
 ```bash
 docker compose up -d postgres redis
 ```
 
-3. Применить миграции локально:
+Apply migrations:
 
 ```bash
 poetry run alembic upgrade head
 ```
 
-4. Запустить приложение:
+Run the app:
 
 ```bash
 make run
-# или вручную
-poetry run uvicorn src.main:app --reload --port 8001
 ```
 
-Приложение будет доступно на `http://localhost:8001` (порт из `APP_PORT`).
+Local URL: `http://localhost:8001`
 
-## Команды Makefile
+If you use Google OAuth locally, update `GOOGLE_OAUTH_REDIRECT_URI` in `.env` to:
 
-- `make run` — локальный запуск FastAPI (uvicorn, порт из `APP_PORT`, `--reload` включается при `DEBUG=true`).
-- `make test` — запуск тестов с coverage и порогом `80%`.
-- `make lint` — проверка Ruff.
-- `make format` — форматирование Ruff + autofix.
-- `make typecheck` — проверка mypy.
-- `make pre-commit` — запуск pre-commit.
-- `make check` — `format` + `lint` + `typecheck` + `test`.
-- `make infra-up` — поднять только инфраструктуру (`postgres`, `redis`).
-- `make infra-down` — остановить инфраструктуру (`postgres`, `redis`).
-- `make infra-restart` — перезапустить контейнеры `postgres` и `redis`.
-- `make infra-logs` — посмотреть логи `postgres` и `redis`.
-- `make app-up` — поднять только приложение `app` (при уже запущенной инфраструктуре).
-- `make app-down` — остановить только приложение `app`.
-- `make app-restart` — перезапустить приложение `app`.
-- `make app-logs` — посмотреть логи приложения `app`.
-- `make compose-up` — пересобрать и поднять все контейнеры (`docker compose up -d --build`).
-- `make compose-down` — остановить и удалить все контейнеры (`docker compose down`).
-- `make compose-logs` — посмотреть логи всех контейнеров.
-- `make migration` — применить миграции в app-контейнере.
-- `make psql` — подключиться к PostgreSQL в контейнере.
+```text
+http://localhost:8001/auth/google/callback
+```
 
-## Тестирование
+## Verify
+
+Useful pages:
+
+- `/`
+- `/themes`
+- `/tasks`
+- `/habits`
+- `/stats`
+- `/auth/login`
+- `/auth/register`
+
+Run tests:
 
 ```bash
 make test
 ```
 
-или:
+Run the main quality checks:
 
 ```bash
-poetry run pytest -v
+make lint
+make typecheck
+make test
 ```
 
-`make test` запускает pytest с coverage для `src` и порогом `80%`.
-Integration-тесты поднимают временные контейнеры PostgreSQL и Redis через Docker, поэтому для полного прогона нужен работающий Docker daemon.
+## Testing Strategy
 
-Основные группы тестов:
-- `tests/unit`
-- `tests/api_unit`
-- `tests/integration`
+The test suite is split into three layers:
 
-## Документация
+- `tests/unit` for isolated business logic;
+- `tests/api_unit` for route and HTTP behavior;
+- `tests/integration` for end-to-end behavior with real infrastructure.
 
-- `docs/overview.mdc` — контекст проекта и принципы.
-- `docs/backend_roadmap.mdc` — план итераций.
-- `docs/api_contract.mdc` — web/API-контракты.
-- `docs/session_contract.mdc` — контракт auth/session.
-- `docs/testing_strategy.mdc` — стратегия тестирования.
+The default `make test` command runs pytest with coverage and enforces a minimum coverage threshold of `80%`.
 
-## Переменные окружения
+## Main Environment Variables
 
-| Переменная | Описание | Значение по умолчанию |
+| Variable | Purpose | Default |
 |---|---|---|
-| POSTGRES_DB | Имя БД PostgreSQL | mydatabase |
-| POSTGRES_USER | Пользователь PostgreSQL | myuser |
-| POSTGRES_PASSWORD | Пароль PostgreSQL | mypassword |
-| POSTGRES_HOST | Хост PostgreSQL | localhost |
-| POSTGRES_PORT | Порт PostgreSQL | 5432 |
-| REDIS_HOST | Хост Redis | localhost |
-| REDIS_PORT | Порт Redis | 6379 |
-| REDIS_PASSWORD | Пароль Redis | your_redis_password_here |
-| REDIS_DB | База Redis | 0 |
-| CONTAINER_APP_PORT | Порт app в Docker | 8000 |
-| APP_PORT | Порт локального uvicorn | 8001 |
-| UI_SESSION_SECRET_KEY | Секрет UI-сессий | change_me_to_a_long_random_string |
-| UI_SESSION_COOKIE_NAME | Имя cookie UI-сессии | habitflow_session |
-| UI_SESSION_MAX_AGE | TTL UI-сессии (сек.) | 1209600 |
-| UI_SESSION_SAME_SITE | SameSite UI-cookie | lax |
-| UI_SESSION_HTTPS_ONLY | `Secure` для UI-cookie | False |
-| AUTH_SESSION_COOKIE_NAME | Имя cookie auth-сессии | auth_session |
-| AUTH_SESSION_MAX_AGE | TTL auth-сессии (сек.) | 1209600 |
-| AUTH_SESSION_SAME_SITE | SameSite auth-cookie | lax |
-| AUTH_SESSION_HTTPS_ONLY | `Secure` для auth-cookie | False |
-| GOOGLE_OAUTH_CLIENT_ID | Client ID Google OAuth | пусто |
-| GOOGLE_OAUTH_CLIENT_SECRET | Client secret Google OAuth | пусто |
-| GOOGLE_OAUTH_REDIRECT_URI | Redirect URI для callback Google OAuth | http://localhost:8000/auth/google/callback |
-| GOOGLE_OAUTH_STATE_TTL | TTL OAuth state (сек.) | 600 |
-| API_KEY | Технический ключ приложения | your_api_key_here |
-| DEBUG | Режим отладки | True |
+| `POSTGRES_DB` | PostgreSQL database name | `mydatabase` |
+| `POSTGRES_USER` | PostgreSQL user | `myuser` |
+| `POSTGRES_PASSWORD` | PostgreSQL password | `mypassword` |
+| `POSTGRES_HOST` | PostgreSQL host | `localhost` |
+| `POSTGRES_PORT` | PostgreSQL host port | `5430` |
+| `REDIS_HOST` | Redis host | `localhost` |
+| `REDIS_PORT` | Redis host port | `6370` |
+| `REDIS_PASSWORD` | Redis password | `your_redis_password_here` |
+| `REDIS_DB` | Redis DB index | `0` |
+| `CONTAINER_APP_PORT` | Docker app port | `8000` |
+| `APP_PORT` | local app port | `8001` |
+| `UI_SESSION_SECRET_KEY` | UI session middleware secret | `change_me_to_a_long_random_string` |
+| `AUTH_SESSION_COOKIE_NAME` | auth cookie name | `auth_session` |
+| `GOOGLE_OAUTH_CLIENT_ID` | Google OAuth client id | empty |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | Google OAuth client secret | empty |
+| `GOOGLE_OAUTH_REDIRECT_URI` | Google OAuth callback URL | `http://localhost:8000/auth/google/callback` |
+| `ZENQUOTES_API_URL` | quotes provider URL | `https://zenquotes.io/api/quotes` |
+| `DEBUG` | debug mode | `True` |
 
-> Если `DEBUG=False`, `UI_SESSION_SECRET_KEY` должен быть задан явно. Если `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` и `GOOGLE_OAUTH_REDIRECT_URI` не заполнены одновременно, вход через Google автоматически выключен.
+Notes:
+
+- if `DEBUG=False`, `UI_SESSION_SECRET_KEY` must be set explicitly;
+- Google OAuth is disabled unless all required `GOOGLE_OAUTH_*` variables are provided;
+- `REFILL_INTERVAL_HOURS` exists in config, but the scheduler is currently started with a fixed 6-hour interval in `src/main.py`;
+- `Make` is optional because all commands can also be run manually.
+
+## Make Commands
+
+```bash
+make run
+make test
+make lint
+make format
+make typecheck
+make pre-commit
+make check
+make infra-up
+make infra-down
+make infra-restart
+make infra-logs
+make compose-up
+make compose-down
+make compose-logs
+make migration
+make psql
+```
+
+## Screenshots
+
+<div align="center">
+  <img src="assets/main_page.png"
+       alt="HabitFlow main page"
+       width="800"
+       loading="lazy"
+       style="border-radius: 12px;
+              box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+              border: 1px solid #eaeef2;">
+  <p><em>Main page</em></p>
+</div>
+
+<details>
+  <summary>More UI screenshots</summary>
+
+  <div align="center">
+    <img src="assets/tasks_list.png"
+         alt="Tasks list"
+         width="800"
+         loading="lazy"
+         style="border-radius: 12px;
+                box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+                border: 1px solid #eaeef2;">
+    <p><em>Tasks list</em></p>
+  </div>
+
+  <div align="center">
+    <img src="assets/habits_list.png"
+         alt="Habits list"
+         width="800"
+         loading="lazy"
+         style="border-radius: 12px;
+                box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+                border: 1px solid #eaeef2;">
+    <p><em>Habits list</em></p>
+  </div>
+
+  <div align="center">
+    <img src="assets/themes_list.png"
+         alt="Themes list"
+         width="800"
+         loading="lazy"
+         style="border-radius: 12px;
+                box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+                border: 1px solid #eaeef2;">
+    <p><em>Themes list</em></p>
+  </div>
+</details>
+
+## Documentation
+
+- `docs/overview.mdc` for project context and architecture principles
+- `docs/backend_roadmap.mdc` for roadmap
+- `docs/api_contract.mdc` for current HTTP contracts
+- `docs/session_contract.mdc` for auth and session behavior
+- `docs/testing_strategy.mdc` for testing approach
+
+## Current Status
+
+HabitFlow is an educational backend project with a working web UI, authentication, ownership boundaries, recurring habit logic, statistics, automated tests, and containerized local setup.

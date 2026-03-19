@@ -75,7 +75,9 @@ async def lifespan(app: FastAPI):
         scheduler.add_job(
             refresh_quotes_job,
             trigger="interval",
-            hours=6,
+            hours=settings.REFILL_INTERVAL_HOURS
+            if settings.REFILL_INTERVAL_HOURS
+            else 12,
             kwargs={"app": app},
             id="refresh_quotes_job",
             replace_existing=True,

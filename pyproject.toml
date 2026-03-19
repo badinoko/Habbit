@@ -1,6 +1,6 @@
 [project]
 name = "habitflow"
-version = "0.1.0"
+version = "1.0.0"
 description = "HabitFlow - task and habit management app that tracks your activity and helps you set and achieve goals."
 authors = [
     {name = "Amir",email = "zamnatov2004@gmail.com"}
