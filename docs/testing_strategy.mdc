@@ -53,7 +53,7 @@ alwaysApply: false
 ## 4. Инфраструктурные требования
 - Integration-тесты используют временные PostgreSQL и Redis контейнеры через Docker.
 - Для полного прогона integration нужен работающий Docker daemon.
-- `make test` запускает pytest с coverage для `src` и порогом `75%`.
+- `make test` запускает pytest с coverage для `src` и порогом `80%`.
 
 ## 5. Матрица покрытия (текущий обязательный минимум)
 
