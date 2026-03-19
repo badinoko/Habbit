@@ -16,7 +16,7 @@ run:
 	poetry run uvicorn src.main:app --port $(APP_PORT) $(UVICORN_RELOAD)
 
 test:
-	PYTHONPATH=. poetry run pytest -x tests -v --junitxml=junit.xml --cov=src --cov-branch --cov-report=term --cov-report=xml:coverage.xml --cov-fail-under=80
+	PYTHONPATH=. poetry run pytest -x tests -v --junitxml=junit.xml --cov=src --cov-branch --cov-report=term --cov-report=xml:coverage.xml --cov-report=html:htmlcov --cov-fail-under=80
 
 lint:
 	poetry run ruff check . --force-exclude

@@ -73,6 +73,7 @@ jobs:
           name: test-artifacts
           path: |
             coverage.xml
+            htmlcov/
             junit.xml
           if-no-files-found: ignore
           retention-days: 14
