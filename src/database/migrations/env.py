@@ -26,15 +26,17 @@ def _normalize_sync_database_url(raw_url: str) -> str:
     if url.drivername == "postgresql+asyncpg":
         url = url.set(drivername="postgresql+psycopg2")
 
-    return str(url)
+    return url.render_as_string(hide_password=False)
 
 
 def _resolve_database_url() -> str:
-    explicit_url = os.getenv("DATABASE_URL") or config.get_main_option(
-        "sqlalchemy.url"
-    )
-    if explicit_url and not explicit_url.startswith("driver://"):
-        return _normalize_sync_database_url(explicit_url)
+    configured_url = config.get_main_option("sqlalchemy.url")
+    if configured_url and not configured_url.startswith("driver://"):
+        return _normalize_sync_database_url(configured_url)
+
+    env_url = os.getenv("DATABASE_URL")
+    if env_url:
+        return _normalize_sync_database_url(env_url)
 
     from src.config import settings
 
