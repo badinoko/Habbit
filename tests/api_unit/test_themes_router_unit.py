@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 from datetime import datetime
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi import Request
@@ -50,6 +50,8 @@ class _FakeThemeService:
         update_error: Exception | None = None,
         update_returns_none: bool = False,
         themes_count: int = 0,
+        theme_id: UUID | None = None,
+        theme_name: str = "Hobby",
     ):
         self.exists = exists
         self.create_error = create_error
@@ -57,6 +59,8 @@ class _FakeThemeService:
         self.update_error = update_error
         self.update_returns_none = update_returns_none
         self.themes_count = themes_count
+        self.theme_id = theme_id or uuid4()
+        self.theme_name = theme_name
 
     async def list_themes_with_counts(
         self, page: int = 1, per_page: int = 20
@@ -73,10 +77,19 @@ class _FakeThemeService:
             return None
         return _mk_theme(theme_data.name, theme_data.color or "#FF00FF")
 
-    async def get_theme_by_name(self, name: str) -> ThemeInDB | None:
+    async def get_theme_by_id(self, id: UUID) -> ThemeInDB | None:
         if not self.exists:
             return None
-        return _mk_theme(name, "#FF00FF")
+        if id != self.theme_id:
+            return None
+        now = datetime(2026, 1, 1, 0, 0, 0)
+        return ThemeInDB(
+            id=self.theme_id,
+            name=self.theme_name,
+            color="#FF00FF",
+            created_at=now,
+            updated_at=now,
+        )
 
     async def update_theme(
         self,
@@ -90,8 +103,10 @@ class _FakeThemeService:
         dump = theme_data.model_dump(exclude_unset=True)
         return old_theme.model_copy(update=dump)
 
-    async def delete_theme(self, theme: str) -> None:
-        return None
+    async def delete_theme(self, id: UUID) -> bool:
+        if not self.exists:
+            return False
+        return id == self.theme_id
 
 
 def _override_theme_service(service: _FakeThemeService) -> None:
@@ -126,13 +141,16 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
 async def test_update_theme_returns_404_when_missing(client: AsyncClient) -> None:
     _override_theme_service(_FakeThemeService(exists=False))
 
-    res = await client.put("/themes/Nope", json={"name": "X"})
+    res = await client.put(f"/themes/{uuid4()}", json={"name": "X"})
 
     assert_json_response(res, status_code=404)
 
 
 async def test_update_theme_returns_success_payload(client: AsyncClient) -> None:
-    res = await client.put("/themes/Hobby", json={"color": "#FFFFFF"})
+    theme_id = uuid4()
+    _override_theme_service(_FakeThemeService(theme_id=theme_id, theme_name="Hobby"))
+
+    res = await client.put(f"/themes/{theme_id}", json={"color": "#FFFFFF"})
 
     assert_json_response(res, status_code=200)
     data = res.json()
@@ -158,9 +176,10 @@ async def test_update_theme_returns_expected_json_error(
     expected_status: int,
     expected_detail: str,
 ) -> None:
-    _override_theme_service(_FakeThemeService(**service_kwargs))
+    theme_id = uuid4()
+    _override_theme_service(_FakeThemeService(theme_id=theme_id, **service_kwargs))
 
-    res = await client.put("/themes/Hobby", json={"color": "#FFFFFF"})
+    res = await client.put(f"/themes/{theme_id}", json={"color": "#FFFFFF"})
 
     assert_json_detail(res, status_code=expected_status, detail=expected_detail)
 
@@ -224,7 +243,7 @@ async def test_create_theme_accepts_valid_csrf_token(client: AsyncClient) -> Non
 async def test_get_theme_page_returns_404_when_missing(client: AsyncClient) -> None:
     _override_theme_service(_FakeThemeService(exists=False))
 
-    res = await client.get("/themes/Missing")
+    res = await client.get(f"/themes/{uuid4()}")
 
     assert_html_response(res, status_code=404)
 
@@ -232,7 +251,10 @@ async def test_get_theme_page_returns_404_when_missing(client: AsyncClient) -> N
 async def test_update_theme_rejects_missing_csrf_token(client: AsyncClient) -> None:
     app.dependency_overrides.pop(require_csrf, None)
 
-    res = await client.put("/themes/Hobby", json={"color": "#FFFFFF"})
+    theme_id = uuid4()
+    _override_theme_service(_FakeThemeService(theme_id=theme_id))
+
+    res = await client.put(f"/themes/{theme_id}", json={"color": "#FFFFFF"})
 
     assert_json_detail(res, status_code=403, detail=PUBLIC_ERRORS[403])
 
