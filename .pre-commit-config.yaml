@@ -14,7 +14,8 @@ repos:
       - id: end-of-file-fixer     # добавляет новую строку в конце
       - id: check-yaml             # проверяет YAML синтаксис
       - id: check-toml             # проверяет TOML синтаксис
-      - id: check-added-large-files # проверяет большие файлы
+      - id: check-added-large-files # проверяет большие файлы (README screenshots в assets/ длинные full-page)
+        exclude: ^assets/
 
   # Ruff - линтинг и форматирование
   - repo: https://github.com/astral-sh/ruff-pre-commit

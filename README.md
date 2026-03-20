@@ -251,10 +251,10 @@ http://localhost:8001/auth/google/callback
 Useful pages:
 
 - `/`
+- `/stats` (statistics dashboard v2)
 - `/themes`
 - `/tasks`
 - `/habits`
-- `/stats`
 - `/auth/login`
 - `/auth/register`
 
@@ -336,19 +336,32 @@ make psql
 
 ## Screenshots
 
+Screenshots are captured with demo data (themes, tasks, habits, partial task completions) using `scripts/capture_readme_screenshots.py` so lists and the statistics dashboard look like a real account. **They always reflect whatever app is running at `SCREENSHOT_BASE_URL`.** After changing `src/templates/` or `src/static/`, either rebuild and restart the Docker app (`docker compose build app && docker compose up -d app`) or point `SCREENSHOT_BASE_URL` at local `make run` (default in the script is `http://127.0.0.1:8001`) so PNGs are not stuck on an old image. If `auth/register` is rate-limited, set `SCREENSHOT_EMAIL` / `SCREENSHOT_PASSWORD` for an existing user or retry after a short wait.
+
 <div align="center">
-  <img src="assets/main_page.png"
-       alt="HabitFlow main page (Legacy - block 'Быстрые действия' replaced with quotes block)"
+  <img src="assets/stats_page.png"
+       alt="HabitFlow statistics dashboard (Statistics v2)"
        width="800"
        loading="lazy"
        style="border-radius: 12px;
               box-shadow: 0 6px 12px rgba(0,0,0,0.15);
               border: 1px solid #eaeef2;">
-  <p><em>Main page</em></p>
+  <p><em>Statistics dashboard (v2)</em></p>
 </div>
 
 <details>
   <summary>More UI screenshots</summary>
+
+  <div align="center">
+    <img src="assets/main_page.png"
+         alt="HabitFlow main dashboard"
+         width="800"
+         loading="lazy"
+         style="border-radius: 12px;
+                box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+                border: 1px solid #eaeef2;">
+    <p><em>Main dashboard</em></p>
+  </div>
 
   <div align="center">
     <img src="assets/tasks_list.png"
