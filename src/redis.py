@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import builtins
+import inspect
 import logging
 from types import TracebackType
 from typing import Any, Self, cast
@@ -13,6 +14,9 @@ from src.config import settings
 
 logger = logging.getLogger(__name__)
 
+_DEFAULT_SOCKET_TIMEOUT_SECONDS = 5
+_HEALTHCHECK_SOCKET_TIMEOUT_SECONDS = 1
+
 
 class RedisAdapter:
     def __init__(self) -> None:
@@ -21,17 +25,30 @@ class RedisAdapter:
         self._retry_attempts = 3
         self._retry_delay = 1
 
+    def _build_client(
+        self,
+        *,
+        socket_connect_timeout: int,
+        socket_timeout: int,
+        retry_on_timeout: bool,
+    ) -> Redis:
+        return Redis.from_url(
+            self.dsn,
+            decode_responses=True,
+            socket_connect_timeout=socket_connect_timeout,
+            socket_keepalive=True,
+            retry_on_timeout=retry_on_timeout,
+            socket_timeout=socket_timeout,
+        )
+
     async def _get_connection(self) -> Redis:
         for attempt in range(self._retry_attempts):
             try:
                 if self._redis is None:
-                    self._redis = Redis.from_url(
-                        self.dsn,
-                        decode_responses=True,
-                        socket_connect_timeout=5,
-                        socket_keepalive=True,
+                    self._redis = self._build_client(
+                        socket_connect_timeout=_DEFAULT_SOCKET_TIMEOUT_SECONDS,
+                        socket_timeout=_DEFAULT_SOCKET_TIMEOUT_SECONDS,
                         retry_on_timeout=True,
-                        socket_timeout=5,
                     )
 
                 # после проверки self._redis точно не None
@@ -67,6 +84,23 @@ class RedisAdapter:
 
     async def get(self, key: int | str) -> Any:
         return await self._execute_with_retry("get", str(key))
+
+    async def ping(self) -> bool:
+        return bool(await self._execute_with_retry("ping"))
+
+    async def ping_for_healthcheck(self) -> bool:
+        redis = self._build_client(
+            socket_connect_timeout=_HEALTHCHECK_SOCKET_TIMEOUT_SECONDS,
+            socket_timeout=_HEALTHCHECK_SOCKET_TIMEOUT_SECONDS,
+            retry_on_timeout=False,
+        )
+        try:
+            ping_result = redis.ping()
+            if inspect.isawaitable(ping_result):
+                ping_result = await ping_result
+            return bool(ping_result)
+        finally:
+            await redis.aclose()
 
     async def set(self, key: int | str, value: Any, ex: int | None = None) -> None:
         if ex is not None:

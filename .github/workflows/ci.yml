@@ -115,6 +115,50 @@ jobs:
     runs-on: ubuntu-latest
     needs: docker-build
 
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: app_smoke
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app_smoke"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TESTING: "true"
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: app_smoke
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      REDIS_DB: 0
+      APP_HOST: 0.0.0.0
+      CONTAINER_APP_PORT: 8000
+      APP_PORT: 8000
+      PUBLISHED_APP_PORT: 18000
+      DOCKER_HOST_ACCESS: host.docker.internal
+      UI_SESSION_SECRET_KEY: smoke-test-session-secret
+      ZENQUOTES_API_URL: http://127.0.0.1:65535/api/random
+      REFILL_INTERVAL_HOURS: 6
+
     steps:
       - name: Download image artifact
         uses: actions/download-artifact@v8
@@ -124,8 +168,95 @@ jobs:
       - name: Load image
         run: gunzip -c app-image.tar.gz | docker load
 
-      - name: Smoke test image
-        run: docker run --rm --entrypoint python app:${{ github.sha }} --version
+      - name: Apply migrations inside image
+        run: |
+          docker run --rm \
+            --add-host "${DOCKER_HOST_ACCESS}:host-gateway" \
+            -e TESTING="${TESTING}" \
+            -e POSTGRES_HOST="${DOCKER_HOST_ACCESS}" \
+            -e POSTGRES_PORT="${POSTGRES_PORT}" \
+            -e POSTGRES_USER="${POSTGRES_USER}" \
+            -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
+            -e POSTGRES_DB="${POSTGRES_DB}" \
+            -e REDIS_HOST="${DOCKER_HOST_ACCESS}" \
+            -e REDIS_PORT="${REDIS_PORT}" \
+            -e REDIS_PASSWORD="${REDIS_PASSWORD}" \
+            -e REDIS_DB="${REDIS_DB}" \
+            -e APP_HOST="${APP_HOST}" \
+            -e CONTAINER_APP_PORT="${CONTAINER_APP_PORT}" \
+            -e APP_PORT="${APP_PORT}" \
+            -e UI_SESSION_SECRET_KEY="${UI_SESSION_SECRET_KEY}" \
+            -e ZENQUOTES_API_URL="${ZENQUOTES_API_URL}" \
+            -e REFILL_INTERVAL_HOURS="${REFILL_INTERVAL_HOURS}" \
+            --entrypoint alembic \
+            app:${{ github.sha }} upgrade head
+
+      - name: Start app container
+        run: |
+          docker rm -f app-smoke >/dev/null 2>&1 || true
+          docker run -d --name app-smoke \
+            --add-host "${DOCKER_HOST_ACCESS}:host-gateway" \
+            -p 127.0.0.1:${PUBLISHED_APP_PORT}:${CONTAINER_APP_PORT} \
+            -e TESTING="${TESTING}" \
+            -e POSTGRES_HOST="${DOCKER_HOST_ACCESS}" \
+            -e POSTGRES_PORT="${POSTGRES_PORT}" \
+            -e POSTGRES_USER="${POSTGRES_USER}" \
+            -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
+            -e POSTGRES_DB="${POSTGRES_DB}" \
+            -e REDIS_HOST="${DOCKER_HOST_ACCESS}" \
+            -e REDIS_PORT="${REDIS_PORT}" \
+            -e REDIS_PASSWORD="${REDIS_PASSWORD}" \
+            -e REDIS_DB="${REDIS_DB}" \
+            -e APP_HOST="${APP_HOST}" \
+            -e CONTAINER_APP_PORT="${CONTAINER_APP_PORT}" \
+            -e APP_PORT="${APP_PORT}" \
+            -e UI_SESSION_SECRET_KEY="${UI_SESSION_SECRET_KEY}" \
+            -e ZENQUOTES_API_URL="${ZENQUOTES_API_URL}" \
+            -e REFILL_INTERVAL_HOURS="${REFILL_INTERVAL_HOURS}" \
+            app:${{ github.sha }}
+
+      - name: Wait for app healthcheck
+        run: |
+          # Dockerfile healthcheck uses start-period=20s, interval=10s, timeout=5s, retries=6.
+          # Give CI a longer deadline so it can observe either "healthy" or "unhealthy"
+          # instead of failing while the container is still in the initial "starting" state.
+          max_wait_seconds=100
+          deadline=$(( $(date +%s) + max_wait_seconds ))
+
+          while true; do
+            status="$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}missing{{end}}' app-smoke)"
+
+            if [ "${status}" = "healthy" ]; then
+              exit 0
+            fi
+
+            if [ "${status}" = "unhealthy" ]; then
+              docker logs app-smoke
+              exit 1
+            fi
+
+            if [ "$(date +%s)" -ge "${deadline}" ]; then
+              echo "Timed out after ${max_wait_seconds}s waiting for app-smoke healthcheck (last status: ${status})."
+              docker logs app-smoke
+              exit 1
+            fi
+
+            sleep 2
+          done
+
+      - name: Smoke test running app
+        run: |
+          set -eo pipefail
+          response="$(curl --fail --silent --show-error http://127.0.0.1:${PUBLISHED_APP_PORT}/)"
+          grep -q "HabitFlow" <<< "${response}"
+
+      - name: Print app logs on failure
+        if: failure()
+        run: docker logs app-smoke
+
+      - name: Stop app container
+        if: always()
+        run: docker rm -f app-smoke
 
   migration-smoke:
     name: Migration smoke test
@@ -134,7 +265,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:17
+        image: postgres:17-alpine
         env:
           POSTGRES_USER: app
           POSTGRES_PASSWORD: app

@@ -55,4 +55,7 @@ USER app
 
 EXPOSE 8000
 
+HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=6 \
+    CMD curl --fail http://127.0.0.1:${CONTAINER_APP_PORT:-8000}/healthz/ready || exit 1
+
 ENTRYPOINT ["/app/docker/entrypoint.sh"]

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from typing import Any
@@ -7,11 +8,19 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncEngine
 from starlette.middleware.sessions import SessionMiddleware
 
 from src.config import settings
-from src.database.connection import AsyncSessionLocal
-from src.dependencies import add_quote_to_context, get_habit_service, get_task_service
+from src.database.connection import AsyncSessionLocal, get_engine
+from src.dependencies import (
+    add_quote_to_context,
+    get_habit_service,
+    get_redis_adapter,
+    get_task_service,
+)
+from src.redis import RedisAdapter
 from src.repositories.quote_batches import QuoteBatchRepository
 from src.repositories.quotes import QuoteRepository
 from src.routers.auth import router as auth_router
@@ -32,6 +41,24 @@ logging.basicConfig(
     level=logging.DEBUG if settings.DEBUG else logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
+
+
+async def _postgres_ready(db_engine: AsyncEngine) -> bool:
+    try:
+        async with db_engine.connect() as connection:
+            await connection.execute(text("SELECT 1"))
+        return True
+    except Exception as exc:
+        logger.warning("Readiness check failed for Postgres: %s", exc)
+        return False
+
+
+async def _redis_ready(redis: RedisAdapter) -> bool:
+    try:
+        return await redis.ping_for_healthcheck()
+    except Exception as exc:
+        logger.warning("Readiness check failed for Redis: %s", exc)
+        return False
 
 
 async def refresh_quotes_job(app: FastAPI) -> None:
@@ -121,6 +148,34 @@ app.add_middleware(
     same_site=settings.UI_SESSION_SAME_SITE,
     https_only=settings.UI_SESSION_HTTPS_ONLY,
 )
+
+
+@app.get("/healthz/live")
+async def live_health():
+    return JSONResponse(content={"status": "ok"})
+
+
+@app.get("/healthz/ready")
+async def ready_health(
+    db_engine: AsyncEngine = Depends(get_engine),
+    redis: RedisAdapter = Depends(get_redis_adapter),
+):
+    postgres_ready, redis_ready = await asyncio.gather(
+        _postgres_ready(db_engine),
+        _redis_ready(redis),
+    )
+    status_code = 200 if postgres_ready and redis_ready else 503
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "ok" if status_code == 200 else "degraded",
+            "checks": {
+                "postgres": "ok" if postgres_ready else "error",
+                "redis": "ok" if redis_ready else "error",
+            },
+        },
+    )
 
 
 @app.exception_handler(HTTPException)

@@ -1,7 +1,12 @@
 import logging
 from collections.abc import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from src.config import settings
 
@@ -18,6 +23,10 @@ AsyncSessionLocal = async_sessionmaker(
     engine,
     expire_on_commit=False,
 )
+
+
+def get_engine() -> AsyncEngine:
+    return engine
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

@@ -195,7 +195,7 @@ def postgres_container():
 
     try:
         client.containers.run(
-            image="postgres:15-alpine",
+            image="postgres:17-alpine",
             name=container_name,
             environment={
                 "POSTGRES_USER": config.user,
@@ -476,11 +476,12 @@ async def secondary_auth_session_id(
 
 
 @pytest.fixture
-def authed_client_factory(session_factory_async):
+def authed_client_factory(engine_async, session_factory_async):
     """
     Фабрика авторизованных FastAPI-клиентов с переопределённой зависимостью БД.
     """
     from src.database.connection import get_db
+    from src.database.connection import get_engine
     from src.config import settings
     from src.main import app
 
@@ -496,6 +497,7 @@ def authed_client_factory(session_factory_async):
                     raise
 
         app.dependency_overrides[get_db] = override_get_db
+        app.dependency_overrides[get_engine] = lambda: engine_async
 
         transport = ASGITransport(app=app)
         async with httpx.AsyncClient(
