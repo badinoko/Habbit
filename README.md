@@ -322,7 +322,7 @@ make psql
 
 <div align="center">
   <img src="assets/main_page.png"
-       alt="HabitFlow main page"
+       alt="HabitFlow main page (Legacy - block 'Быстрые действия' replaced with quotes block)"
        width="800"
        loading="lazy"
        style="border-radius: 12px;
@@ -375,6 +375,16 @@ make psql
 - `docs/api_contract.mdc` for current HTTP contracts
 - `docs/session_contract.mdc` for auth and session behavior
 - `docs/testing_strategy.mdc` for testing approach
+
+## Next Steps
+
+1. Redesign the GUI.
+2. Perform load testing.
+3. Refactor `main.py`.
+4. Add user settings:
+   - theme selection for the web UI;
+   - language switching.
+5. Add quote translation based on the selected language.
 
 ## Current Status
 
