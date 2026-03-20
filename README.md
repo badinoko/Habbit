@@ -2,6 +2,10 @@
 
 HabitFlow is a web-first habit and task tracker that explores backend concerns beyond basic CRUD: recurring schedule logic, auth/session boundaries, owner-scoped data access, and reporting shaped by real product constraints.
 
+## Live Demo
+
+- https://www.amir-vps.ru
+
 The goal of this repository is to show how a small productivity app quickly becomes an engineering problem:
 
 - recurring habits are not just `daily yes/no`, but support daily, weekly, monthly, yearly, and interval-based schedules with streaks, due-today logic, and auto-archiving;
