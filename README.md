@@ -371,10 +371,8 @@ make psql
 ## Documentation
 
 - `docs/overview.mdc` for project context and architecture principles
-- `docs/backend_roadmap.mdc` for roadmap
 - `docs/api_contract.mdc` for current HTTP contracts
 - `docs/session_contract.mdc` for auth and session behavior
-- `docs/testing_strategy.mdc` for testing approach
 
 ## Next Steps
 
