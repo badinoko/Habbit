@@ -84,6 +84,13 @@
 
 .page-header .btn {
     flex-shrink: 0;
+    text-decoration: none;
+}
+
+.page-header .btn:hover,
+.page-header .btn:focus,
+.page-header .btn:active {
+    text-decoration: none;
 }
 
 .page-header h1 {
