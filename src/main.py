@@ -129,6 +129,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
     debug=settings.DEBUG,
+    docs_url="/docs" if settings.API_DOCS_ENABLED else None,
+    redoc_url="/redoc" if settings.API_DOCS_ENABLED else None,
+    openapi_url="/openapi.json" if settings.API_DOCS_ENABLED else None,
 )
 
 app.mount("/static", StaticFiles(directory="src/static"), name="static")

@@ -392,13 +392,12 @@ make psql
 
 ## Next Steps
 
-1. Redesign the GUI.
-2. Perform load testing.
-3. Refactor `main.py`.
-4. Add user settings:
+1. Perform load testing.
+2. Refactor `main.py` and `utils.py`.
+3. Add user settings:
    - theme selection for the web UI;
    - language switching.
-5. Add quote translation based on the selected language.
+4. Add quote translation based on the selected language.
 
 ## Current Status
 

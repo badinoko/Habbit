@@ -3,12 +3,13 @@ set -eu
 
 HOST="${APP_HOST:-0.0.0.0}"
 PORT="${CONTAINER_APP_PORT:-8000}"
+TRUSTED_PROXY_IPS="${TRUSTED_PROXY_IPS:-127.0.0.1}"
 
 case "${DEBUG:-false}" in
   [Tt]rue|1)
-    exec uvicorn src.main:app --host "$HOST" --port "$PORT" --reload --proxy-headers --forwarded-allow-ips="*"
+    exec uvicorn src.main:app --host "$HOST" --port "$PORT" --reload --proxy-headers --forwarded-allow-ips="$TRUSTED_PROXY_IPS"
     ;;
   *)
-    exec uvicorn src.main:app --host "$HOST" --port "$PORT" --proxy-headers --forwarded-allow-ips="*"
+    exec uvicorn src.main:app --host "$HOST" --port "$PORT" --proxy-headers --forwarded-allow-ips="$TRUSTED_PROXY_IPS"
     ;;
 esac

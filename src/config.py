@@ -41,6 +41,7 @@ class Settings(BaseSettings):
 
     DEBUG: bool = False
     TESTING: bool = False
+    API_DOCS_ENABLED: bool = False
 
     @property
     def google_oauth_enabled(self) -> bool:
