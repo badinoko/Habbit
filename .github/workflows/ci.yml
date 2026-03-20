@@ -215,7 +215,7 @@ jobs:
             -e REFILL_INTERVAL_HOURS="${REFILL_INTERVAL_HOURS}" \
             app:${{ github.sha }}
 
-      - name: Wait for app healthcheck
+      - name: Wait for app liveness healthcheck
         run: |
           # Dockerfile healthcheck uses start-period=20s, interval=10s, timeout=5s, retries=6.
           # Give CI a longer deadline so it can observe either "healthy" or "unhealthy"
@@ -237,6 +237,26 @@ jobs:
 
             if [ "$(date +%s)" -ge "${deadline}" ]; then
               echo "Timed out after ${max_wait_seconds}s waiting for app-smoke healthcheck (last status: ${status})."
+              docker logs app-smoke
+              exit 1
+            fi
+
+            sleep 2
+          done
+
+      - name: Wait for app readiness endpoint
+        run: |
+          max_wait_seconds=30
+          deadline=$(( $(date +%s) + max_wait_seconds ))
+          ready_url="http://127.0.0.1:${PUBLISHED_APP_PORT}/healthz/ready"
+
+          while true; do
+            if curl --fail --silent --show-error "${ready_url}" >/dev/null; then
+              exit 0
+            fi
+
+            if [ "$(date +%s)" -ge "${deadline}" ]; then
+              echo "Timed out after ${max_wait_seconds}s waiting for readiness endpoint: ${ready_url}"
               docker logs app-smoke
               exit 1
             fi
