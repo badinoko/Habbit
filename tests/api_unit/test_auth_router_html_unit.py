@@ -846,7 +846,7 @@ async def test_login_form_returns_validation_error_for_invalid_payload(
     )
 
     assert res.status_code == 400
-    assert "Укажите корректный email и пароль." in res.text
+    assert "Введите корректный email." in res.text
     assert 'value="not-an-email"' in res.text
 
 
@@ -870,8 +870,33 @@ async def test_register_form_returns_validation_error_and_preserves_email(
     )
 
     assert res.status_code == 400
-    assert "Проверьте email и пароль" in res.text
+    assert "Пароль должен быть длиной от 8 до 256 символов." in res.text
     assert 'value="new@example.com"' in res.text
+
+
+async def test_register_form_returns_detailed_validation_errors_for_invalid_email_and_password(
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
+) -> None:
+    http_client, _, _, _, _, _state = client
+
+    page = await http_client.get("/auth/register", headers={"Accept": "text/html"})
+    csrf_token = extract_csrf_token(page.text)
+
+    res = await http_client.post(
+        "/auth/register",
+        headers={"Accept": "text/html"},
+        data={
+            "email": "bad-email",
+            "password": "short",
+            "csrf_token": csrf_token,
+            "next": "/tasks",
+        },
+    )
+
+    assert res.status_code == 400
+    assert "Введите корректный email." in res.text
+    assert "Пароль должен быть длиной от 8 до 256 символов." in res.text
+    assert 'value="bad-email"' in res.text
 
 
 async def test_register_form_redirects_after_success(

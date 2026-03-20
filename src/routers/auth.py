@@ -201,6 +201,35 @@ _DEFAULT_REDIRECT_PATH = "/"
 _GOOGLE_OAUTH_UI_SESSION_KEY = "google_oauth"
 
 
+def _format_auth_validation_error(exc: ValidationError) -> str:
+    messages: list[str] = []
+
+    for error in exc.errors():
+        location = error.get("loc", ())
+        field = location[-1] if location else None
+
+        if field == "email":
+            message = "Введите корректный email."
+        elif field == "password":
+            error_message = str(error.get("msg", ""))
+            if "between 8 and 256 characters" in error_message:
+                message = "Пароль должен быть длиной от 8 до 256 символов."
+            elif "string" in error_message:
+                message = "Пароль должен быть строкой."
+            else:
+                message = "Проверьте корректность пароля."
+        else:
+            message = "Проверьте корректность введённых данных."
+
+        if message not in messages:
+            messages.append(message)
+
+    if not messages:
+        return "Проверьте корректность введённых данных."
+
+    return " ".join(messages)
+
+
 def _normalize_next(next_value: object) -> str:
     if not isinstance(next_value, str) or not next_value:
         return _DEFAULT_REDIRECT_PATH
@@ -534,7 +563,7 @@ async def register(
             template_name="auth/register.html",
             current_page="register",
             next_url=_normalize_next(raw_payload.get("next")),
-            error_message="Проверьте email и пароль: пароль должен быть длиной от 8 символов.",
+            error_message=_format_auth_validation_error(exc),
             form_data={"email": raw_payload.get("email", "")},
             status_code=status.HTTP_400_BAD_REQUEST,
         )
@@ -610,7 +639,7 @@ async def login(
             template_name="auth/login.html",
             current_page="login",
             next_url=_normalize_next(raw_payload.get("next")),
-            error_message="Укажите корректный email и пароль.",
+            error_message=_format_auth_validation_error(exc),
             form_data={"email": raw_payload.get("email", "")},
             status_code=status.HTTP_400_BAD_REQUEST,
         )

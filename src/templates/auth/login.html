@@ -18,7 +18,7 @@
         </div>
         {% endif %}
 
-        <form method="post" action="/auth/login" class="auth-form" autocomplete="on" novalidate>
+        <form method="post" action="/auth/login" class="auth-form" autocomplete="on">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="next" value="{{ next_url }}">
 
