@@ -1393,7 +1393,7 @@ body {
     flex-shrink: 0;
 }
 
-/* Стили для сетки привычек на главной */
+/* Стили для сетки привычек на главной
 .habits-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1479,7 +1479,7 @@ body {
     justify-content: center;
 }
 
-/* Анимация для прогресс-бара */
+/* Анимация для прогресс-бара
 @keyframes moveStripes {
     0% {
         background-position: 0 0;
@@ -1489,7 +1489,7 @@ body {
     }
 }
 
-/* Анимация для кнопки завершения задачи */
+/* Анимация для кнопки завершения задачи
 .task-checkbox input[type="checkbox"]:checked + label::after {
     content: '✓';
     position: absolute;
@@ -1506,7 +1506,7 @@ body {
     border-color: var(--secondary);
 }
 
-/* Адаптивность для главной страницы */
+/* Адаптивность для главной страницы
 @media (max-width: 768px) {
     .habits-grid {
         grid-template-columns: 1fr;
@@ -1535,7 +1535,7 @@ body {
 
 }
 
-/* === LAYER: Lists -> Habits === */
+/* === LAYER: Lists -> Habits ===
 .habit-card-top {
     display: flex;
     align-items: flex-start;
