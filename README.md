@@ -1,5 +1,17 @@
 # HabitFlow
 
+[![CI](https://github.com/Qwertyil/HabitFlow/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Qwertyil/HabitFlow/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/Qwertyil/HabitFlow/actions/workflows/codeql.yml/badge.svg?branch=master)](https://github.com/Qwertyil/HabitFlow/actions/workflows/codeql.yml)
+[![codecov](https://codecov.io/gh/Qwertyil/HabitFlow/branch/master/graph/badge.svg)](https://codecov.io/gh/Qwertyil/HabitFlow)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.135-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)](https://redis.io/)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.x-D71F00?logo=sqlalchemy&logoColor=white)](https://www.sqlalchemy.org/)
+[![Poetry](https://img.shields.io/badge/Poetry-2.x-60A5FA?logo=poetry&logoColor=white)](https://python-poetry.org/)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Pytest](https://img.shields.io/badge/Pytest-tested-0A9EDC?logo=pytest&logoColor=white)](https://pytest.org/)
+
 HabitFlow is a web-first habit and task tracker that explores backend concerns beyond basic CRUD: recurring schedule logic, auth/session boundaries, owner-scoped data access, and reporting shaped by real product constraints.
 
 ## Live Demo
