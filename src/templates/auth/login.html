@@ -18,6 +18,11 @@
         </div>
         {% endif %}
 
+        <div class="alert alert-error" data-auth-client-error hidden>
+            <i class="fas fa-exclamation-circle"></i>
+            <span data-auth-client-error-text></span>
+        </div>
+
         <form method="post" action="/auth/login" class="auth-form" autocomplete="on">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="next" value="{{ next_url }}">
@@ -72,4 +77,8 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="{{ url_for('static', path='/js/auth_validation.js') }}"></script>
 {% endblock %}

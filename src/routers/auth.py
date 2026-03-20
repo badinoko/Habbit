@@ -343,6 +343,93 @@ def _render_google_oauth_error_template(
     )
 
 
+def _build_google_oauth_callback_error_response(
+    request: Request,
+    exc: Exception,
+    *,
+    next_url: str,
+    current_user: AuthUser | None,
+) -> HTMLResponse | RedirectResponse:
+    if isinstance(exc, OAuthConfigurationError):
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Вход через Google недоступен",
+            message="Не удалось завершить вход через Google. Повторите попытку позже",
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    if isinstance(exc, OAuthStateInvalidError):
+        if current_user is not None:
+            return RedirectResponse(
+                url=next_url,
+                status_code=status.HTTP_303_SEE_OTHER,
+            )
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Сессия входа истекла",
+            message="Не удалось подтвердить запрос на вход через Google.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    if isinstance(exc, OAuthProviderRejectedError):
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Не удалось войти через Google",
+            message="Google отклонил запрос на вход.",
+            details="Повторите попытку и подтвердите доступ к аккаунту.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    if isinstance(exc, OAuthAuthorizationCodeMissingError):
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Не удалось войти через Google",
+            message="Ответ Google не содержит кода авторизации.",
+            details="Начните вход заново со страницы авторизации.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    if isinstance(exc, OAuthProviderUnavailableError):
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Google временно недоступен",
+            message="Не удалось завершить вход через Google.",
+            details="Попробуйте снова через несколько минут.",
+            status_code=status.HTTP_502_BAD_GATEWAY,
+        )
+    if isinstance(exc, OAuthEmailNotVerifiedError):
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Email не подтвержден",
+            message="Не удалось завершить вход через Google.",
+            details="Google не подтвердил email этого аккаунта.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+    if isinstance(
+        exc, (EmailAlreadyExistsError, OAuthIdentityAlreadyLinkedToAnotherUserError)
+    ):
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Аккаунт уже используется",
+            message="Не удалось завершить вход через Google.",
+            details="Этот email или Google-аккаунт уже связан с другим способом входа.",
+            status_code=status.HTTP_409_CONFLICT,
+        )
+    if isinstance(exc, UserIsInactiveError):
+        return _render_google_oauth_error_template(
+            request,
+            next_url=next_url,
+            title="Аккаунт недоступен",
+            message="Этот пользовательский аккаунт отключен.",
+            details="Обратитесь к администратору или используйте другой аккаунт.",
+            status_code=status.HTTP_403_FORBIDDEN,
+        )
+    raise exc
+
+
 def _set_auth_cookie(response: Response, session_id: str) -> None:
     response.set_cookie(
         key=settings.AUTH_SESSION_COOKIE_NAME,
@@ -392,6 +479,7 @@ async def google_start(
 async def google_callback(
     request: Request,
     oauth_service: OAuthService = Depends(get_oauth_service),
+    current_user: AuthUser | None = Depends(get_current_user),
 ):
     oauth_session = request.session.pop(_GOOGLE_OAUTH_UI_SESSION_KEY, None)
     next_url = _DEFAULT_REDIRECT_PATH
@@ -405,75 +493,12 @@ async def google_callback(
             provider_error=request.query_params.get("error"),
             code=request.query_params.get("code"),
         )
-    except OAuthConfigurationError:
-        return _render_google_oauth_error_template(
+    except Exception as exc:
+        return _build_google_oauth_callback_error_response(
             request,
+            exc,
             next_url=next_url,
-            title="Вход через Google недоступен",
-            message="Не удалось завершить вход через Google. Повторите попытку позже",
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        )
-    except OAuthStateInvalidError:
-        return _render_google_oauth_error_template(
-            request,
-            next_url=next_url,
-            title="Сессия входа истекла",
-            message="Не удалось подтвердить запрос на вход через Google.",
-            status_code=status.HTTP_400_BAD_REQUEST,
-        )
-    except OAuthProviderRejectedError:
-        return _render_google_oauth_error_template(
-            request,
-            next_url=next_url,
-            title="Не удалось войти через Google",
-            message="Google отклонил запрос на вход.",
-            details="Повторите попытку и подтвердите доступ к аккаунту.",
-            status_code=status.HTTP_400_BAD_REQUEST,
-        )
-    except OAuthAuthorizationCodeMissingError:
-        return _render_google_oauth_error_template(
-            request,
-            next_url=next_url,
-            title="Не удалось войти через Google",
-            message="Ответ Google не содержит кода авторизации.",
-            details="Начните вход заново со страницы авторизации.",
-            status_code=status.HTTP_400_BAD_REQUEST,
-        )
-    except OAuthProviderUnavailableError:
-        return _render_google_oauth_error_template(
-            request,
-            next_url=next_url,
-            title="Google временно недоступен",
-            message="Не удалось завершить вход через Google.",
-            details="Попробуйте снова через несколько минут.",
-            status_code=status.HTTP_502_BAD_GATEWAY,
-        )
-    except OAuthEmailNotVerifiedError:
-        return _render_google_oauth_error_template(
-            request,
-            next_url=next_url,
-            title="Email не подтвержден",
-            message="Не удалось завершить вход через Google.",
-            details="Google не подтвердил email этого аккаунта.",
-            status_code=status.HTTP_403_FORBIDDEN,
-        )
-    except (EmailAlreadyExistsError, OAuthIdentityAlreadyLinkedToAnotherUserError):
-        return _render_google_oauth_error_template(
-            request,
-            next_url=next_url,
-            title="Аккаунт уже используется",
-            message="Не удалось завершить вход через Google.",
-            details="Этот email или Google-аккаунт уже связан с другим способом входа.",
-            status_code=status.HTTP_409_CONFLICT,
-        )
-    except UserIsInactiveError:
-        return _render_google_oauth_error_template(
-            request,
-            next_url=next_url,
-            title="Аккаунт недоступен",
-            message="Этот пользовательский аккаунт отключен.",
-            details="Обратитесь к администратору или используйте другой аккаунт.",
-            status_code=status.HTTP_403_FORBIDDEN,
+            current_user=current_user,
         )
 
     redirect = RedirectResponse(

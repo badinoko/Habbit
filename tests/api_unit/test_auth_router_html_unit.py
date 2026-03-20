@@ -391,6 +391,25 @@ async def test_google_callback_rejects_invalid_state_as_one_time_token(
     assert "google_oauth" not in session_after.json()
 
 
+async def test_google_callback_redirects_authenticated_user_when_state_was_already_consumed(
+    client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
+) -> None:
+    http_client, fake_auth_service, _, _, _, current_user_state = client
+    fake_auth_service.google_callback_error = OAuthStateInvalidError()
+    current_user_state["value"] = make_auth_user()
+
+    res = await http_client.get(
+        "/auth/google/callback?code=oauth-code&state=already-used-state",
+        headers={"Accept": "text/html"},
+        follow_redirects=False,
+    )
+
+    assert res.status_code == 303
+    assert res.headers["location"] == "/"
+    assert fake_auth_service.oauth_user_calls == []
+    assert fake_auth_service.created_session_for == []
+
+
 async def test_google_callback_rejects_expired_state(
     client: tuple[AsyncClient, _FakeAuthService, _FakeLoginService, _FakeRegistrationService, _FakeOAuthService, dict[str, AuthUser | None]],
 ) -> None:
