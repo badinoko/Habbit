@@ -126,85 +126,26 @@ document.addEventListener('DOMContentLoaded', () => {
         return { startsOn, endsOn };
     }
 
-    async function submitCreateAsJson(event, payload) {
-        event.preventDefault();
-
-        const submitBtn = form.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.classList.add('btn-loading');
-            submitBtn.disabled = true;
-        }
-
-        try {
-            const response = await fetch(form.action, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCsrfToken()
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (response.ok || response.redirected) {
-                window.location.assign('/habits');
-                return;
-            }
-
-            let errorMessage = 'Ошибка при создании привычки';
-            try {
-                const responseBody = await response.json();
-                if (responseBody?.error?.message) {
-                    errorMessage = responseBody.error.message;
-                }
-            } catch {
-                // Ignore parsing error and use fallback message.
-            }
-            showError(errorMessage);
-        } catch (error) {
-            console.error('Error creating habit:', error);
-            showError('Ошибка соединения с сервером');
-        } finally {
-            if (submitBtn) {
-                submitBtn.classList.remove('btn-loading');
-                submitBtn.disabled = false;
-            }
-        }
-    }
 
     scheduleTypeSelect.addEventListener('change', toggleScheduleBlocks);
     toggleScheduleBlocks();
     periodInfiniteCheckbox?.addEventListener('change', togglePeriodFields);
     togglePeriodFields();
 
-    form.addEventListener('submit', async (event) => {
-        let scheduleConfig;
-        let period;
+    form.addEventListener('submit', (event) => {
         try {
-            scheduleConfig = buildScheduleConfig();
-            period = normalizePeriod();
+            const scheduleConfig = buildScheduleConfig();
+            normalizePeriod();
+            scheduleConfigInput.value = JSON.stringify(scheduleConfig);
         } catch (error) {
             event.preventDefault();
             showError(error instanceof Error ? error.message : 'Ошибка валидации формы');
             return;
         }
 
-        scheduleConfigInput.value = JSON.stringify(scheduleConfig);
-
         const method = (form.dataset.method || form.getAttribute('method') || 'post').toLowerCase();
         if (method === 'put') {
             return;
         }
-
-        const payload = {
-            name: (document.getElementById('name')?.value || '').trim(),
-            description: (document.getElementById('description')?.value || '').trim() || null,
-            theme_id: (form.querySelector('input[name="theme_id"]:checked')?.value || 'NoTheme'),
-            schedule_type: scheduleTypeSelect.value,
-            schedule_config: scheduleConfig,
-            starts_on: period.startsOn,
-            ends_on: period.endsOn
-        };
-
-        await submitCreateAsJson(event, payload);
     });
 });

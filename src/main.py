@@ -6,7 +6,7 @@ from typing import Any
 import httpx
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import Depends, FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
@@ -182,6 +182,26 @@ async def ready_health(
 async def http_exception_handler(request: Request, exc: HTTPException):
     internal_detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
     logger.info("HTTP %s: %s", exc.status_code, internal_detail)
+
+    headers = exc.headers or {}
+    redirect_location = None
+    if headers:
+        for header_name, header_value in headers.items():
+            if header_name.lower() == "location":
+                redirect_location = header_value
+                break
+
+    if redirect_location is not None and 300 <= exc.status_code < 400:
+        redirect_headers = {
+            header_name: header_value
+            for header_name, header_value in headers.items()
+            if header_name.lower() != "location"
+        }
+        return RedirectResponse(
+            url=redirect_location,
+            status_code=exc.status_code,
+            headers=redirect_headers,
+        )
 
     public_detail = get_public_error_message(exc.status_code, exc.detail)
 
