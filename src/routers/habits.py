@@ -54,8 +54,21 @@ async def habits_page(
         order=order,
         due_today_only=status == "todays",
     )
+    total_pages = (habits_count + per_page - 1) // per_page if habits_count else 0
     context.update(
-        {"habits": habits, "habits_count": habits_count, "current_page": "habits"}
+        {
+            "habits": habits,
+            "habits_count": habits_count,
+            "habits_page": page,
+            "habits_per_page": per_page,
+            "habits_total_pages": total_pages,
+            "habits_has_prev": page > 1,
+            "habits_has_next": total_pages > 0 and page < total_pages,
+            "current_page": "habits",
+            # Sidebar is required in DOM for client-side stat updates
+            # (and some integration tests assert presence of stat elements).
+            "hide_sidebar": True,
+        }
     )
     return templates.TemplateResponse(request, "habits/habits_list.html", context)
 
@@ -70,7 +83,7 @@ async def create_habit_page(
     request: Request,
     context: dict[str, Any] = Depends(get_template_context),
 ):
-    context.update({"current_page": "habits"})
+    context.update({"current_page": "habits", "hide_sidebar": True})
     return templates.TemplateResponse(request, "habits/habits_form.html", context)
 
 
@@ -92,7 +105,7 @@ async def habit_page(
         return templates.TemplateResponse(
             request, "message.html", context, status_code=status.HTTP_404_NOT_FOUND
         )
-    context.update({"habit": habit, "current_page": "habits"})
+    context.update({"habit": habit, "current_page": "habits", "hide_sidebar": True})
     return templates.TemplateResponse(request, "habits/habits_form.html", context)
 
 
@@ -119,6 +132,7 @@ async def create_habit(
         context.update(
             {
                 "current_page": "habits",
+                "hide_sidebar": True,
                 "error_message": csrf_error_message(),
             }
         )
@@ -158,7 +172,7 @@ async def create_habit(
                 },
             )
         context = error_context_updater(context, f"Ошибка создания привычки: {exc}")
-        context.update({"current_page": "habits"})
+        context.update({"current_page": "habits", "hide_sidebar": True})
         return templates.TemplateResponse(
             request,
             "habits/habits_form.html",
