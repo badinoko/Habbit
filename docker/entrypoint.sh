@@ -3,7 +3,7 @@ set -eu
 
 HOST="${APP_HOST:-0.0.0.0}"
 PORT="${CONTAINER_APP_PORT:-8000}"
-TRUSTED_PROXY_IPS="${TRUSTED_PROXY_IPS:-127.0.0.1}"
+TRUSTED_PROXY_IPS="${TRUSTED_PROXY_IPS:-*}"
 
 case "${DEBUG:-false}" in
   [Tt]rue|1)
