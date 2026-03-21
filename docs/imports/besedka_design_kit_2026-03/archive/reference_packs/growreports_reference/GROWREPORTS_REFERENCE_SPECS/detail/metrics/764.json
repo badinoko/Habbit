@@ -1,0 +1,99 @@
+{
+  "breakpoint": "764px",
+  "viewport": {
+    "width": 764,
+    "height": 485
+  },
+  "hero": {
+    "width": 539,
+    "height": 32,
+    "fontSize": "19.2px",
+    "fontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Noto Sans\", Ubuntu, \"Droid Sans\", \"Helvetica Neue\", sans-serif",
+    "color": "rgb(72, 72, 72)"
+  },
+  "weeks": [
+    {
+      "index": 1,
+      "width": 674,
+      "height": 53
+    },
+    {
+      "index": 2,
+      "width": 182,
+      "height": 48
+    },
+    {
+      "index": 3,
+      "width": 674,
+      "height": 53
+    }
+  ],
+  "images": [
+    {
+      "width": 175,
+      "height": 43,
+      "description": "logo",
+      "src": "https://growdiaries.com/logo/logo-light.svg"
+    },
+    {
+      "width": 674,
+      "height": 175,
+      "description": "large banner",
+      "src": "https://bucket.growdiaries.com/static/partner/all/b60333ccf448fd6e2e3624676b46e4c5.webp"
+    },
+    {
+      "width": 40,
+      "height": 40,
+      "description": "seedbank icon",
+      "src": "https://bucket.growdiaries.com/static/bank_photos/141/seedstockers_150.webp"
+    },
+    {
+      "width": 40,
+      "height": 40,
+      "description": "equipment category icon",
+      "src": "https://growdiaries.com/images/product-categories/lamp.svg"
+    }
+  ],
+  "typography": [
+    {
+      "element": "H1",
+      "fontSize": "19.2px",
+      "fontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Noto Sans\", Ubuntu, \"Droid Sans\", \"Helvetica Neue\", sans-serif",
+      "lineHeight": "27.4286px",
+      "fontWeight": "700",
+      "color": "rgb(72, 72, 72)"
+    },
+    {
+      "element": "DIV",
+      "fontSize": "13.6px",
+      "fontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Noto Sans\", Ubuntu, \"Droid Sans\", \"Helvetica Neue\", sans-serif",
+      "lineHeight": "19.4286px",
+      "fontWeight": "400",
+      "color": "rgb(72, 72, 72)"
+    },
+    {
+      "element": "LINK",
+      "fontSize": "13.6px",
+      "fontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Noto Sans\", Ubuntu, \"Droid Sans\", \"Helvetica Neue\", sans-serif",
+      "lineHeight": "19.4286px",
+      "fontWeight": "400",
+      "color": "rgb(72, 72, 72)"
+    }
+  ],
+  "components": {
+    "hero_title": {
+      "fontSize": "19.2px",
+      "fontWeight": "700",
+      "color": "#484848"
+    },
+    "body_text": {
+      "fontSize": "13.6px",
+      "fontWeight": "400",
+      "lineHeight": "1.43"
+    },
+    "week_entries": {
+      "typical_width": 674,
+      "typical_height": 53
+    }
+  }
+}

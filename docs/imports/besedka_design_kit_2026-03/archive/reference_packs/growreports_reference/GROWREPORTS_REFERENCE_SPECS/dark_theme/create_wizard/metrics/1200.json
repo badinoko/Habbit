@@ -1,0 +1,43 @@
+{
+  "viewport": {
+    "width": 1200,
+    "height": 900
+  },
+  "typography": {
+    "fontFamilies": [
+      "\"Times New Roman\"",
+      "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Noto Sans\", Ubuntu, \"Droid Sans\", \"Helvetica Neue\", sans-serif"
+    ],
+    "fontSizes": [
+      "12px",
+      "13.6px",
+      "16px"
+    ],
+    "lineHeights": [
+      "normal",
+      "19.4286px",
+      "17.1429px"
+    ]
+  },
+  "colors": [
+    [
+      "rgb(0, 0, 0)",
+      50
+    ]
+  ],
+  "backgrounds": [],
+  "borderColors": [
+    [
+      "rgb(0, 0, 0)",
+      50
+    ]
+  ],
+  "boxShadows": [],
+  "themeInfo": {
+    "currentTheme": "light",
+    "bodyClasses": "",
+    "htmlClasses": "",
+    "toggleFound": false,
+    "toggleSelector": null
+  }
+}

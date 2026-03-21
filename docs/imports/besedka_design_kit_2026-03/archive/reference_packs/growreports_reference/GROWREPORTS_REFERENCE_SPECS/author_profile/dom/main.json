@@ -1,0 +1,213 @@
+{
+  "url": "https://growdiaries.com/grower/mindflowers68",
+  "title": "MindFlowers68 grower profile - GrowDiaries",
+  "viewport": {
+    "width": 764,
+    "height": 485
+  },
+  "structure": {
+    "header": {
+      "selector": "generic[ref=e16]",
+      "navigation": "Same as list page - consistent across site"
+    },
+    "breadcrumb": {
+      "selector": "link[ref=e117]",
+      "text": "Back to Growers"
+    },
+    "profile_hero": {
+      "selector": "generic[ref=e119]",
+      "avatar": "img[ref=e122] - MindFlowers68",
+      "title": "heading[ref=e128] - MindFlowers68",
+      "status": "Мастер",
+      "actions": {
+        "message": "generic[ref=e137] - Message",
+        "follow": "generic[ref=e139] - Подписаться 80"
+      }
+    },
+    "stats_section": {
+      "selector": "generic[ref=e142]",
+      "global_position": {
+        "rank": "#230",
+        "label": "Global pos.",
+        "link": "/growers"
+      },
+      "harvests": {
+        "count": "17",
+        "label": "Harvests"
+      },
+      "detailed_stats": {
+        "diaries": "34 Diaries",
+        "harvests": "17 Harvests",
+        "experience": "2 Выращивает, года",
+        "answers": "65 Answers",
+        "autoflower_percent": "24% Автоцвет",
+        "photoperiod_percent": "76% Photoperiod",
+        "indoor_percent": "67% В помещении",
+        "outdoor_percent": "24% Аутдор"
+      }
+    },
+    "preferences": {
+      "breeders": {
+        "title": "Breeders of choice:",
+        "items": [
+          {"name": "Divine Seeds", "percent": "17%"},
+          {"name": "Seedsman", "percent": "17%"}
+        ]
+      },
+      "nutrients": {
+        "title": "Nutrients of choice:",
+        "items": [
+          {"name": "Boogie Brew", "percent": "45%"},
+          {"name": "True Plant Science (TPS)", "percent": "17%"}
+        ]
+      },
+      "lights": {
+        "title": "Lights of choice:",
+        "items": [
+          {"name": "Bestva Led", "percent": "61%"},
+          {"name": "AC Infinity", "percent": "22%"}
+        ]
+      }
+    },
+    "navigation_tabs": {
+      "selector": "generic[ref=e214]",
+      "tabs": [
+        {"name": "Info", "active": true},
+        {"name": "Diaries", "count": "34"},
+        {"name": "Reviews", "count": "400+"},
+        {"name": "Подписан"},
+        {"name": "Followers"}
+      ]
+    },
+    "main_content": {
+      "awards": {
+        "selector": "generic[ref=e229]",
+        "title": "Awards",
+        "items": [
+          {
+            "title": "Grower of the Month September 2025",
+            "position": "1st",
+            "image": "img[ref=e235]"
+          },
+          {
+            "title": "Divine Seeds World-Wide Grow Contest",
+            "position": "8th",
+            "image": "img[ref=e238]"
+          }
+        ]
+      },
+      "popular_diaries": {
+        "selector": "generic[ref=e240]",
+        "title": "Popular Diaries",
+        "show_all_link": "/grower/mindflowers68/diaries",
+        "cards": [
+          {
+            "title": "Liberty Haze Winter Indoor",
+            "duration": "29 weeks",
+            "author": "MindFlowers68",
+            "strain": "Barney's Farm - Liberty Haze",
+            "activity": "1y ago · 62 комментария",
+            "link": "/diaries/185035-grow-journal-by-kosyjuana1"
+          },
+          {
+            "title": "Auto Overdose Indoor Veg Tent Summer Divine Seeds",
+            "duration": "21 weeks",
+            "strain": "Divine Seeds - Auto Overdose",
+            "activity": "9mo ago · 25 комментария"
+          }
+        ]
+      },
+      "grow_questions": {
+        "selector": "generic[ref=e321]",
+        "title": "Grow Questions",
+        "sections": [
+          {
+            "type": "Решенные",
+            "question": "Will my plants bounce back or should I replace them?",
+            "preview": "Limb damage. Bubblegum hit worse but it did open sunlight up...",
+            "activity": "1mo ago · 5 answers · 4 likes"
+          },
+          {
+            "type": "Открытые",
+            "question": "Metric instead of imperial?",
+            "preview": "Is there any way to change my units bac to imperial. All my ...",
+            "activity": "2mo ago · 1 answer · 2 likes"
+          }
+        ]
+      },
+      "activity_log": {
+        "selector": "generic[ref=e375]",
+        "title": "Журнал активности",
+        "entries": [
+          {
+            "time": "10h ago",
+            "action": "лайкнул пост",
+            "target": "💜 Its CRITICAL to have some PURPLE FLOWERS FAST! 💜",
+            "type": "like"
+          },
+          {
+            "time": "2d ago",
+            "action": "прокомментировал",
+            "content": "@m0use, Tahnks! yeah i tried that but it got scared Disney was gonna get wind of it lol",
+            "type": "comment"
+          }
+        ]
+      },
+      "reviews": {
+        "selector": "generic[ref=e469]",
+        "title": "Latest Reviews",
+        "items": [
+          {
+            "strain": "White Widow",
+            "rating": "10",
+            "grow_difficulty": "Легко",
+            "resistance": "Сильный",
+            "preview": "Easy growing and rewarding plant to grow. Lived up to my expectations...",
+            "time": "9mo ago"
+          },
+          {
+            "strain": "Pablo Escobar",
+            "rating": "10",
+            "grow_difficulty": "Средне",
+            "resistance": "Сильный",
+            "time": "9mo ago"
+          }
+        ]
+      },
+      "network": {
+        "selector": "generic[ref=e548]",
+        "title": "Grower's Network",
+        "users": [
+          {"name": "Fast_Buds", "status": "Официальный представитель"},
+          {"name": "m0use", "status": "ГрандМастер"},
+          {"name": "Hashy", "status": "ГрандМастер"},
+          {"name": "Anna-J", "status": "Мастер"},
+          {"name": "MrGrowDiarie", "status": "Мастер"},
+          {"name": "ATLien415", "status": "Мастер"},
+          {"name": "GrowDiaries", "status": "Admin"},
+          {"name": "Radagast_", "status": "Подмастерья"},
+          {"name": "Mateo513", "status": "Подмастерья"}
+        ]
+      },
+      "comments": {
+        "selector": "generic[ref=e605]",
+        "comment_form": "textbox[ref=e608] - Выскажи свое мнение",
+        "sorting": "popularity",
+        "thread": [
+          {
+            "author": "Papa_T",
+            "time": "1y ago",
+            "content": "Hey man, thanks for the response. I can't answer you there so I'm doing it here...",
+            "likes": 1
+          },
+          {
+            "author": "MindFlowers68",
+            "time": "1y ago",
+            "content": "@Papa_T, Your welcome. I'm not positive but I think the blue light is more for the seedling stage...",
+            "likes": 1
+          }
+        ]
+      }
+    }
+  }
+}

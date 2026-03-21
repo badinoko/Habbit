@@ -1,0 +1,72 @@
+{
+  "breakpoint": {
+    "width": 375,
+    "height": 812
+  },
+  "viewport": {
+    "width": 375,
+    "height": 812,
+    "devicePixelRatio": 1
+  },
+  "styles": {
+    "body": {
+      "selector": "body",
+      "fontSize": "14px",
+      "fontFamily": "Outfit, \"Helvetica Neue\", HelveticaNeue, Helvetica, TeXGyreHeros, FreeSans, \"Nimbus Sans L\", \"Liberation Sans\", Arial, sans-serif",
+      "fontWeight": "400",
+      "color": "rgba(0, 0, 0, 0.65)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "padding": "0px",
+      "margin": "0px",
+      "borderRadius": "0px",
+      "boxShadow": "none",
+      "width": "375px",
+      "height": "812px",
+      "display": "block",
+      "position": "static",
+      "zIndex": "auto"
+    },
+    "photoCard": {
+      "selector": "[class*=\"photo\"]:first-of-type, [class*=\"image\"]:first-of-type, [class*=\"card\"]:first-of-type",
+      "fontSize": "14px",
+      "fontFamily": "Outfit, \"Helvetica Neue\", HelveticaNeue, Helvetica, FreeSans, Arial, sansserif",
+      "fontWeight": "700",
+      "color": "rgb(34, 34, 34)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "padding": "0px",
+      "margin": "0px 0px 0px 8px",
+      "borderRadius": "0px",
+      "boxShadow": "none",
+      "width": "28px",
+      "height": "20px",
+      "display": "block",
+      "position": "static",
+      "zIndex": "auto"
+    },
+    "galleryGrid": null,
+    "navigation": {
+      "selector": "nav, [class*=\"nav\"]:first-of-type",
+      "fontSize": "14px",
+      "fontFamily": "Outfit, \"Helvetica Neue\", HelveticaNeue, Helvetica, TeXGyreHeros, FreeSans, \"Nimbus Sans L\", \"Liberation Sans\", Arial, sans-serif",
+      "fontWeight": "400",
+      "color": "rgba(0, 0, 0, 0.65)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "padding": "0px 16px",
+      "margin": "0px",
+      "borderRadius": "0px",
+      "boxShadow": "none",
+      "width": "375px",
+      "height": "105px",
+      "display": "block",
+      "position": "relative",
+      "zIndex": "6"
+    },
+    "filters": null
+  },
+  "layout": {
+    "scrollHeight": 11441,
+    "scrollWidth": 375,
+    "photoCardsCount": 29,
+    "columnsDetected": 1
+  }
+}

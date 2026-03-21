@@ -1,0 +1,47 @@
+{
+  "url": "https://growdiaries.com/",
+  "body": {
+    "tag": "body",
+    "id": "",
+    "cls": "",
+    "ch": [
+      {
+        "tag": "div",
+        "id": "__nuxt",
+        "cls": "",
+        "ch": [
+          {
+            "tag": "div",
+            "id": "app",
+            "cls": "bd pg onnav",
+            "ch": []
+          }
+        ]
+      },
+      {
+        "tag": "div",
+        "id": "teleports",
+        "cls": "",
+        "ch": []
+      },
+      {
+        "tag": "script",
+        "id": "__NUXT_DATA__",
+        "cls": "",
+        "ch": []
+      },
+      {
+        "tag": "script",
+        "id": "",
+        "cls": "",
+        "ch": []
+      },
+      {
+        "tag": "script",
+        "id": "",
+        "cls": "",
+        "ch": []
+      }
+    ]
+  }
+}

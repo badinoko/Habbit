@@ -1,0 +1,237 @@
+{
+  "url": "https://growdiaries.com/diaries/271638-grow-journal-by-virke",
+  "title": "Future #1 again! grow journal by Virke - GrowDiaries",
+  "viewport": {
+    "width": 764,
+    "height": 485
+  },
+  "page_type": "diary_detail",
+  "collected_at": "2025-08-14",
+
+  "structure": {
+    "header": {
+      "selector": "generic[ref=e15]",
+      "navigation": {
+        "logo": "link[ref=e7] - Growdiaries ru",
+        "main_menu": [
+          "Начать Мой Репорт",
+          "Главная",
+          "Репорты",
+          "Shorts",
+          "Вопросы",
+          "Конкурсы",
+          "Гроверы",
+          "Strains NEW",
+          "Seeds",
+          "Бридеры",
+          "Удобрения",
+          "Лампы",
+          "Equipment",
+          "Блог"
+        ],
+        "auth_section": "generic[ref=e63] - Логин, Начать Мой Репорт, Регистрация"
+      }
+    },
+
+    "main_content": {
+      "selector": "generic[ref=e121]",
+
+      "hero": {
+        "selector": "generic[ref=e124]",
+        "title": "heading[ref=e126] - Future #1 again!",
+        "author": {
+          "avatar": "img[ref=e131] - Virke",
+          "name": "link[ref=e132] - Virke"
+        },
+        "stats": {
+          "followers": "2",
+          "likes": "17",
+          "comments": "7",
+          "views": "135",
+          "updated": "8d ago"
+        },
+        "follow_button": "generic[ref=e146] - Follow"
+      },
+
+      "equipment_bar": {
+        "selector": "generic[ref=e147]",
+        "items": [
+          {
+            "type": "seeds",
+            "brand": "Anesia Seeds",
+            "product": "Future #1®",
+            "selector": "generic[ref=e148]"
+          },
+          {
+            "type": "nutrients",
+            "brand": "Mills Nutrients",
+            "selector": "generic[ref=e155]"
+          },
+          {
+            "type": "lighting_vega",
+            "brand": "Mars Hydro",
+            "product": "TS3000 420W LED",
+            "selector": "generic[ref=e162]"
+          },
+          {
+            "type": "lighting_flower",
+            "brand": "Spider Farmer",
+            "product": "SF-4000 Светодиоды/450W",
+            "selector": "generic[ref=e170]"
+          },
+          {
+            "type": "tent",
+            "brand": "Mammoth Tents",
+            "product": "Mammoth Pro+ 120",
+            "selector": "generic[ref=e178]"
+          },
+          {
+            "type": "fan",
+            "product": "Prima Klima PK125",
+            "selector": "generic[ref=e186]"
+          },
+          {
+            "type": "filter",
+            "brand": "Prima Klima",
+            "product": "VK125",
+            "selector": "generic[ref=e194]"
+          },
+          {
+            "type": "substrate",
+            "brand": "BioBizz",
+            "product": "Light-Mix",
+            "selector": "generic[ref=e202]"
+          },
+          {
+            "type": "environment",
+            "value": "В помещении",
+            "selector": "generic[ref=e209]"
+          },
+          {
+            "type": "pot_size",
+            "value": "20 л",
+            "selector": "generic[ref=e254]"
+          },
+          {
+            "type": "watering",
+            "value": "1.5 л",
+            "selector": "generic[ref=e261]"
+          }
+        ],
+        "techniques_summary": [
+          "Дефолиация: недели 4-8, 8-13",
+          "Transplantation: недели 2, 4, 6, 9-10",
+          "LST: недели 3-8, 8-13",
+          "HST: недели 7, 11, 13",
+          "Топпинг: недели 3-8, 8-11, 13"
+        ]
+      },
+
+      "weeks_content": {
+        "selector": "generic[ref=e268]",
+        "note": "Each week is a separate block with photos, metrics, nutrients, and description",
+        "week_structure": {
+          "header": {
+            "week_number": "generic with number",
+            "phase": "Вегетация or Цветение",
+            "timestamp": "3mo ago, 2mo ago, etc"
+          },
+          "photo_gallery": {
+            "note": "Multiple img elements in grid layout",
+            "typical_count": "3-7 photos per week"
+          },
+          "metrics": {
+            "note": "Clickable metric cards with icons",
+            "common_metrics": [
+              "Height (Height)",
+              "Light Schedule (Light Schedule)",
+              "Day Air Temp (Day Air Temp)",
+              "pH (pH)",
+              "Smell (Smell)",
+              "Air Humidity (Air Humidity)",
+              "Solution Temp (Solution Temp)",
+              "Night Air Temp (Night Air Temp)",
+              "Pot Size (Pot Size)",
+              "Watering Volume (Watering Volume)",
+              "Lamp Distance (Lamp Distance)"
+            ]
+          },
+          "nutrients": {
+            "note": "Expandable nutrients section",
+            "structure": "Images + names + dosages"
+          },
+          "description": {
+            "author_link": "Link to grower profile",
+            "text": "Weekly description and notes"
+          },
+          "interactions": {
+            "likes": "лайк count",
+            "comments": "комментариев count",
+            "share": "Share button",
+            "translate": "Перевод button"
+          },
+          "techniques": {
+            "note": "Used techniques list",
+            "examples": ["LST", "Топпинг", "Дефолиация", "Transplantation", "HST"]
+          }
+        }
+      }
+    },
+
+    "comments_section": {
+      "selector": "generic[ref=e2042]",
+      "comment_form": {
+        "input": "textbox[ref=e2045] - Выскажи свое мнение",
+        "file_upload": "button[ref=e2049] - Choose File",
+        "login_prompt": "generic[ref=e2052] - Login"
+      },
+      "comments_header": {
+        "count": "7 комментария",
+        "sort": "Сортировать по popularity"
+      },
+      "comments_thread": {
+        "note": "Multiple comment blocks",
+        "comment_structure": {
+          "avatar": "img - user avatar",
+          "author": "link - username",
+          "timestamp": "2mo ago, 3mo ago, etc",
+          "text": "Comment content",
+          "actions": ["лайка count", "Перевод button"]
+        }
+      }
+    },
+
+    "follow_section": {
+      "selector": "generic[ref=e2158]",
+      "text": "Enjoying this diary? Follow for more updates!",
+      "options": [
+        "Follow Author",
+        "Follow Diary"
+      ]
+    },
+
+    "timeline_navigation": {
+      "selector": "generic[ref=e2180]",
+      "note": "Bottom navigation with week tabs",
+      "structure": {
+        "vega_weeks": [
+          {"week": "1", "phase": "ВЕГА", "selector": "generic[ref=e2183]"},
+          {"week": "2", "phase": "ВЕГА", "selector": "generic[ref=e2187]"},
+          {"week": "3", "phase": "ВЕГА", "selector": "generic[ref=e2191]"},
+          {"week": "4", "phase": "ВЕГА", "selector": "generic[ref=e2195]"},
+          {"week": "5", "phase": "ВЕГА", "selector": "generic[ref=e2199]"},
+          {"week": "6", "phase": "ВЕГА", "selector": "generic[ref=e2203]"},
+          {"week": "7", "phase": "ВЕГА", "selector": "generic[ref=e2207]"},
+          {"week": "8", "phase": "ВЕГА", "selector": "generic[ref=e2211]"}
+        ],
+        "flower_weeks": [
+          {"week": "9", "phase": "ЦВЕТ", "selector": "generic[ref=e2215]"},
+          {"week": "10", "phase": "ЦВЕТ", "selector": "generic[ref=e2219]"},
+          {"week": "11", "phase": "ЦВЕТ", "selector": "generic[ref=e2223]"},
+          {"week": "12", "phase": "ЦВЕТ", "selector": "generic[ref=e2227]"},
+          {"week": "13", "phase": "ЦВЕТ", "selector": "generic[ref=e2231]"}
+        ]
+      }
+    }
+  }
+}

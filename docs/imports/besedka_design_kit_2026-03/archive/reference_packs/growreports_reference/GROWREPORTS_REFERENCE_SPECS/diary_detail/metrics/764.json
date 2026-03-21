@@ -1,0 +1,120 @@
+{
+  "breakpoint": "764px",
+  "viewport": {
+    "width": 764,
+    "height": 485
+  },
+  "page_type": "diary_detail",
+  "collected_at": "2025-08-14",
+  "note": "REAL diary page structure - NOT modal window",
+
+  "hero": {
+    "title": {
+      "text": "Future #1 again!",
+      "width": 172,
+      "height": 27,
+      "fontSize": "19.2px",
+      "fontFamily": "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Noto Sans\", Ubuntu, \"Droid Sans\", \"Helvetica Neue\", sans-serif"
+    },
+    "stats_area": {
+      "note": "Followers, Likes, Comments, Views, Updated stats section"
+    }
+  },
+
+  "equipment_bar": {
+    "note": "Horizontal equipment showcase with seeds, nutrients, lighting, etc",
+    "layout": "horizontal_scroll_or_grid"
+  },
+
+  "weeks": [
+    {
+      "week": 1,
+      "phase": "Вегетация",
+      "photos": {
+        "count": 3,
+        "layout": "horizontal_gallery"
+      },
+      "metrics_grid": {
+        "note": "Clickable metric cards in grid layout",
+        "metrics": [
+          {"type": "height", "value": "5 см"},
+          {"type": "light_schedule", "value": "18 часов"},
+          {"type": "day_temp", "value": "27°C"},
+          {"type": "ph", "value": "6.5"},
+          {"type": "smell", "value": "Без запаха"},
+          {"type": "humidity", "value": "60%"},
+          {"type": "solution_temp", "value": "22°C"},
+          {"type": "night_temp", "value": "19°C"},
+          {"type": "pot_size", "value": "0.1 л"},
+          {"type": "watering", "value": "0.05 л"},
+          {"type": "lamp_distance", "value": "70 см"}
+        ]
+      }
+    },
+    {
+      "week": 2,
+      "phase": "Вегетация",
+      "photos": {
+        "count": 7,
+        "layout": "horizontal_gallery"
+      },
+      "metrics_grid": {
+        "key_changes": [
+          {"type": "height", "value": "10 см"},
+          {"type": "pot_size", "value": "3 л"},
+          {"type": "watering", "value": "0.1 л"},
+          {"type": "lamp_distance", "value": "60 см"}
+        ]
+      },
+      "nutrients": {
+        "count": 3,
+        "items": [
+          {"name": "Basis A", "dosage": "1 mll"},
+          {"name": "Basis B", "dosage": "1 mll"},
+          {"name": "Start-R", "dosage": "1 mll"}
+        ]
+      },
+      "techniques": ["Transplantation"]
+    },
+    {
+      "week": 13,
+      "phase": "Цветение",
+      "photos": {
+        "count": 6,
+        "layout": "horizontal_gallery"
+      },
+      "metrics_grid": {
+        "final_values": [
+          {"type": "height", "value": "55 см"},
+          {"type": "light_schedule", "value": "12 часов"},
+          {"type": "day_temp", "value": "29°C"},
+          {"type": "humidity", "value": "45%"},
+          {"type": "pot_size", "value": "20 л"},
+          {"type": "watering", "value": "1.5 л"}
+        ]
+      },
+      "nutrients": {
+        "count": 5,
+        "flowering_nutrients": true
+      },
+      "techniques": ["LST", "Дефолиация", "Топпинг", "HST"]
+    }
+  ],
+
+  "comments_section": {
+    "form": {
+      "input_placeholder": "Выскажи свое мнение",
+      "file_upload": true
+    },
+    "comments_count": 7,
+    "sorting": "popularity"
+  },
+
+  "timeline_navigation": {
+    "position": "bottom_fixed",
+    "total_weeks": 13,
+    "vega_weeks": 8,
+    "flower_weeks": 5,
+    "layout": "horizontal_tabs"
+  }
+}

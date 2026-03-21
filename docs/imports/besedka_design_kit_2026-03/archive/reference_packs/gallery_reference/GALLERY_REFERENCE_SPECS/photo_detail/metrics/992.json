@@ -1,0 +1,48 @@
+{
+  "breakpoint": {
+    "width": 992,
+    "height": 1080
+  },
+  "viewport": {
+    "width": 992,
+    "height": 1080
+  },
+  "styles": {
+    "body": {
+      "selector": "body",
+      "fontSize": "14px",
+      "fontFamily": "Outfit, \"Helvetica Neue\", HelveticaNeue, Helvetica, TeXGyreHeros, FreeSans, \"Nimbus Sans L\", \"Liberation Sans\", Arial, sans-serif",
+      "color": "rgba(0, 0, 0, 0.65)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "width": "992px",
+      "height": "1080px",
+      "position": "static",
+      "zIndex": "auto"
+    },
+    "photoImage": {
+      "selector": "img[src*=\"500px\"], img[class*=\"photo\"], img[class*=\"image\"]",
+      "fontSize": "14px",
+      "fontFamily": "Outfit, \"Helvetica Neue\", HelveticaNeue, Helvetica, TeXGyreHeros, FreeSans, \"Nimbus Sans L\", \"Liberation Sans\", Arial, sans-serif",
+      "color": "rgba(0, 0, 0, 0.65)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "width": "100%",
+      "height": "100%",
+      "position": "static",
+      "zIndex": "auto"
+    },
+    "lightbox": null,
+    "navigation": {
+      "selector": "[class*=\"nav\"], nav",
+      "fontSize": "14px",
+      "fontFamily": "Outfit, \"Helvetica Neue\", HelveticaNeue, Helvetica, TeXGyreHeros, FreeSans, \"Nimbus Sans L\", \"Liberation Sans\", Arial, sans-serif",
+      "color": "rgba(0, 0, 0, 0.65)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "width": "992px",
+      "height": "72px",
+      "position": "sticky",
+      "zIndex": "6"
+    },
+    "metadata": null,
+    "author": null
+  }
+}

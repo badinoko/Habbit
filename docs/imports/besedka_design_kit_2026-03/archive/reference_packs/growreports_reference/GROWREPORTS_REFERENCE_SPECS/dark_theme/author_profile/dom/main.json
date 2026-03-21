@@ -1,0 +1,114 @@
+{
+  "title": "Growdiaries",
+  "url": "https://growdiaries.com/grower/spliff-seeds",
+  "body": {
+    "tag": "body",
+    "id": "",
+    "classes": "",
+    "children": [
+      {
+        "tag": "div",
+        "id": "__nuxt",
+        "classes": "",
+        "children": [
+          {
+            "tag": "div",
+            "id": "",
+            "classes": "bd prose",
+            "children": [
+              {
+                "tag": "a",
+                "id": "",
+                "classes": "logo",
+                "children": [
+                  {
+                    "tag": "IMG",
+                    "classes": "lg",
+                    "truncated": true
+                  }
+                ]
+              },
+              {
+                "tag": "h1",
+                "id": "",
+                "classes": "",
+                "text": "Ooops!",
+                "children": []
+              },
+              {
+                "tag": "p",
+                "id": "",
+                "classes": "",
+                "text": "It looks like something broke.",
+                "children": []
+              },
+              {
+                "tag": "p",
+                "id": "",
+                "classes": "",
+                "text": "Sorry about that.",
+                "children": []
+              },
+              {
+                "tag": "div",
+                "id": "",
+                "classes": "om",
+                "children": [
+                  {
+                    "tag": "STRONG",
+                    "classes": "",
+                    "truncated": true
+                  }
+                ]
+              },
+              {
+                "tag": "p",
+                "id": "",
+                "classes": "",
+                "children": [
+                  {
+                    "tag": "A",
+                    "classes": "",
+                    "truncated": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "tag": "div",
+        "id": "teleports",
+        "classes": "",
+        "text": "",
+        "children": []
+      },
+      {
+        "tag": "script",
+        "id": "__NUXT_DATA__",
+        "classes": "",
+        "text": "[[\"ShallowReactive\",1],{\"error\":2,\"data\":7,\"state\":791,\"once\":815,\"_errors\":816,\"serverRendered\":808",
+        "children": []
+      },
+      {
+        "tag": "script",
+        "id": "",
+        "classes": "",
+        "text": "window.__NUXT__={};window.__NUXT__.config={public:{turnstile:{siteKey:\"0x4AAAAAAAPrDLTxe09gtHhJ\"},ap",
+        "children": []
+      },
+      {
+        "tag": "script",
+        "id": "",
+        "classes": "",
+        "text": "",
+        "children": []
+      }
+    ]
+  },
+  "themeClasses": {
+    "html": "",
+    "body": ""
+  }
+}

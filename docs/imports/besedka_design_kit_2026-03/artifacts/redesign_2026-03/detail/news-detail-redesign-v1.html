@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Детальная новость — Беседка</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<style>
+:root {
+  --bs-primary: #2EA6FF;
+  --bs-body-bg: #FDFCFA;
+  --bs-card-bg: #ffffff;
+  --bs-text-primary: #1e293b;
+  --bs-text-secondary: #64748b;
+  --bs-text-muted: #94a3b8;
+  --bs-border-subtle: rgba(0,0,0,0.06);
+  --bs-shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+  --bs-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --bs-shadow-lg: 0 12px 48px rgba(0,0,0,0.12);
+  --accent-green: #2d8a56;
+  --accent-green-light: #e8f5e9;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --navbar-h: 64px;
+  --sticky-h: 52px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  background: var(--bs-body-bg);
+  color: var(--bs-text-primary);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+
+/* NAVBAR */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--navbar-h); z-index: 1000;
+  background: rgba(253,252,250,0.92);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--bs-border-subtle);
+  display: flex; align-items: center;
+  padding: 0 clamp(1rem, 3vw, 2.5rem);
+}
+.nav__brand { font-family: var(--font-display); font-size: 1.75rem; font-weight: 700; }
+.nav__brand span { color: var(--accent-green); }
+.nav__links {
+  display: flex; gap: 2rem; margin-left: auto;
+  list-style: none; font-size: 0.9rem; font-weight: 500;
+}
+.nav__links a { color: var(--bs-text-secondary); transition: color 0.2s; }
+.nav__links a:hover, .nav__links a.active { color: var(--bs-text-primary); }
+
+/* STICKY BAR */
+.sticky-bar {
+  position: fixed; top: var(--navbar-h); left: 0; right: 0;
+  height: var(--sticky-h); z-index: 150;
+  background: rgba(253,252,250,0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--bs-border-subtle);
+  display: flex; align-items: center;
+  padding: 0 clamp(1rem, 3vw, 2.5rem); gap: 1rem;
+}
+.sticky-bar__back {
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1px solid var(--bs-border-subtle); background: var(--bs-card-bg);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--bs-text-secondary); font-size: 0.9rem;
+}
+.sticky-bar__back:hover { border-color: var(--accent-green); color: var(--accent-green); }
+.sticky-bar__title {
+  font-size: 0.85rem; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 400px; color: var(--bs-text-secondary);
+}
+.sticky-bar__spacer { flex: 1; }
+.sticky-bar__actions { display: flex; gap: 0.5rem; }
+.action-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1px solid var(--bs-border-subtle); background: var(--bs-card-bg);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--bs-text-secondary); font-size: 0.85rem;
+  transition: all 0.2s;
+}
+.action-btn:hover { border-color: var(--accent-green); color: var(--accent-green); }
+
+/* ============================================
+   TWO-COLUMN LAYOUT
+   ============================================ */
+.detail {
+  margin-top: calc(var(--navbar-h) + var(--sticky-h) + 1.5rem);
+  max-width: 1200px;
+  margin-left: auto; margin-right: auto;
+  padding: 0 clamp(1rem, 3vw, 2.5rem) 4rem;
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 2rem;
+  align-items: start;
+}
+
+/* ============================================
+   ARTICLE (main column)
+   ============================================ */
+.article {}
+
+/* Hero Image */
+.article__hero {
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 2rem;
+  background: #f1f5f9;
+  cursor: pointer;
+}
+.article__hero-img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+}
+.article__hero-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 4rem; opacity: 0.15;
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f5f9 50%, #fce4ec 100%);
+}
+.article__hero-badge {
+  position: absolute; top: 16px; left: 16px;
+  padding: 0.3rem 0.7rem; border-radius: 8px;
+  font-size: 0.75rem; font-weight: 700;
+  background: rgba(45,138,86,0.15); color: #2d8a56;
+  backdrop-filter: blur(8px);
+}
+
+/* Meta */
+.article__meta {
+  display: flex; align-items: center; gap: 0.75rem;
+  margin-bottom: 1.25rem; flex-wrap: wrap;
+}
+.article__badge {
+  padding: 0.2rem 0.6rem; border-radius: 8px;
+  font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  background: var(--accent-green-light); color: var(--accent-green);
+}
+.article__date {
+  font-size: 0.85rem; color: var(--bs-text-muted);
+}
+.article__reading-time {
+  font-size: 0.85rem; color: var(--bs-text-muted);
+  display: flex; align-items: center; gap: 0.3rem;
+}
+
+/* Title */
+.article__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin-bottom: 1.5rem;
+}
+
+/* Content body */
+.article__body {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: var(--bs-text-primary);
+}
+.article__body p { margin-bottom: 1.25rem; }
+.article__body h2 {
+  font-family: var(--font-display);
+  font-size: 1.6rem; font-weight: 700;
+  margin: 2rem 0 1rem;
+  letter-spacing: -0.01em;
+}
+.article__body h3 {
+  font-size: 1.2rem; font-weight: 700;
+  margin: 1.5rem 0 0.75rem;
+}
+.article__body blockquote {
+  border-left: 3px solid var(--accent-green);
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  background: var(--accent-green-light);
+  border-radius: 0 12px 12px 0;
+  font-style: italic;
+  color: var(--bs-text-secondary);
+}
+.article__body ul, .article__body ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+.article__body li { margin-bottom: 0.5rem; }
+.article__body img {
+  border-radius: 14px;
+  margin: 1.5rem 0;
+  box-shadow: var(--bs-shadow-sm);
+}
+
+/* Source */
+.article__source {
+  margin: 2rem 0;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid var(--bs-border-subtle);
+  font-size: 0.85rem;
+  color: var(--bs-text-secondary);
+}
+.article__source a {
+  color: var(--bs-primary);
+  text-decoration: underline;
+}
+
+/* Reactions bar */
+.article__reactions {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--bs-border-subtle);
+  border-bottom: 1px solid var(--bs-border-subtle);
+  margin: 2rem 0;
+}
+.reaction-btn {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.5rem 0.85rem; border-radius: 12px;
+  border: 1px solid var(--bs-border-subtle);
+  background: var(--bs-card-bg);
+  font-size: 0.85rem; cursor: pointer;
+  transition: all 0.2s;
+}
+.reaction-btn:hover {
+  border-color: var(--accent-green);
+  background: var(--accent-green-light);
+}
+.reaction-btn.active {
+  border-color: var(--accent-green);
+  background: var(--accent-green-light);
+  color: var(--accent-green);
+  font-weight: 600;
+}
+.reaction-btn__emoji { font-size: 1.1rem; }
+.reaction-btn__count { font-size: 0.8rem; color: var(--bs-text-muted); }
+
+/* Comments section */
+.comments { margin-top: 2rem; }
+.comments__title {
+  font-family: var(--font-display);
+  font-size: 1.5rem; font-weight: 700;
+  margin-bottom: 1.25rem;
+}
+.comments__input-wrap {
+  display: flex; gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+.comments__avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--accent-green-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; color: var(--accent-green);
+  flex-shrink: 0;
+}
+.comments__input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  border: 1.5px solid var(--bs-border-subtle);
+  background: var(--bs-card-bg);
+  font-family: inherit; font-size: 0.9rem;
+  color: var(--bs-text-primary);
+  resize: none; outline: none;
+  transition: border-color 0.2s;
+}
+.comments__input:focus { border-color: var(--accent-green); }
+
+/* Single comment */
+.comment {
+  display: flex; gap: 0.75rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+.comment__avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: #f1f5f9;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 700; color: var(--bs-text-muted);
+  flex-shrink: 0;
+}
+.comment__body { flex: 1; }
+.comment__header {
+  display: flex; align-items: center; gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.comment__author { font-size: 0.88rem; font-weight: 600; }
+.comment__time { font-size: 0.78rem; color: var(--bs-text-muted); }
+.comment__text { font-size: 0.9rem; line-height: 1.6; color: var(--bs-text-secondary); }
+.comment__actions {
+  margin-top: 0.5rem; display: flex; gap: 1rem;
+  font-size: 0.78rem; color: var(--bs-text-muted);
+}
+.comment__actions a { cursor: pointer; transition: color 0.2s; }
+.comment__actions a:hover { color: var(--accent-green); }
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+.sidebar { position: sticky; top: calc(var(--navbar-h) + var(--sticky-h) + 1.5rem); }
+
+/* Author card */
+.sidebar__author {
+  background: var(--bs-card-bg);
+  border-radius: 18px;
+  padding: 1.5rem;
+  border: 1px solid var(--bs-border-subtle);
+  box-shadow: var(--bs-shadow-sm);
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+.sidebar__author-avatar {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--accent-green-light);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 0.75rem;
+  font-size: 1.5rem; font-weight: 700; color: var(--accent-green);
+}
+.sidebar__author-name {
+  font-size: 1rem; font-weight: 700; margin-bottom: 0.15rem;
+}
+.sidebar__author-role {
+  font-size: 0.8rem; color: var(--bs-text-muted); margin-bottom: 0.75rem;
+}
+.sidebar__author-stats {
+  display: flex; justify-content: center; gap: 1.25rem;
+  font-size: 0.78rem; color: var(--bs-text-muted);
+}
+.sidebar__author-stats span { display: flex; flex-direction: column; align-items: center; }
+.sidebar__author-stats strong {
+  font-size: 1.1rem; font-weight: 800; color: var(--bs-text-primary);
+}
+
+/* Tags */
+.sidebar__tags {
+  background: var(--bs-card-bg);
+  border-radius: 18px;
+  padding: 1.25rem;
+  border: 1px solid var(--bs-border-subtle);
+  box-shadow: var(--bs-shadow-sm);
+  margin-bottom: 1.25rem;
+}
+.sidebar__tags-title {
+  font-size: 0.82rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--bs-text-muted); margin-bottom: 0.75rem;
+}
+.sidebar__tags-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.tag {
+  padding: 0.3rem 0.65rem; border-radius: 8px;
+  font-size: 0.78rem; font-weight: 500;
+  background: #f1f5f9; color: var(--bs-text-secondary);
+  transition: all 0.2s;
+}
+.tag:hover { background: var(--accent-green-light); color: var(--accent-green); }
+
+/* Related news */
+.sidebar__related {
+  background: var(--bs-card-bg);
+  border-radius: 18px;
+  padding: 1.25rem;
+  border: 1px solid var(--bs-border-subtle);
+  box-shadow: var(--bs-shadow-sm);
+}
+.sidebar__related-title {
+  font-size: 0.82rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--bs-text-muted); margin-bottom: 0.75rem;
+}
+.related-item {
+  display: flex; gap: 0.75rem; align-items: center;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+  transition: all 0.2s;
+}
+.related-item:last-child { border-bottom: none; }
+.related-item:hover { padding-left: 0.25rem; }
+.related-item__img {
+  width: 56px; height: 56px; border-radius: 10px;
+  background: #f1f5f9; flex-shrink: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; opacity: 0.25;
+}
+.related-item__info { flex: 1; min-width: 0; }
+.related-item__title {
+  font-size: 0.82rem; font-weight: 600;
+  line-height: 1.35; margin-bottom: 0.15rem;
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.related-item__meta {
+  font-size: 0.72rem; color: var(--bs-text-muted);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 1000px) {
+  .detail {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .sidebar__author { grid-column: span 2; }
+}
+
+@media (max-width: 600px) {
+  .detail { padding: 0 1rem 3rem; }
+  .nav__links { display: none; }
+  .sidebar {
+    grid-template-columns: 1fr;
+  }
+  .sidebar__author { grid-column: span 1; }
+  .article__title { font-size: 1.6rem; }
+  .article__body { font-size: 0.95rem; }
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="nav">
+  <div class="nav__brand"><span>&#127807;</span> Беседка</div>
+  <ul class="nav__links">
+    <li><a href="#">Главная</a></li>
+    <li><a href="#" class="active">Новости</a></li>
+    <li><a href="#">Галерея</a></li>
+    <li><a href="#">Гроурепорты</a></li>
+    <li><a href="#">Магазин</a></li>
+    <li><a href="#">Чат</a></li>
+  </ul>
+</nav>
+
+<!-- STICKY BAR -->
+<div class="sticky-bar">
+  <button class="sticky-bar__back"><i class="fas fa-arrow-left"></i></button>
+  <span class="sticky-bar__title">Полный гайд по органическому выращиванию</span>
+  <div class="sticky-bar__spacer"></div>
+  <div class="sticky-bar__actions">
+    <button class="action-btn" title="Поделиться"><i class="fas fa-share-alt"></i></button>
+    <button class="action-btn" title="В закладки"><i class="far fa-bookmark"></i></button>
+  </div>
+</div>
+
+<!-- DETAIL LAYOUT -->
+<div class="detail">
+  <!-- LEFT: ARTICLE -->
+  <article class="article">
+    <!-- Hero Image -->
+    <div class="article__hero">
+      <div class="article__hero-placeholder">&#127793;</div>
+      <span class="article__hero-badge">&#10024; Оригинальный контент</span>
+    </div>
+
+    <!-- Meta -->
+    <div class="article__meta">
+      <span class="article__badge">&#127793; Органика</span>
+      <span class="article__date">11 марта 2026</span>
+      <span class="article__reading-time"><i class="far fa-clock"></i> 8 мин</span>
+    </div>
+
+    <!-- Title -->
+    <h1 class="article__title">Полный гайд по органическому выращиванию: от семечки до харвеста</h1>
+
+    <!-- Body -->
+    <div class="article__body">
+      <p>Органическое выращивание — это не просто тренд, а философия, которая позволяет получить максимально чистый и вкусный продукт. В этом гайде я расскажу обо всём, что нужно знать для успешного органического цикла.</p>
+
+      <h2>Почему органика?</h2>
+      <p>Переход на органику меняет подход к выращиванию кардинально. Вместо того чтобы кормить растение напрямую, вы кормите почву — а она уже заботится о растении. Это создаёт более сложный и богатый терпеновый профиль, который невозможно получить на минеральных удобрениях.</p>
+
+      <blockquote>
+        Здоровая почва — это живой организм. Миллиарды микроорганизмов работают 24/7, чтобы ваше растение получало всё необходимое.
+      </blockquote>
+
+      <h2>Подготовка почвосмеси</h2>
+      <p>Основа хорошей органической почвосмеси — это баланс. Вам нужны три компонента: структура (перлит, вермикулит), питание (компост, гумус) и жизнь (микориза, бактерии).</p>
+
+      <h3>Базовый рецепт</h3>
+      <ul>
+        <li>40% кокосового субстрата или торфа</li>
+        <li>30% компоста (червячный или растительный)</li>
+        <li>15% перлита для дренажа</li>
+        <li>10% вермикулита для влагоудержания</li>
+        <li>5% добавок (костная мука, зола, микориза)</li>
+      </ul>
+
+      <p>Эту смесь нужно «активировать» — замочить, перемешать и дать постоять 2-3 недели при комнатной температуре. За это время микроорганизмы размножатся и создадут полноценную экосистему.</p>
+
+      <h2>Полив и подкормки</h2>
+      <p>Главное правило органического полива — не переливать. Почва должна дышать. Между поливами верхний слой (2-3 см) должен просохнуть. Подкормки органическими чаями (компостный чай, настой банановых шкурок) проводятся раз в неделю во время вегетации и раз в 10 дней во время цветения.</p>
+    </div>
+
+    <!-- Source -->
+    <div class="article__source">
+      &#9998; Оригинальный контент Беседки &middot; Автор: Органик_гровер
+    </div>
+
+    <!-- Reactions -->
+    <div class="article__reactions">
+      <button class="reaction-btn active">
+        <span class="reaction-btn__emoji">&#10084;&#65039;</span>
+        <span class="reaction-btn__count">67</span>
+      </button>
+      <button class="reaction-btn">
+        <span class="reaction-btn__emoji">&#128077;</span>
+        <span class="reaction-btn__count">23</span>
+      </button>
+      <button class="reaction-btn">
+        <span class="reaction-btn__emoji">&#128293;</span>
+        <span class="reaction-btn__count">12</span>
+      </button>
+      <button class="reaction-btn">
+        <span class="reaction-btn__emoji">&#129300;</span>
+        <span class="reaction-btn__count">5</span>
+      </button>
+      <button class="reaction-btn">
+        <span class="reaction-btn__emoji">&#128558;</span>
+        <span class="reaction-btn__count">3</span>
+      </button>
+    </div>
+
+    <!-- Comments -->
+    <div class="comments">
+      <h3 class="comments__title">Комментарии (34)</h3>
+
+      <div class="comments__input-wrap">
+        <div class="comments__avatar">ТЫ</div>
+        <textarea class="comments__input" rows="2" placeholder="Написать комментарий..."></textarea>
+      </div>
+
+      <div class="comment">
+        <div class="comment__avatar">ГД</div>
+        <div class="comment__body">
+          <div class="comment__header">
+            <span class="comment__author">Гидропонщик</span>
+            <span class="comment__time">2 часа назад</span>
+          </div>
+          <p class="comment__text">Отличный гайд! Особенно полезна часть про компостный чай. Я раньше использовал готовые концентраты, но после перехода на самодельный чай разница просто огромная.</p>
+          <div class="comment__actions">
+            <a>&#10084; 8</a>
+            <a>Ответить</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="comment">
+        <div class="comment__avatar">НЛ</div>
+        <div class="comment__body">
+          <div class="comment__header">
+            <span class="comment__author">НовичокЛёша</span>
+            <span class="comment__time">5 часов назад</span>
+          </div>
+          <p class="comment__text">А можно использовать обычную землю из сада как базу? Или лучше всё с нуля замешивать?</p>
+          <div class="comment__actions">
+            <a>&#10084; 3</a>
+            <a>Ответить</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="comment">
+        <div class="comment__avatar">ОГ</div>
+        <div class="comment__body">
+          <div class="comment__header">
+            <span class="comment__author" style="color: var(--accent-green);">Органик_гровер</span>
+            <span class="comment__time" style="font-size: 0.72rem;">&#10024; автор</span>
+            <span class="comment__time">4 часа назад</span>
+          </div>
+          <p class="comment__text">Садовую землю можно, но лучше пропарить или прокалить для обеззараживания. И добавить перлит обязательно — садовая земля обычно слишком плотная.</p>
+          <div class="comment__actions">
+            <a>&#10084; 12</a>
+            <a>Ответить</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- RIGHT: SIDEBAR -->
+  <aside class="sidebar">
+    <!-- Author card -->
+    <div class="sidebar__author">
+      <div class="sidebar__author-avatar">ОГ</div>
+      <div class="sidebar__author-name">Органик_гровер</div>
+      <div class="sidebar__author-role">Опытный гровер &middot; с 2023</div>
+      <div class="sidebar__author-stats">
+        <span><strong>12</strong> публ.</span>
+        <span><strong>48</strong> реп.</span>
+        <span><strong>156</strong> фото</span>
+      </div>
+    </div>
+
+    <!-- Tags -->
+    <div class="sidebar__tags">
+      <div class="sidebar__tags-title">Теги</div>
+      <div class="sidebar__tags-list">
+        <a class="tag" href="#">органика</a>
+        <a class="tag" href="#">почва</a>
+        <a class="tag" href="#">компост</a>
+        <a class="tag" href="#">гайд</a>
+        <a class="tag" href="#">для новичков</a>
+        <a class="tag" href="#">удобрения</a>
+        <a class="tag" href="#">микориза</a>
+      </div>
+    </div>
+
+    <!-- Related -->
+    <div class="sidebar__related">
+      <div class="sidebar__related-title">Похожие статьи</div>
+
+      <a class="related-item" href="#">
+        <div class="related-item__img">&#127793;</div>
+        <div class="related-item__info">
+          <div class="related-item__title">Компостный чай: рецепт и применение</div>
+          <div class="related-item__meta">5 мар &middot; 342 просм.</div>
+        </div>
+      </a>
+
+      <a class="related-item" href="#">
+        <div class="related-item__img">&#129516;</div>
+        <div class="related-item__info">
+          <div class="related-item__title">Микориза: невидимый помощник гровера</div>
+          <div class="related-item__meta">28 фев &middot; 218 просм.</div>
+        </div>
+      </a>
+
+      <a class="related-item" href="#">
+        <div class="related-item__img">&#128161;</div>
+        <div class="related-item__info">
+          <div class="related-item__title">Топ-5 ошибок начинающих органик-гроверов</div>
+          <div class="related-item__meta">21 фев &middot; 567 просм.</div>
+        </div>
+      </a>
+
+      <a class="related-item" href="#">
+        <div class="related-item__img">&#127807;</div>
+        <div class="related-item__info">
+          <div class="related-item__title">Living soil: почва которая сама себя кормит</div>
+          <div class="related-item__meta">14 фев &middot; 891 просм.</div>
+        </div>
+      </a>
+    </div>
+  </aside>
+</div>
+
+</body>
+</html>

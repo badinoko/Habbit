@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Northern Lights Auto — Гроурепорт — Беседка</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&family=Caveat:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<style>
+:root {
+  --bs-body-bg: #FDFCFA; --bs-card-bg: #ffffff;
+  --bs-text-primary: #1e293b; --bs-text-secondary: #64748b; --bs-text-muted: #94a3b8;
+  --bs-border-subtle: rgba(0,0,0,0.06);
+  --bs-shadow-sm: 0 2px 8px rgba(0,0,0,0.05); --bs-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --accent-green: #2d8a56; --accent-green-light: #e8f5e9; --accent-green-dim: rgba(45,138,86,0.08);
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-hand: 'Caveat', cursive;
+  --navbar-h: 56px; --sticky-h: 44px;
+  --shell-h: calc(var(--navbar-h) + var(--sticky-h));
+  --glass-bg: rgba(253,252,250,0.88);
+  --stage-seed: #78909c; --stage-seed-bg: #eceff1;
+  --stage-veg: #2d8a56; --stage-veg-bg: #e8f5e9;
+  --stage-flower: #e91e63; --stage-flower-bg: #fce4ec;
+  --stage-flush: #0288d1; --stage-flush-bg: #e1f5fe;
+  --stage-harvest: #ff8f00; --stage-harvest-bg: #fff8e1;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--bs-body-bg);color:var(--bs-text-primary);-webkit-font-smoothing:antialiased;line-height:1.5}
+a{color:inherit;text-decoration:none} button{font-family:inherit}
+
+/* === SHELL (compact) === */
+.nav{position:fixed;top:0;left:0;right:0;height:var(--navbar-h);z-index:1000;background:var(--glass-bg);backdrop-filter:blur(24px);display:flex;align-items:center;padding:0 clamp(.75rem,2vw,1.5rem)}
+.nav__left{display:flex;align-items:center;gap:.5rem}
+.nav__ham{width:36px;height:36px;border-radius:10px;border:none;background:0 0;display:flex;align-items:center;justify-content:center;color:var(--bs-text-primary);font-size:1.1rem;cursor:pointer}
+.nav__brand{font-family:var(--font-display);font-size:1.4rem;font-weight:700}.nav__brand-i{color:var(--accent-green)}
+.nav__section{display:none;font-size:.88rem;font-weight:700;color:var(--accent-green);margin-left:.5rem}
+.nav__center{flex:1;display:flex;justify-content:center;gap:.25rem}
+.nav__link{display:inline-flex;align-items:center;gap:.35rem;padding:.4rem .75rem;border-radius:10px;font-size:.82rem;font-weight:500;color:var(--bs-text-secondary);white-space:nowrap}
+.nav__link--active{color:var(--accent-green);background:var(--accent-green-dim);font-weight:600}
+.nav__right{display:flex;align-items:center;gap:.35rem;margin-left:auto}
+.nav__btn{width:36px;height:36px;border-radius:10px;border:none;background:0 0;display:flex;align-items:center;justify-content:center;color:var(--bs-text-secondary);font-size:.95rem;cursor:pointer;position:relative}
+.nav__dot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#ef4444}
+.nav__av{width:32px;height:32px;border-radius:50%;background:var(--accent-green-light);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--accent-green);cursor:pointer}
+
+.sticky{position:fixed;top:var(--navbar-h);left:0;right:0;height:var(--sticky-h);z-index:150;background:var(--glass-bg);backdrop-filter:blur(24px);border-bottom:1px solid var(--bs-border-subtle);display:flex;align-items:center;padding:0 clamp(.75rem,2vw,1.5rem);gap:.5rem}
+.sticky__back{width:30px;height:30px;border-radius:8px;border:1px solid var(--bs-border-subtle);background:var(--bs-card-bg);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--bs-text-muted);font-size:.75rem}
+.sticky__title{font-size:.82rem;font-weight:600;color:var(--bs-text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px}
+.sticky__spacer{flex:1}
+.sticky__act{width:30px;height:30px;border-radius:8px;border:1px solid var(--bs-border-subtle);background:var(--bs-card-bg);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--bs-text-muted);font-size:.78rem;transition:all .15s}
+.sticky__act:hover{border-color:var(--accent-green);color:var(--accent-green)}
+
+/* ============================================ */
+/* HERO                                         */
+/* ============================================ */
+.hero{
+  margin-top:var(--shell-h);
+  background:linear-gradient(135deg,var(--stage-veg-bg) 0%,var(--bs-body-bg) 40%,var(--stage-flower-bg) 100%);
+  padding:2.5rem clamp(1rem,3vw,3rem);position:relative;overflow:hidden;
+}
+.hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='40' height='40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%232d8a56' fill-opacity='.03'%3E%3Cpath d='M20 20h20v20H20z'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none}
+.hero__inner{max-width:960px;margin:0 auto;position:relative;z-index:1}
+.hero__eyebrow{font-family:var(--font-hand);font-size:1.15rem;color:var(--accent-green);margin-bottom:.25rem}
+.hero__top{display:flex;align-items:flex-start;justify-content:space-between;gap:1.5rem;margin-bottom:1rem}
+.hero__title{font-family:var(--font-display);font-size:clamp(1.75rem,4vw,2.5rem);font-weight:700;line-height:1.15;letter-spacing:-.02em}
+.hero__stage{display:inline-flex;align-items:center;gap:.35rem;padding:.4rem .9rem;border-radius:10px;font-size:.82rem;font-weight:700;flex-shrink:0;white-space:nowrap}
+.hero__stage--flower{background:var(--stage-flower-bg);color:var(--stage-flower)}
+.hero__meta{font-size:.88rem;color:var(--bs-text-secondary);margin-bottom:1.25rem}
+.hero__meta strong{color:var(--bs-text-primary)}
+
+/* Info chips */
+.hero__chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem}
+.hero__chip{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .85rem;border-radius:10px;background:rgba(255,255,255,.7);backdrop-filter:blur(8px);border:1px solid var(--bs-border-subtle);font-size:.8rem;font-weight:500}
+.hero__chip i{color:var(--accent-green);font-size:.85rem}
+
+/* Progress */
+.hero__progress{margin-top:.5rem}
+.hero__prog-label{display:flex;justify-content:space-between;font-size:.75rem;color:var(--bs-text-muted);margin-bottom:.3rem}
+.hero__prog-track{height:7px;border-radius:4px;background:rgba(0,0,0,.06);overflow:hidden}
+.hero__prog-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--stage-veg),var(--stage-flower));transition:width .8s}
+.hero__stages-dots{display:flex;gap:3px;margin-top:.5rem}
+.hero__dot{flex:1;height:3px;border-radius:2px}
+.hero__dot--done{background:var(--accent-green);opacity:.6}
+.hero__dot--active{background:var(--stage-flower)}
+.hero__dot--future{background:rgba(0,0,0,.08)}
+
+/* ============================================ */
+/* EQUIPMENT BAR                                */
+/* ============================================ */
+.equip{max-width:960px;margin:1.25rem auto;padding:1rem 1.25rem;background:var(--bs-card-bg);border-radius:16px;border:1px solid var(--bs-border-subtle);box-shadow:var(--bs-shadow-sm);display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.75rem}
+.equip__item{}
+.equip__label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--bs-text-muted);margin-bottom:.15rem;display:flex;align-items:center;gap:.3rem}
+.equip__label i{color:var(--accent-green);font-size:.7rem}
+.equip__value{font-size:.85rem;font-weight:600}
+
+/* ============================================ */
+/* WEEK NAVIGATOR (side)                        */
+/* ============================================ */
+.content-wrap{max-width:960px;margin:0 auto;padding:0 clamp(1rem,3vw,3rem) 4rem;display:grid;grid-template-columns:1fr 180px;gap:1.5rem;align-items:start}
+
+.week-nav{position:sticky;top:calc(var(--shell-h) + 1rem)}
+.week-nav__title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--bs-text-muted);margin-bottom:.5rem}
+.week-nav__item{display:flex;align-items:center;gap:.5rem;padding:.4rem .6rem;border-radius:8px;font-size:.78rem;font-weight:500;color:var(--bs-text-secondary);cursor:pointer;transition:all .15s;margin-bottom:.15rem}
+.week-nav__item:hover{background:var(--accent-green-dim);color:var(--accent-green)}
+.week-nav__item--active{background:var(--accent-green-dim);color:var(--accent-green);font-weight:600}
+.week-nav__dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.week-nav__dot--veg{background:var(--stage-veg)}
+.week-nav__dot--flower{background:var(--stage-flower)}
+.week-nav__dot--harvest{background:var(--stage-harvest)}
+.week-nav__dot--seed{background:var(--stage-seed)}
+
+/* ============================================ */
+/* TIMELINE                                     */
+/* ============================================ */
+.timeline{}
+
+/* WEEK CARD */
+.wk{background:var(--bs-card-bg);border-radius:16px;border:1px solid var(--bs-border-subtle);box-shadow:var(--bs-shadow-sm);margin-bottom:1.5rem;overflow:hidden;scroll-margin-top:calc(var(--shell-h) + 12px)}
+.wk:hover{border-color:color-mix(in srgb, var(--accent-green) 40%, transparent)}
+
+/* Week header (clickable toggle) */
+.wk__head{padding:.85rem 1.25rem;display:flex;align-items:center;gap:.75rem;cursor:pointer;user-select:none;transition:background .15s;border-bottom:1px solid var(--bs-border-subtle)}
+.wk__head:hover{background:var(--accent-green-dim)}
+.wk__head-title{font-family:var(--font-display);font-size:1.2rem;font-weight:700}
+.wk__head-dates{font-size:.72rem;color:var(--bs-text-muted)}
+.wk__head-stage{padding:.15rem .5rem;border-radius:6px;font-size:.68rem;font-weight:700;color:#fff}
+.wk__head-stage--veg{background:var(--stage-veg)}
+.wk__head-stage--flower{background:var(--stage-flower)}
+.wk__head-stage--flush{background:var(--stage-flush)}
+.wk__head-stage--harvest{background:var(--stage-harvest)}
+.wk__head-stage--seed{background:var(--stage-seed)}
+.wk__chevron{margin-left:auto;font-size:.7rem;color:var(--bs-text-muted);transition:transform .25s}
+.wk.collapsed .wk__chevron{transform:rotate(-90deg)}
+.wk.collapsed .wk__body{display:none}
+
+/* Week body */
+.wk__body{padding:0}
+
+/* ============================================ */
+/* ENTRY (day) inside week                      */
+/* ============================================ */
+.entry{padding:1.25rem;border-bottom:1px solid var(--bs-border-subtle)}
+.entry:last-child{border-bottom:none}
+
+.entry__head{display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem}
+.entry__day{font-size:.88rem;font-weight:700;color:var(--accent-green)}
+.entry__date{font-size:.72rem;color:var(--bs-text-muted)}
+.entry__stage-sm{font-size:.68rem;color:var(--bs-text-muted);font-style:italic}
+.entry__actions-owner{margin-left:auto;display:flex;gap:.35rem}
+.entry__edit-btn,.entry__del-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--bs-border-subtle);background:var(--bs-card-bg);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--bs-text-muted);font-size:.7rem;transition:all .15s}
+.entry__edit-btn:hover{border-color:var(--accent-green);color:var(--accent-green)}
+.entry__del-btn:hover{border-color:#ef4444;color:#ef4444}
+
+/* Entry photos grid */
+.entry__photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:4px;margin-bottom:.75rem;border-radius:10px;overflow:hidden}
+.entry__photo{aspect-ratio:1;overflow:hidden;background:#f1f5f9;cursor:pointer}
+.entry__photo img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
+.entry__photo:hover img{transform:scale(1.06)}
+.entry__photo-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;opacity:.12;background:linear-gradient(135deg,var(--stage-veg-bg),#f1f5f9)}
+
+/* Entry metrics */
+.entry__metrics{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem}
+.metric{display:inline-flex;align-items:center;gap:.3rem;padding:.3rem .6rem;border-radius:8px;background:#f8fafc;border:1px solid var(--bs-border-subtle);font-size:.75rem}
+.metric__icon{font-size:.8rem}
+.metric__val{font-weight:700;color:var(--bs-text-primary)}
+.metric__unit{color:var(--bs-text-muted)}
+
+/* Entry text */
+.entry__text{font-size:.92rem;line-height:1.7;color:var(--bs-text-primary);margin-bottom:.75rem;border-left:3px solid var(--accent-green-light);padding-left:1rem}
+
+/* Entry actions: like, comment, report */
+.entry__actions{display:flex;gap:.5rem;align-items:center}
+.entry__action-btn{display:inline-flex;align-items:center;gap:.3rem;padding:.35rem .7rem;border-radius:9px;border:1px solid var(--bs-border-subtle);background:var(--bs-card-bg);font-size:.78rem;cursor:pointer;transition:all .15s;color:var(--bs-text-secondary)}
+.entry__action-btn:hover{border-color:var(--accent-green);color:var(--accent-green)}
+.entry__action-btn--liked{background:var(--accent-green-light);border-color:var(--accent-green);color:var(--accent-green)}
+.entry__action-btn i{font-size:.75rem}
+.entry__comments-count{font-size:.75rem;color:var(--bs-text-muted);margin-left:auto;cursor:pointer;display:flex;align-items:center;gap:.3rem}
+.entry__comments-count:hover{color:var(--accent-green)}
+
+/* Collapsed comment section placeholder */
+.entry__comments-section{margin-top:.75rem;padding:.75rem;background:#f8fafc;border-radius:12px;border:1px solid var(--bs-border-subtle)}
+.entry__comment{display:flex;gap:.5rem;padding:.5rem 0;border-bottom:1px solid rgba(0,0,0,.04)}
+.entry__comment:last-child{border-bottom:none}
+.entry__comment-av{width:28px;height:28px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:var(--bs-text-muted);flex-shrink:0}
+.entry__comment-body{flex:1}
+.entry__comment-author{font-size:.78rem;font-weight:600}
+.entry__comment-text{font-size:.82rem;color:var(--bs-text-secondary);line-height:1.5}
+.entry__comment-time{font-size:.68rem;color:var(--bs-text-muted)}
+
+/* Week footer: add entry */
+.wk__add{padding:.85rem 1.25rem;border-top:1px solid var(--bs-border-subtle);text-align:center}
+.wk__add-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.45rem 1rem;border-radius:10px;border:1.5px dashed var(--bs-border-subtle);background:transparent;font-size:.82rem;font-weight:600;color:var(--bs-text-muted);cursor:pointer;transition:all .2s}
+.wk__add-btn:hover{border-color:var(--accent-green);color:var(--accent-green);background:var(--accent-green-dim)}
+
+/* ============================================ */
+/* RESPONSIVE                                   */
+/* ============================================ */
+@media(max-width:768px){
+  :root{--navbar-h:52px;--sticky-h:40px}
+  .nav__center{display:none}.nav__section{display:block}
+  .content-wrap{grid-template-columns:1fr;padding:0 .75rem 3rem}
+  .week-nav{display:none}
+  .hero{padding:1.75rem 1rem}
+  .hero__title{font-size:1.6rem}
+  .hero__chips{gap:.35rem}
+  .hero__chip{font-size:.72rem;padding:.35rem .65rem}
+  .equip{margin:1rem .75rem;grid-template-columns:repeat(2,1fr);gap:.5rem;padding:.85rem}
+  .entry{padding:1rem}
+  .entry__photos{grid-template-columns:repeat(auto-fill,minmax(64px,1fr))}
+  .entry__metrics{gap:.35rem}
+  .metric{font-size:.7rem;padding:.25rem .5rem}
+}
+
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,.1);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="nav">
+  <div class="nav__left">
+    <button class="nav__ham"><i class="fas fa-bars"></i></button>
+    <a class="nav__brand"><span class="nav__brand-i">&#127807;</span> Беседка</a>
+    <span class="nav__section">Гроурепорты</span>
+  </div>
+  <div class="nav__center">
+    <a class="nav__link"><i class="fas fa-newspaper"></i> Новости</a>
+    <a class="nav__link nav__link--active"><i class="fas fa-seedling"></i> Гроурепорты</a>
+    <a class="nav__link"><i class="fas fa-images"></i> Галерея</a>
+    <a class="nav__link"><i class="fas fa-comments"></i> Чат</a>
+  </div>
+  <div class="nav__right">
+    <button class="nav__btn"><i class="far fa-bell"></i><span class="nav__dot"></span></button>
+    <div class="nav__av">РА</div>
+  </div>
+</nav>
+
+<!-- STICKY -->
+<div class="sticky">
+  <button class="sticky__back"><i class="fas fa-arrow-left"></i></button>
+  <span class="sticky__title">Northern Lights Auto — 3-й цикл</span>
+  <div class="sticky__spacer"></div>
+  <button class="sticky__act" title="Поделиться"><i class="fas fa-share-alt"></i></button>
+  <button class="sticky__act" title="Закладка"><i class="far fa-bookmark"></i></button>
+</div>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero__inner">
+    <div class="hero__eyebrow">&#127793; Гроурепорт #42</div>
+    <div class="hero__top">
+      <h1 class="hero__title">Northern Lights Auto — 3-й цикл</h1>
+      <span class="hero__stage hero__stage--flower">&#127804; Цветение (Week 8)</span>
+    </div>
+    <div class="hero__meta">
+      Автор: <strong>Растаман</strong> &middot; Начат 15 января 2026 &middot; 8 недель &middot; 1.4k просмотров
+    </div>
+
+    <div class="hero__chips">
+      <span class="hero__chip"><i class="fas fa-seedling"></i> Northern Lights Auto</span>
+      <span class="hero__chip"><i class="fas fa-building"></i> Royal Queen Seeds</span>
+      <span class="hero__chip"><i class="fas fa-leaf"></i> Почва (органика)</span>
+      <span class="hero__chip"><i class="fas fa-lightbulb"></i> LED 240W</span>
+      <span class="hero__chip"><i class="fas fa-cube"></i> 11L Air Pot</span>
+      <span class="hero__chip"><i class="fas fa-expand"></i> 80x80 см</span>
+    </div>
+
+    <div class="hero__progress">
+      <div class="hero__prog-label"><span>Прогресс</span><span>75% (Week 8 / ~10-11)</span></div>
+      <div class="hero__prog-track"><div class="hero__prog-fill" style="width:75%"></div></div>
+    </div>
+    <div class="hero__stages-dots">
+      <div class="hero__dot hero__dot--done"></div><div class="hero__dot hero__dot--done"></div>
+      <div class="hero__dot hero__dot--done"></div><div class="hero__dot hero__dot--done"></div>
+      <div class="hero__dot hero__dot--done"></div><div class="hero__dot hero__dot--done"></div>
+      <div class="hero__dot hero__dot--done"></div><div class="hero__dot hero__dot--active"></div>
+      <div class="hero__dot hero__dot--future"></div><div class="hero__dot hero__dot--future"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TIMELINE + SIDEBAR NAV ============ -->
+<div class="content-wrap">
+  <div class="timeline">
+
+    <!-- ===== WEEK 8 (latest, expanded) ===== -->
+    <div class="wk" id="week-8">
+      <div class="wk__head" onclick="this.parentElement.classList.toggle('collapsed')">
+        <span class="wk__head-title">Неделя 8</span>
+        <span class="wk__head-dates">4 — 10 мар 2026</span>
+        <span class="wk__head-stage wk__head-stage--flower">Цветение</span>
+        <i class="fas fa-chevron-down wk__chevron"></i>
+      </div>
+      <div class="wk__body">
+
+        <!-- Entry: Day 54 -->
+        <div class="entry" id="entry-54">
+          <div class="entry__head">
+            <span class="entry__day">Day 54</span>
+            <span class="entry__date">8 марта</span>
+            <span class="entry__stage-sm">Цветение</span>
+            <div class="entry__actions-owner">
+              <button class="entry__edit-btn" title="Редактировать"><i class="fas fa-edit"></i></button>
+              <button class="entry__del-btn" title="Удалить"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+
+          <div class="entry__photos">
+            <div class="entry__photo"><div class="entry__photo-ph">&#127804;</div></div>
+            <div class="entry__photo"><div class="entry__photo-ph">&#128270;</div></div>
+            <div class="entry__photo"><div class="entry__photo-ph">&#127793;</div></div>
+          </div>
+
+          <div class="entry__metrics">
+            <span class="metric"><span class="metric__icon">&#127777;</span> <span class="metric__val">25</span><span class="metric__unit">&#176;C</span></span>
+            <span class="metric"><span class="metric__icon">&#128167;</span> <span class="metric__val">55</span><span class="metric__unit">%</span></span>
+            <span class="metric"><span class="metric__icon">&#128161;</span> <span class="metric__val">18/6</span></span>
+            <span class="metric"><span class="metric__icon">&#129516;</span> pH <span class="metric__val">6.4</span></span>
+            <span class="metric"><span class="metric__icon">&#128207;</span> <span class="metric__val">52</span><span class="metric__unit">см</span></span>
+            <span class="metric"><span class="metric__icon">&#9889;</span> EC <span class="metric__val">1.8</span></span>
+          </div>
+
+          <div class="entry__text">
+            Шишки заметно набирают вес! Трихомы начинают мутнеть — думаю, ещё 2-3 недели до харвеста.
+            Запах стал очень интенсивным — сладковатый, с нотками сосны и специй.
+            Продолжаю давать компостный чай раз в 3 дня. Температура стабильно 24-26&#176;C.
+          </div>
+
+          <div class="entry__actions">
+            <button class="entry__action-btn entry__action-btn--liked"><i class="fas fa-heart"></i> 24</button>
+            <button class="entry__action-btn"><i class="fas fa-fire"></i> 8</button>
+            <button class="entry__action-btn"><i class="fas fa-thumbs-up"></i> 5</button>
+            <span class="entry__comments-count" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'"><i class="far fa-comment"></i> 12 комментариев</span>
+          </div>
+
+          <!-- Comments (collapsed by default) -->
+          <div class="entry__comments-section" style="display:none">
+            <div class="entry__comment">
+              <div class="entry__comment-av">ГД</div>
+              <div class="entry__comment-body">
+                <div class="entry__comment-author">Гидропонщик <span class="entry__comment-time">&middot; 2ч назад</span></div>
+                <div class="entry__comment-text">Красота! Трихомы шикарные. Какой микроскоп используешь?</div>
+              </div>
+            </div>
+            <div class="entry__comment">
+              <div class="entry__comment-av" style="background:var(--accent-green-light);color:var(--accent-green)">РА</div>
+              <div class="entry__comment-body">
+                <div class="entry__comment-author" style="color:var(--accent-green)">Растаман &#10024; <span class="entry__comment-time">&middot; 1ч назад</span></div>
+                <div class="entry__comment-text">Спасибо! Обычная USB-лупа x60 с Aliexpress за 300 руб. Для трихом хватает.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Entry: Day 50 -->
+        <div class="entry" id="entry-50">
+          <div class="entry__head">
+            <span class="entry__day">Day 50</span>
+            <span class="entry__date">4 марта</span>
+            <div class="entry__actions-owner">
+              <button class="entry__edit-btn" title="Редактировать"><i class="fas fa-edit"></i></button>
+              <button class="entry__del-btn" title="Удалить"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+
+          <div class="entry__photos">
+            <div class="entry__photo"><div class="entry__photo-ph">&#127807;</div></div>
+            <div class="entry__photo"><div class="entry__photo-ph">&#128248;</div></div>
+          </div>
+
+          <div class="entry__metrics">
+            <span class="metric"><span class="metric__icon">&#127777;</span> <span class="metric__val">24</span><span class="metric__unit">&#176;C</span></span>
+            <span class="metric"><span class="metric__icon">&#128167;</span> <span class="metric__val">52</span><span class="metric__unit">%</span></span>
+            <span class="metric"><span class="metric__icon">&#128207;</span> <span class="metric__val">50</span><span class="metric__unit">см</span></span>
+          </div>
+
+          <div class="entry__text">
+            Пистилы начинают темнеть, около 20% оранжевые. Поднял влажность — совет от Органик_гровера.
+            Растение пьёт 1.5 литра в день.
+          </div>
+
+          <div class="entry__actions">
+            <button class="entry__action-btn entry__action-btn--liked"><i class="fas fa-heart"></i> 18</button>
+            <button class="entry__action-btn"><i class="fas fa-fire"></i> 5</button>
+            <span class="entry__comments-count"><i class="far fa-comment"></i> 8 комментариев</span>
+          </div>
+        </div>
+
+        <!-- Add entry button -->
+        <div class="wk__add">
+          <button class="wk__add-btn"><i class="fas fa-plus"></i> Добавить запись в Week 8</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== WEEK 4 (veg, collapsed) ===== -->
+    <div class="wk collapsed" id="week-4">
+      <div class="wk__head" onclick="this.parentElement.classList.toggle('collapsed')">
+        <span class="wk__head-title">Неделя 4</span>
+        <span class="wk__head-dates">4 — 10 фев 2026</span>
+        <span class="wk__head-stage wk__head-stage--veg">Вегетация</span>
+        <i class="fas fa-chevron-down wk__chevron"></i>
+      </div>
+      <div class="wk__body">
+        <div class="entry">
+          <div class="entry__head"><span class="entry__day">Day 25</span><span class="entry__date">8 февраля</span></div>
+          <div class="entry__photos">
+            <div class="entry__photo"><div class="entry__photo-ph">&#127807;</div></div>
+          </div>
+          <div class="entry__metrics">
+            <span class="metric"><span class="metric__icon">&#127777;</span> <span class="metric__val">26</span><span class="metric__unit">&#176;C</span></span>
+            <span class="metric"><span class="metric__icon">&#128167;</span> <span class="metric__val">65</span><span class="metric__unit">%</span></span>
+            <span class="metric"><span class="metric__icon">&#128207;</span> <span class="metric__val">28</span><span class="metric__unit">см</span></span>
+          </div>
+          <div class="entry__text">Растение набирает массу! LST работает отлично — крона стала ровной. Появились первые преф-флауэры.</div>
+          <div class="entry__actions">
+            <button class="entry__action-btn entry__action-btn--liked"><i class="fas fa-heart"></i> 14</button>
+            <span class="entry__comments-count"><i class="far fa-comment"></i> 6 комментариев</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== WEEK 1 (seed, collapsed) ===== -->
+    <div class="wk collapsed" id="week-1">
+      <div class="wk__head" onclick="this.parentElement.classList.toggle('collapsed')">
+        <span class="wk__head-title">Неделя 1</span>
+        <span class="wk__head-dates">15 — 21 янв 2026</span>
+        <span class="wk__head-stage wk__head-stage--seed">Проращивание</span>
+        <i class="fas fa-chevron-down wk__chevron"></i>
+      </div>
+      <div class="wk__body">
+        <div class="entry">
+          <div class="entry__head"><span class="entry__day">Day 1</span><span class="entry__date">15 января</span></div>
+          <div class="entry__photos">
+            <div class="entry__photo"><div class="entry__photo-ph">&#127793;</div></div>
+            <div class="entry__photo"><div class="entry__photo-ph">&#127793;</div></div>
+          </div>
+          <div class="entry__text">Старт третьего цикла! Семечка проклюнулась через 36 часов в стакане воды. Посадил в маленький горшочек. На второй день появился росточек. Летим!</div>
+          <div class="entry__actions">
+            <button class="entry__action-btn entry__action-btn--liked"><i class="fas fa-heart"></i> 32</button>
+            <button class="entry__action-btn"><i class="fas fa-fire"></i> 11</button>
+            <span class="entry__comments-count"><i class="far fa-comment"></i> 15 комментариев</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- WEEK SIDEBAR NAVIGATION -->
+  <aside class="week-nav">
+    <div class="week-nav__title">Недели</div>
+    <a class="week-nav__item week-nav__item--active" href="#week-8"><span class="week-nav__dot week-nav__dot--flower"></span> Неделя 8</a>
+    <a class="week-nav__item" href="#week-7"><span class="week-nav__dot week-nav__dot--flower"></span> Неделя 7</a>
+    <a class="week-nav__item" href="#week-6"><span class="week-nav__dot week-nav__dot--flower"></span> Неделя 6</a>
+    <a class="week-nav__item" href="#week-5"><span class="week-nav__dot week-nav__dot--flower"></span> Неделя 5</a>
+    <a class="week-nav__item" href="#week-4"><span class="week-nav__dot week-nav__dot--veg"></span> Неделя 4</a>
+    <a class="week-nav__item" href="#week-3"><span class="week-nav__dot week-nav__dot--veg"></span> Неделя 3</a>
+    <a class="week-nav__item" href="#week-2"><span class="week-nav__dot week-nav__dot--veg"></span> Неделя 2</a>
+    <a class="week-nav__item" href="#week-1"><span class="week-nav__dot week-nav__dot--seed"></span> Неделя 1</a>
+  </aside>
+</div>
+
+</body>
+</html>

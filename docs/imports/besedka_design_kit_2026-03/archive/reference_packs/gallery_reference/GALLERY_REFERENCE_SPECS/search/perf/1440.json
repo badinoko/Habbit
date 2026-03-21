@@ -1,0 +1,14 @@
+{
+  "navigation": {
+    "loadEventEnd": 2552.800000011921,
+    "domContentLoadedEventEnd": 1945.699999988079,
+    "responseEnd": 912.1000000238419,
+    "domInteractive": 1945.5
+  },
+  "paint": {
+    "first-paint": 2136,
+    "first-contentful-paint": 2136
+  },
+  "resources": 100,
+  "timestamp": 1755228150048
+}

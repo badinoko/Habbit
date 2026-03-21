@@ -1,0 +1,65 @@
+{
+  "breakpoint": {
+    "width": 1200,
+    "height": 900
+  },
+  "viewport": {
+    "width": 1200,
+    "height": 900,
+    "devicePixelRatio": 1
+  },
+  "styles": {
+    "body": {
+      "selector": "body",
+      "fontSize": "14px",
+      "fontFamily": "Outfit, \"Helvetica Neue\", HelveticaNeue, Helvetica, TeXGyreHeros, FreeSans, \"Nimbus Sans L\", \"Liberation Sans\", Arial, sans-serif",
+      "fontWeight": "400",
+      "color": "rgba(0, 0, 0, 0.65)",
+      "backgroundColor": "rgb(247, 248, 250)",
+      "padding": "0px",
+      "margin": "0px",
+      "borderRadius": "0px",
+      "boxShadow": "none",
+      "width": "1200px",
+      "height": "900px",
+      "display": "block",
+      "position": "static",
+      "zIndex": "auto",
+      "border": "0px none rgba(0, 0, 0, 0.65)"
+    },
+    "searchInput": null,
+    "searchForm": null,
+    "filterContainer": null,
+    "categoryLinks": {
+      "selector": "[class*=\"category\"] a, nav a",
+      "fontSize": "14px",
+      "fontFamily": "Outfit, \"Helvetica Neue\", HelveticaNeue, Helvetica, TeXGyreHeros, FreeSans, \"Nimbus Sans L\", \"Liberation Sans\", Arial, sans-serif",
+      "fontWeight": "400",
+      "color": "rgb(34, 34, 34)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "padding": "0px",
+      "margin": "0px",
+      "borderRadius": "0px",
+      "boxShadow": "none",
+      "width": "78px",
+      "height": "16px",
+      "display": "flex",
+      "position": "relative",
+      "zIndex": "auto",
+      "border": "0px none rgb(34, 34, 34)"
+    },
+    "resultGrid": null,
+    "photoCards": null,
+    "pagination": null
+  },
+  "layout": {
+    "scrollHeight": 900,
+    "scrollWidth": 1200,
+    "hasSearchInput": false,
+    "hasFilters": false,
+    "hasCategories": true,
+    "photoResultsCount": 0,
+    "filtersCount": 0,
+    "categoriesCount": 14
+  }
+}

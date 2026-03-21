@@ -1,0 +1,36 @@
+{
+  "breakpoint": {
+    "width": 1920,
+    "height": 1080
+  },
+  "viewport": {
+    "width": 1920,
+    "height": 1080,
+    "devicePixelRatio": 1
+  },
+  "styles": {
+    "body": {
+      "selector": "body",
+      "fontSize": "14px",
+      "fontFamily": "Outfit, \"Helvetica Neue\", HelveticaNeue, Helvetica, TeXGyreHeros, FreeSans, \"Nimbus Sans L\", \"Liberation Sans\", Arial, sans-serif",
+      "fontWeight": "400",
+      "color": "rgba(0, 0, 0, 0.65)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "padding": "0px",
+      "margin": "0px",
+      "borderRadius": "0px",
+      "boxShadow": "none",
+      "width": "1920px",
+      "height": "1080px",
+      "display": "block",
+      "position": "static",
+      "zIndex": "auto"
+    },
+    "uploadZone": null,
+    "uploadButton": null,
+    "form": null,
+    "input": null,
+    "header": null,
+    "main": null
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "colors": [
+    [
+      "rgb(0, 0, 0)",
+      200
+    ]
+  ],
+  "backgrounds": [],
+  "borderColors": [
+    [
+      "rgb(0, 0, 0)",
+      200
+    ]
+  ],
+  "themeInfo": {
+    "bodyClasses": "",
+    "htmlClasses": "",
+    "documentTitle": "Login - GrowDiaries",
+    "url": "https://growdiaries.com/auth/signin"
+  },
+  "timestamp": "2025-08-15T05:22:32.954Z"
+}

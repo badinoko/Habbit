@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Новости — Беседка</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<style>
+/* ============================================
+   DESIGN TOKENS — same as homepage, from besedka_themes_v2.css
+   ============================================ */
+:root {
+  --bs-primary: #2EA6FF;
+  --bs-body-bg: #FDFCFA;
+  --bs-card-bg: #ffffff;
+  --bs-surface-3: #f8fafc;
+  --bs-text-primary: #1e293b;
+  --bs-text-secondary: #64748b;
+  --bs-text-muted: #94a3b8;
+  --bs-border-subtle: rgba(0,0,0,0.06);
+  --bs-border-color: rgba(0,0,0,0.1);
+  --bs-shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+  --bs-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --bs-shadow-lg: 0 12px 48px rgba(0,0,0,0.12);
+  --bs-glass-bg: rgba(255,255,255,0.85);
+  --bs-hover-bg: rgba(0,0,0,0.04);
+  --accent-green: #2d8a56;
+  --accent-green-light: #e8f5e9;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --card-radius: 18px;
+  --navbar-h: 64px;
+  --sticky-h: 56px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-body);
+  background: var(--bs-body-bg);
+  color: var(--bs-text-primary);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+}
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+
+/* ============================================
+   SIMULATED NAVBAR SHELL
+   (In Django: {% include 'includes/navbar/navbar.html' %})
+   ============================================ */
+.shell-navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--navbar-h);
+  z-index: 1000;
+  background: rgba(253,252,250,0.92);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--bs-border-subtle);
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  gap: 0.75rem;
+}
+.shell-navbar__hamburger {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: none; background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--bs-text-primary); font-size: 1.1rem;
+}
+.shell-navbar__hamburger:hover { background: var(--bs-hover-bg); }
+.shell-navbar__logo {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 1.1rem; font-weight: 700;
+}
+.shell-navbar__logo .logo-icon { font-size: 1.25rem; }
+.shell-navbar__center {
+  flex: 1; display: flex; justify-content: center;
+  gap: 1.5rem; font-size: 0.88rem; font-weight: 500;
+}
+.shell-navbar__center a { color: var(--bs-text-secondary); transition: color 0.2s; }
+.shell-navbar__center a:hover { color: var(--bs-text-primary); }
+.shell-navbar__center a.active { color: var(--bs-text-primary); border-bottom: 2px solid var(--accent-green); padding-bottom: 2px; }
+.shell-navbar__right { display: flex; align-items: center; gap: 0.5rem; }
+.shell-navbar__icon-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: none; background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--bs-text-secondary); font-size: 1rem; position: relative;
+}
+.shell-navbar__icon-btn:hover { background: var(--bs-hover-bg); }
+.shell-navbar__badge { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: #ef4444; }
+.shell-navbar__avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--accent-green-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem; font-weight: 700; color: var(--accent-green); cursor: pointer;
+}
+
+/* ============================================
+   UNIFIED STICKY BAR (simulated)
+   In Django: {% include 'includes/partials/unified_sticky_bar.html' %}
+   CSS: static/css/unified_sticky_bar.css
+   ============================================ */
+.sticky-bar {
+  position: fixed;
+  top: var(--navbar-h);
+  left: 0; right: 0;
+  min-height: var(--sticky-h);
+  z-index: 150;
+  background: rgba(253,252,250,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--bs-border-subtle);
+  display: flex;
+  align-items: center;
+  padding: 0 clamp(1rem, 3vw, 2rem);
+  gap: 0.75rem;
+}
+
+.sticky-bar__back {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--bs-border-subtle);
+  background: var(--bs-card-bg);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--bs-text-secondary); font-size: 0.85rem;
+  flex-shrink: 0; transition: all 0.2s;
+}
+.sticky-bar__back:hover { border-color: var(--accent-green); color: var(--accent-green); }
+
+.sticky-bar__filters {
+  display: flex; gap: 0.3rem;
+}
+.filter-pill {
+  padding: 0.38rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 0.82rem; font-weight: 600;
+  color: var(--bs-text-secondary);
+  cursor: pointer; transition: all 0.2s;
+  white-space: nowrap;
+  font-family: var(--font-body);
+}
+.filter-pill:hover { color: var(--bs-text-primary); background: rgba(0,0,0,0.03); }
+.filter-pill.active { background: var(--accent-green); color: #fff; border-color: var(--accent-green); }
+
+.sticky-bar__spacer { flex: 1; }
+
+.sticky-bar__actions { display: flex; gap: 0.4rem; }
+.action-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--bs-border-subtle);
+  background: var(--bs-card-bg);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--bs-text-secondary); font-size: 0.82rem;
+  transition: all 0.2s;
+}
+.action-icon:hover { border-color: var(--accent-green); color: var(--accent-green); }
+.action-icon.active { background: var(--accent-green-light); border-color: var(--accent-green); color: var(--accent-green); }
+
+/* ============================================
+   MAIN CONTENT — offset by navbar + sticky bar
+   ============================================ */
+.listing-main {
+  margin-top: calc(var(--navbar-h) + var(--sticky-h) + 1rem);
+  max-width: 1360px;
+  margin-left: auto; margin-right: auto;
+  padding: 0 clamp(1rem, 3vw, 2rem) 3rem;
+}
+
+/* Background blobs (matching existing news_redesign.css) */
+.listing-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+.listing-bg__blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.04;
+}
+.listing-bg__blob--1 {
+  width: 500px; height: 500px;
+  top: -100px; right: -100px;
+  background: var(--accent-green);
+}
+.listing-bg__blob--2 {
+  width: 400px; height: 400px;
+  bottom: 0; left: -100px;
+  background: var(--bs-primary);
+}
+
+/* ============================================
+   CARD GRID — 4 columns desktop
+   ============================================ */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+/* ============================================
+   UNIFIED CARD — Redesigned visual language
+   ============================================ */
+.ucard {
+  background: var(--bs-card-bg);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  border: 1px solid var(--bs-border-subtle);
+  box-shadow: var(--bs-shadow-sm);
+  transition: transform 0.3s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s;
+  display: flex; flex-direction: column;
+  cursor: pointer;
+}
+.ucard:hover { transform: translateY(-4px); box-shadow: var(--bs-shadow); }
+
+/* Image */
+.ucard__img {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--bs-surface-3);
+}
+.ucard__img img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.ucard:hover .ucard__img img { transform: scale(1.04); }
+
+.ucard__img-ph {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.5rem; opacity: 0.15;
+  background: linear-gradient(135deg, #e8f5e9, #f1f5f9, #fce4ec);
+}
+
+/* Badges */
+.ucard__badges { position: absolute; top: 10px; left: 10px; display: flex; gap: 0.3rem; }
+.ucard__badge {
+  padding: 0.2rem 0.5rem;
+  border-radius: 7px;
+  font-size: 0.67rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(6px);
+  color: var(--bs-text-primary);
+}
+.ucard__badge--original { background: rgba(45,138,86,0.15); color: #2d8a56; }
+.ucard__badge--new { background: rgba(255,152,0,0.15); color: #e65100; }
+
+/* Unread dot */
+.ucard__unread {
+  position: absolute; top: 10px; right: 10px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--bs-primary);
+  box-shadow: 0 0 0 3px rgba(46,166,255,0.2);
+}
+
+/* Body */
+.ucard__body {
+  padding: 0.85rem 1rem 0.95rem;
+  flex: 1; display: flex; flex-direction: column;
+}
+.ucard__title {
+  font-size: 0.92rem; font-weight: 700;
+  line-height: 1.35; margin-bottom: 0.3rem;
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.ucard__excerpt {
+  font-size: 0.78rem; color: var(--bs-text-secondary);
+  line-height: 1.55;
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+  flex: 1;
+}
+
+/* Footer */
+.ucard__foot {
+  display: flex; align-items: center; gap: 0.4rem;
+  margin-top: 0.6rem; padding-top: 0.55rem;
+  border-top: 1px solid var(--bs-border-subtle);
+  font-size: 0.73rem; color: var(--bs-text-muted);
+}
+.ucard__avatar {
+  width: 21px; height: 21px; border-radius: 50%;
+  background: var(--accent-green-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.58rem; font-weight: 700; color: var(--accent-green);
+  flex-shrink: 0;
+}
+.ucard__stats { margin-left: auto; display: flex; gap: 0.55rem; }
+.ucard__stat { display: inline-flex; align-items: center; gap: 0.2rem; }
+.ucard__stat i { font-size: 0.68rem; }
+.ucard__stat--heart i { color: #ef4444; }
+.ucard__stat--comment i { color: var(--bs-primary); }
+.ucard__stat--eye i { color: var(--bs-text-muted); }
+
+/* ============================================
+   FEATURED CARD — first card, spans 2 columns + rows
+   ============================================ */
+.ucard--featured { grid-column: span 2; grid-row: span 2; }
+.ucard--featured .ucard__img { aspect-ratio: auto; height: 100%; min-height: 200px; flex: 1; }
+.ucard--featured .ucard__title {
+  font-family: var(--font-display);
+  font-size: 1.4rem; line-height: 1.2;
+  -webkit-line-clamp: 3;
+}
+.ucard--featured .ucard__excerpt { font-size: 0.86rem; -webkit-line-clamp: 3; }
+
+/* ============================================
+   PAGINATION
+   ============================================ */
+.pagination {
+  display: flex; justify-content: center; gap: 0.35rem; margin-top: 2.5rem;
+}
+.pg-btn {
+  width: 38px; height: 38px; border-radius: 10px;
+  border: 1px solid var(--bs-border-subtle);
+  background: var(--bs-card-bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; font-weight: 600;
+  color: var(--bs-text-secondary); cursor: pointer;
+  transition: all 0.2s; font-family: var(--font-body);
+}
+.pg-btn:hover { border-color: var(--accent-green); color: var(--accent-green); }
+.pg-btn.active { background: var(--accent-green); border-color: var(--accent-green); color: #fff; }
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 1024px) {
+  .card-grid { grid-template-columns: repeat(3, 1fr); }
+  .ucard--featured { grid-column: span 2; grid-row: span 1; }
+  .ucard--featured .ucard__img { min-height: auto; flex: none; aspect-ratio: 16/10; }
+}
+
+@media (max-width: 768px) {
+  .shell-navbar__center { display: none; }
+  .card-grid { grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+  .ucard--featured { grid-column: span 2; }
+  .ucard--featured .ucard__title { font-size: 1.15rem; }
+  .sticky-bar__filters { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .filter-pill { flex-shrink: 0; }
+}
+
+@media (max-width: 480px) {
+  .card-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+  .ucard--featured { grid-column: span 1; }
+  .ucard__img { aspect-ratio: 16/9; }
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- ==============================================
+     NAVBAR SHELL (simulated, existing)
+     ============================================== -->
+<nav class="shell-navbar">
+  <button class="shell-navbar__hamburger"><i class="fas fa-bars"></i></button>
+  <a class="shell-navbar__logo" href="#">
+    <span class="logo-icon">&#127793;</span>
+    <span class="logo-text">Беседка</span>
+  </a>
+  <div class="shell-navbar__center">
+    <a href="#" class="active">Новости</a>
+    <a href="#">Галерея</a>
+    <a href="#">Гроурепорты</a>
+    <a href="#">Чат</a>
+  </div>
+  <div class="shell-navbar__right">
+    <button class="shell-navbar__icon-btn"><i class="fas fa-bell"></i><span class="shell-navbar__badge"></span></button>
+    <div class="shell-navbar__avatar">РУ</div>
+  </div>
+</nav>
+
+<!-- ==============================================
+     STICKY BAR (simulated unified_sticky_bar.html)
+     ============================================== -->
+<div class="sticky-bar">
+  <button class="sticky-bar__back"><i class="fas fa-arrow-left"></i></button>
+  <div class="sticky-bar__filters">
+    <button class="filter-pill active">Все</button>
+    <button class="filter-pill">Новые</button>
+    <button class="filter-pill">Популярные</button>
+    <button class="filter-pill">Обсуждаемые</button>
+  </div>
+  <div class="sticky-bar__spacer"></div>
+  <div class="sticky-bar__actions">
+    <button class="action-icon" title="Поиск"><i class="fas fa-search"></i></button>
+    <button class="action-icon" title="Фильтры"><i class="fas fa-sliders-h"></i></button>
+    <button class="action-icon active" title="Сетка"><i class="fas fa-th"></i></button>
+    <button class="action-icon" title="Список"><i class="fas fa-list"></i></button>
+  </div>
+</div>
+
+<!-- Background blobs -->
+<div class="listing-bg">
+  <div class="listing-bg__blob listing-bg__blob--1"></div>
+  <div class="listing-bg__blob listing-bg__blob--2"></div>
+</div>
+
+<!-- ==============================================
+     MAIN — news listing
+     (Django: {% block main_container %})
+     ============================================== -->
+<main class="listing-main">
+
+  <div class="card-grid">
+    <!-- FEATURED -->
+    <article class="ucard ucard--featured">
+      <div class="ucard__img">
+        <div class="ucard__img-ph">&#127793;</div>
+        <div class="ucard__badges"><span class="ucard__badge ucard__badge--original">&#9998; Беседка</span></div>
+        <div class="ucard__unread"></div>
+      </div>
+      <div class="ucard__body">
+        <h3 class="ucard__title">Полный гайд по органическому выращиванию: от семечки до харвеста</h3>
+        <p class="ucard__excerpt">Подробное руководство для тех, кто хочет перейти на полностью органический цикл. Разбираем почвосмеси, удобрения, защиту от вредителей и получаем максимальный результат.</p>
+        <div class="ucard__foot">
+          <div class="ucard__avatar">ОГ</div>
+          <span>Органик_гровер</span>
+          <span style="margin-left:0.2rem">11 мар</span>
+          <div class="ucard__stats">
+            <span class="ucard__stat ucard__stat--heart"><i class="fas fa-heart"></i> 67</span>
+            <span class="ucard__stat ucard__stat--comment"><i class="fas fa-comment"></i> 34</span>
+            <span class="ucard__stat ucard__stat--eye"><i class="fas fa-eye"></i> 1.2k</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Regular cards -->
+    <article class="ucard">
+      <div class="ucard__img">
+        <div class="ucard__img-ph">&#128161;</div>
+        <div class="ucard__badges"><span class="ucard__badge">Гайд</span></div>
+      </div>
+      <div class="ucard__body">
+        <h3 class="ucard__title">LED vs HPS: что выбрать в 2026 году?</h3>
+        <p class="ucard__excerpt">Сравниваем технологии освещения по эффективности, стоимости и результатам.</p>
+        <div class="ucard__foot">
+          <div class="ucard__avatar">СВ</div><span>Светодиод</span><span style="margin-left:0.2rem">10 мар</span>
+          <div class="ucard__stats">
+            <span class="ucard__stat ucard__stat--heart"><i class="fas fa-heart"></i> 24</span>
+            <span class="ucard__stat ucard__stat--comment"><i class="fas fa-comment"></i> 12</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="ucard">
+      <div class="ucard__img">
+        <div class="ucard__img-ph">&#127804;</div>
+        <div class="ucard__badges"><span class="ucard__badge">Обзор</span></div>
+        <div class="ucard__unread"></div>
+      </div>
+      <div class="ucard__body">
+        <h3 class="ucard__title">Топ-10 автоцветов 2025: стабильность и вкус</h3>
+        <p class="ucard__excerpt">Рейтинг сортов по отзывам сообщества и результатам гроурепортов.</p>
+        <div class="ucard__foot">
+          <div class="ucard__avatar">РА</div><span>Растаман</span><span style="margin-left:0.2rem">8 мар</span>
+          <div class="ucard__stats">
+            <span class="ucard__stat ucard__stat--heart"><i class="fas fa-heart"></i> 45</span>
+            <span class="ucard__stat ucard__stat--comment"><i class="fas fa-comment"></i> 18</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="ucard">
+      <div class="ucard__img">
+        <div class="ucard__img-ph

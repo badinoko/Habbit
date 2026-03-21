@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Фото — Беседка</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<style>
+:root {
+  --bs-primary: #2EA6FF;
+  --bs-body-bg: #FDFCFA;
+  --bs-card-bg: #ffffff;
+  --bs-text-primary: #1e293b;
+  --bs-text-secondary: #64748b;
+  --bs-text-muted: #94a3b8;
+  --bs-border-subtle: rgba(0,0,0,0.06);
+  --bs-shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+  --bs-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  --bs-shadow-lg: 0 12px 48px rgba(0,0,0,0.12);
+  --accent-green: #2d8a56;
+  --accent-green-light: #e8f5e9;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --navbar-h: 64px;
+  --sticky-h: 52px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-body); background: var(--bs-body-bg); color: var(--bs-text-primary); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+img { display: block; max-width: 100%; }
+
+/* NAVBAR */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; height: var(--navbar-h);
+  z-index: 1000; background: rgba(253,252,250,0.92); backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--bs-border-subtle);
+  display: flex; align-items: center; padding: 0 clamp(1rem, 3vw, 2.5rem);
+}
+.nav__brand { font-family: var(--font-display); font-size: 1.75rem; font-weight: 700; }
+.nav__brand span { color: var(--accent-green); }
+.nav__links { display: flex; gap: 2rem; margin-left: auto; list-style: none; font-size: 0.9rem; font-weight: 500; }
+.nav__links a { color: var(--bs-text-secondary); }
+.nav__links a.active { color: var(--bs-text-primary); }
+
+/* STICKY BAR */
+.sticky-bar {
+  position: fixed; top: var(--navbar-h); left: 0; right: 0; height: var(--sticky-h);
+  z-index: 150; background: rgba(253,252,250,0.92); backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--bs-border-subtle);
+  display: flex; align-items: center; padding: 0 clamp(1rem, 3vw, 2.5rem); gap: 1rem;
+}
+.sticky-bar__back {
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1px solid var(--bs-border-subtle); background: var(--bs-card-bg);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--bs-text-secondary); font-size: 0.9rem;
+}
+.sticky-bar__back:hover { border-color: var(--accent-green); color: var(--accent-green); }
+.sticky-bar__spacer { flex: 1; }
+.sticky-bar__actions { display: flex; gap: 0.5rem; }
+.action-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1px solid var(--bs-border-subtle); background: var(--bs-card-bg);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--bs-text-secondary); font-size: 0.85rem; transition: all 0.2s;
+}
+.action-btn:hover { border-color: var(--accent-green); color: var(--accent-green); }
+
+/* ============================================
+   TWO-COLUMN LAYOUT
+   ============================================ */
+.detail {
+  margin-top: calc(var(--navbar-h) + var(--sticky-h) + 1.5rem);
+  max-width: 1200px; margin-left: auto; margin-right: auto;
+  padding: 0 clamp(1rem, 3vw, 2.5rem) 4rem;
+  display: grid; grid-template-columns: 1fr 320px;
+  gap: 2rem; align-items: start;
+}
+
+/* ============================================
+   PHOTO VIEWER (main column)
+   ============================================ */
+.photo-viewer {}
+
+/* Hero: blur bg + centered photo */
+.photo-viewer__hero {
+  border-radius: 20px; overflow: hidden;
+  position: relative; background: #0f172a;
+  cursor: pointer; margin-bottom: 1.5rem;
+}
+.photo-viewer__blur-bg {
+  position: absolute; inset: -20px;
+  width: calc(100% + 40px); height: calc(100% + 40px);
+  object-fit: cover; filter: blur(30px); opacity: 0.4;
+}
+.photo-viewer__img-wrap {
+  position: relative; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  min-height: 400px; max-height: 600px;
+  padding: 1rem;
+}
+.photo-viewer__img {
+  max-width: 100%; max-height: 100%; object-fit: contain;
+  border-radius: 4px;
+}
+.photo-viewer__img-placeholder {
+  width: 100%; min-height: 400px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 5rem; opacity: 0.15; color: #fff;
+}
+
+/* Photo navigation arrows */
+.photo-viewer__nav {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  z-index: 2; width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(255,255,255,0.15); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1rem; cursor: pointer;
+  opacity: 0; transition: opacity 0.3s;
+}
+.photo-viewer__hero:hover .photo-viewer__nav { opacity: 1; }
+.photo-viewer__nav--prev { left: 16px; }
+.photo-viewer__nav--next { right: 16px; }
+
+/* Meta: author + reactions */
+.photo-viewer__meta {
+  display: flex; align-items: center; gap: 1rem;
+  margin-bottom: 1rem;
+}
+.photo-viewer__author {
+  display: flex; align-items: center; gap: 0.5rem;
+}
+.photo-viewer__avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--accent-green-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; font-weight: 700; color: var(--accent-green);
+}
+.photo-viewer__author-info {}
+.photo-viewer__author-name {
+  font-size: 0.95rem; font-weight: 700;
+}
+.photo-viewer__author-role {
+  font-size: 0.78rem; color: var(--bs-text-muted);
+}
+
+.photo-viewer__reactions {
+  margin-left: auto;
+  display: flex; gap: 0.4rem;
+}
+.reaction-btn {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  padding: 0.4rem 0.7rem; border-radius: 10px;
+  border: 1px solid var(--bs-border-subtle); background: var(--bs-card-bg);
+  font-size: 0.82rem; cursor: pointer; transition: all 0.2s;
+}
+.reaction-btn:hover { border-color: var(--accent-green); background: var(--accent-green-light); }
+.reaction-btn.active { border-color: var(--accent-green); background: var(--accent-green-light); color: var(--accent-green); font-weight: 600; }
+.reaction-btn__count { font-size: 0.75rem; color: var(--bs-text-muted); }
+
+/* Title */
+.photo-viewer__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 700; line-height: 1.2; letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+}
+
+/* Description */
+.photo-viewer__description {
+  font-size: 1rem; line-height: 1.7; color: var(--bs-text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+/* Date + views + album link */
+.photo-viewer__info {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--bs-border-subtle);
+  border-bottom: 1px solid var(--bs-border-subtle);
+  margin-bottom: 2rem;
+  font-size: 0.82rem; color: var(--bs-text-muted);
+}
+.photo-viewer__info span { display: inline-flex; align-items: center; gap: 0.3rem; }
+.photo-viewer__info a { color: var(--accent-green); font-weight: 500; }
+
+/* Comments */
+.comments { margin-top: 0; }
+.comments__title { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; margin-bottom: 1rem; }
+.comments__input-wrap { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; }
+.comments__avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--accent-green-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 700; color: var(--accent-green); flex-shrink: 0;
+}
+.comments__input {
+  flex: 1; padding: 0.7rem 1rem; border-radius: 14px;
+  border: 1.5px solid var(--bs-border-subtle); background: var(--bs-card-bg);
+  font-family: inherit; font-size: 0.88rem; color: var(--bs-text-primary);
+  resize: none; outline: none;
+}
+.comments__input:focus { border-color: var(--accent-green); }
+
+.comment { display: flex; gap: 0.6rem; padding: 0.85rem 0; border-bottom: 1px solid rgba(0,0,0,0.04); }
+.comment__avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: #f1f5f9;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem; font-weight: 700; color: var(--bs-text-muted); flex-shrink: 0;
+}
+.comment__body { flex: 1; }
+.comment__header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem; }
+.comment__author { font-size: 0.85rem; font-weight: 600; }
+.comment__time { font-size: 0.75rem; color: var(--bs-text-muted); }
+.comment__text { font-size: 0.88rem; line-height: 1.55; color: var(--bs-text-secondary); }
+.comment__actions { margin-top: 0.35rem; display: flex; gap: 0.75rem; font-size: 0.75rem; color: var(--bs-text-muted); }
+.comment__actions a { cursor: pointer; }
+.comment__actions a:hover { color: var(--accent-green); }
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+.sidebar { position: sticky; top: calc(var(--navbar-h) + var(--sticky-h) + 1.5rem); }
+
+/* EXIF / Photo info */
+.sidebar__exif {
+  background: var(--bs-card-bg); border-radius: 18px;
+  padding: 1.25rem; border: 1px solid var(--bs-border-subtle);
+  box-shadow: var(--bs-shadow-sm); margin-bottom: 1.25rem;
+}
+.sidebar__exif-title {
+  font-size: 0.82rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--bs-text-muted); margin-bottom: 0.75rem;
+}
+.exif-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.4rem 0; border-bottom: 1px solid rgba(0,0,0,0.04);
+  font-size: 0.82rem;
+}
+.exif-row:last-child { border-bottom: none; }
+.exif-row__label { color: var(--bs-text-muted); }
+.exif-row__value { font-weight: 600; }
+
+/* Album link */
+.sidebar__album {
+  background: var(--bs-card-bg); border-radius: 18px;
+  padding: 1.25rem; border: 1px solid var(--bs-border-subtle);
+  box-shadow: var(--bs-shadow-sm); margin-bottom: 1.25rem;
+  display: flex; gap: 1rem; align-items: center;
+  transition: box-shadow 0.2s;
+}
+.sidebar__album:hover { box-shadow: var(--bs-shadow); }
+.sidebar__album-cover {
+  width: 56px; height: 56px; border-radius: 10px; overflow: hidden;
+  background: #f1f5f9; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; opacity: 0.25;
+}
+.sidebar__album-info { flex: 1; min-width: 0; }
+.sidebar__album-name {
+  font-size: 0.88rem; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sidebar__album-count { font-size: 0.75rem; color: var(--bs-text-muted); }
+
+/* Navigation: prev/next in album */
+.sidebar__nav {
+  background: var(--bs-card-bg); border-radius: 18px;
+  padding: 1.25rem; border: 1px solid var(--bs-border-subtle);
+  box-shadow: var(--bs-shadow-sm); margin-bottom: 1.25rem;
+}
+.sidebar__nav-title {
+  font-size: 0.82rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--bs-text-muted); margin-bottom: 0.75rem;
+}
+.nav-photo {
+  display: flex; gap: 0.75rem; align-items: center;
+  padding: 0.5rem 0; border-bottom: 1px solid rgba(0,0,0,0.04);
+  transition: padding-left 0.2s;
+}
+.nav-photo:last-child { border-bottom: none; }
+.nav-photo:hover { padding-left: 0.25rem; }
+.nav-photo__thumb {
+  width: 48px; height: 48px; border-radius: 8px;
+  background: #f1f5f9; overflow: hidden; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; opacity: 0.25;
+}
+.nav-photo__info { flex: 1; min-width: 0; }
+.nav-photo__label { font-size: 0.7rem; color: var(--bs-text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.nav-photo__title {
+  font-size: 0.82rem; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* Related photos */
+.sidebar__related {
+  background: var(--bs-card-bg); border-radius: 18px;
+  padding: 1.25rem; border: 1px solid var(--bs-border-subtle);
+  box-shadow: var(--bs-shadow-sm);
+}
+.sidebar__related-title {
+  font-size: 0.82rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--bs-text-muted); margin-bottom: 0.75rem;
+}
+.related-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;
+}
+.related-thumb {
+  aspect-ratio: 1; border-radius: 10px; overflow: hidden;
+  background: #f1f5f9; cursor: pointer;
+  transition: transform 0.3s;
+}
+.related-thumb:hover { transform: scale(1.04); }
+.related-thumb__placeholder {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; opacity: 0.15;
+  background: linear-gradient(135deg, #e8f5e9, #f1f5f9);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 1000px) {
+  .detail { grid-template-columns: 1fr; }
+  .sidebar { position: static; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .sidebar__album { grid-column: span 2; }
+}
+@media (max-width: 600px) {
+  .nav__links { display: none; }
+  .detail { padding: 0 1rem 3rem; }
+  .sidebar { grid-template-columns: 1fr; }
+  .sidebar__album { grid-column: span 1; }
+  .photo-viewer__title { font-size: 1.5rem; }
+  .photo-viewer__meta { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .photo-viewer__reactions { margin-left: 0; }
+  .photo-viewer__img-wrap { min-height: 250px; }
+}
+
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="nav">
+  <div class="nav__brand"><span>&#127807;</span> Беседка</div>
+  <ul class="nav__links">
+    <li><a href="#">Главная</a></li>
+    <li><a href="#">Новости</a></li>
+    <li><a href="#" class="active">Галерея</a></li>
+    <li><a href="#">Гроурепорты</a></li>
+    <li><a href="#">Магазин</a></li>
+    <li><a href="#">Чат</a></li>
+  </ul>
+</nav>
+
+<!-- STICKY BAR -->
+<div class="sticky-bar">
+  <button class="sticky-bar__back"><i class="fas fa-arrow-left"></i></button>
+  <div class="sticky-bar__spacer"></div>
+  <div class="sticky-bar__actions">
+    <button class="action-btn" title="Поделиться"><i class="fas fa-share-alt"></i></button>
+    <button class="action-btn" title="В закладки"><i class="far fa-bookmark"></i></button>
+    <button class="action-btn" title="Пожаловаться"><i class="fas fa-flag"></i></button>
+  </div>
+</div>
+
+<!-- DETAIL LAYOUT -->
+<div class="detail">
+  <!-- MAIN: Photo viewer -->
+  <div class="photo-viewer">
+    <!-- Hero with blur background -->
+    <div class="photo-viewer__hero">
+      <div class="photo-viewer__img-wrap">
+        <div class="photo-viewer__img-placeholder">&#127804;</div>
+      </div>
+      <button class="photo-viewer__nav photo-viewer__nav--prev"><i class="fas fa-chevron-left"></i></button>
+      <button class="photo-viewer__nav photo-viewer__nav--next"><i class="fas fa-chevron-right"></i></button>
+    </div>
+
+    <!-- Author + Reactions -->
+    <div class="photo-viewer__meta">
+      <div class="photo-viewer__author">
+        <div class="photo-viewer__avatar">РА</div>
+        <div class="photo-viewer__author-info">
+          <div class="photo-viewer__author-name">Растаман</div>
+          <div class="photo-viewer__author-role">Опытный гровер</div>
+        </div>
+      </div>
+      <div class="photo-viewer__reactions">
+        <button class="reaction-btn active">&#10084;&#65039; <span class="reaction-btn__count">42</span></button>
+        <button class="reaction-btn">&#128293; <span class="reaction-btn__count">8</span></button>
+        <button class="reaction-btn">&#128077; <span class="reaction-btn__count">5</span></button>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <h1 class="photo-viewer__title">Cola shot — Northern Lights Auto, week 8</h1>
+
+    <!-- Description -->
+    <div class="photo-viewer__description">
+      Главная кола на 8-й неделе цветения. Трихомы начинают мутнеть, пистилы примерно 30% оранжевые. 
+      Запах невероятный — сладкий, сосновый, с лёгкими нотами специй. Ещё пара недель и будет харвест!
+    </div>
+
+    <!-- Info strip -->
+    <div class="photo-viewer__info">
+      <span><i class="far fa-calendar"></i> 8 марта 2026</span>
+      <span><i class="far fa-eye"></i> 234 просмотра</span>
+      <span><i class="far fa-folder"></i> Альбом: <a href="#">Northern Lights — полный цикл</a></span>
+    </div>
+
+    <!-- Comments -->
+    <div class="comments">
+      <h3 class="comments__title">Комментарии (6)</h3>
+
+      <div class="comments__input-wrap">
+        <div class="comments__avatar">ТЫ</div>
+        <textarea class="comments__input" rows="2" placeholder="Написать комментарий..."></textarea>
+      </div>
+
+      <div class="comment">
+        <div class="comment__avatar">МК</div>
+        <div class="comment__body">
+          <div class="comment__header">
+            <span class="comment__author">Макрошот</span>
+            <span class="comment__time">3 часа назад</span>
+          </div>
+          <p class="comment__text">Отличная кола! А какой объектив используешь для макро? Трихомы шикарно видно.</p>
+          <div class="comment__actions"><a>&#10084; 4</a> <a>Ответить</a></div>
+        </div>
+      </div>
+
+      <div class="comment">
+        <div class="comment__avatar">РА</div>
+        <div class="comment__body">
+          <div class="comment__header">
+            <span class="comment__author" style="color:var(--accent-green)">Растаман</span>
+            <span class="comment__time" style="font-size:0.7rem">&#10024; автор</span>
+            <span class="comment__time">2 часа назад</span>
+          </div>
+          <p class="comment__text">Спасибо! Это обычный телефон Xiaomi 12 Pro с макро-линзой за 500 руб с Aliexpress. Результат удивляет!</p>
+          <div class="comment__actions"><a>&#10084; 7</a> <a>Ответить</a></div>
+        </div>
+      </div>
+
+      <div class="comment">
+        <div class="comment__avatar">ОГ</div>
+        <div class="comment__body">
+          <div class="comment__header">
+            <span class="comment__author">Органик_гровер</span>
+            <span class="comment__time">1 час назад</span>
+          </div>
+          <p class="comment__text">По трихомам ещё рано. Подожди пока 50-60% станут молочными, тогда и руби. Сейчас слишком прозрачные.</p>
+          <div class="comment__actions"><a>&#10084; 9</a> <a>Ответить</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <!-- Album -->
+    <a class="sidebar__album" href="#">
+      <div class="sidebar__album-cover">&#127807;</div>
+      <div class="sidebar__album-info">
+        <div class="sidebar__album-name">Northern Lights — полный цикл</div>
+        <div class="sidebar__album-count">48 фото в альбоме</div>
+      </div>
+    </a>
+
+    <!-- EXIF / Photo Info -->
+    <div class="sidebar__exif">
+      <div class="sidebar__exif-title">Информация о фото</div>
+      <div class="exif-row"><span class="exif-row__label">Размер</span><span class="exif-row__value">4000 x 3000</span></div>
+      <div class="exif-row"><span class="exif-row__label">Формат</span><span class="exif-row__value">JPEG</span></div>
+      <div class="exif-row"><span class="exif-row__label">Камера</span><span class="exif-row__value">Xiaomi 12 Pro</span></div>
+      <div class="exif-row"><span class="exif-row__label">Загружено</span><span class="exif-row__value">8 мар 2026</span></div>
+    </div>
+
+    <!-- Prev/Next navigation -->
+    <div class="sidebar__nav">
+      <div class="sidebar__nav-title">Навигация</div>
+      <a class="nav-photo" href="#">
+        <div class="nav-photo__thumb">&#127807;</div>
+        <div class="nav-photo__info">
+          <div class="nav-photo__label">&#8592; Предыдущее</div>
+          <div class="nav-photo__title">Canopy сверху — week 7</div>
+        </div>
+      </a>
+      <a class="nav-photo" href="#">
+        <div class="nav-photo__thumb">&#128270;</div>
+        <div class="nav-photo__info">
+          <div class="nav-photo__label">Следующее &#8594;</div>
+          <div class="nav-photo__title">Trichomes macro x100</div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Related photos -->
+    <div class="sidebar__related">
+      <div class="sidebar__related-title">Похожие фото</div>
+      <div class="related-grid">
+        <div class="related-thumb"><div class="related-thumb__placeholder">&#127804;</div></div>
+        <div class="related-thumb"><div class="related-thumb__placeholder">&#128270;</div></div>
+        <div class="related-thumb"><div class="related-thumb__placeholder">&#127807;</div></div>
+        <div class="related-thumb"><div class="related-thumb__placeholder">&#127793;</div></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+</body>
+</html>

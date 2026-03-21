@@ -1,0 +1,139 @@
+{
+  "title": "500px",
+  "url": "https://500px.com/upload",
+  "viewport": {
+    "width": 320,
+    "height": 800
+  },
+  "mainContainer": {
+    "tagName": "body",
+    "classes": [],
+    "attributes": {},
+    "textContent": "window.location.pathname.startsWith(\"/earnings\")&&window.location.search.includes(\"hide_navigation=t",
+    "children": [
+      {
+        "tagName": "script",
+        "classes": [],
+        "attributes": {
+          "type": "text/javascript"
+        },
+        "textContent": "window.location.pathname.startsWith(\"/earnings\")&&window.location.search.includes(\"hide_navigation=t",
+        "children": []
+      },
+      {
+        "tagName": "script",
+        "classes": [],
+        "attributes": {
+          "id": "",
+          "type": "text/javascript"
+        },
+        "textContent": "(function(){function f(b,a,d){if(a.includes(\"google-analytics.com/g/collect\")||a.includes(\"google-an",
+        "children": []
+      },
+      {
+        "tagName": "script",
+        "classes": [],
+        "attributes": {
+          "id": "",
+          "type": "text/javascript"
+        },
+        "textContent": "(function(){function g(a){var b=\"; \"+document.cookie;a=b.split(\"; \"+a+\"\\x3d\");return a.length===2?a.",
+        "children": []
+      },
+      {
+        "tagName": "script",
+        "classes": [],
+        "attributes": {
+          "id": "",
+          "type": "text/javascript"
+        },
+        "textContent": "(function(){function c(){if(!window.dataLayer)return null;for(var a=window.dataLayer.length-1;a>=0;a",
+        "children": []
+      },
+      {
+        "tagName": "script",
+        "classes": [],
+        "attributes": {
+          "id": "",
+          "type": "text/javascript"
+        },
+        "textContent": "(function(){function c(){if(!window.dataLayer)return null;for(var a=window.dataLayer.length-1;a>=0;a",
+        "children": []
+      },
+      {
+        "tagName": "iframe",
+        "classes": [],
+        "attributes": {},
+        "textContent": "",
+        "children": []
+      },
+      {
+        "tagName": "iframe",
+        "classes": [],
+        "attributes": {
+          "id": "_hjSafeContext_25745890",
+          "src": "about:blank",
+          "title": "_hjSafeContext"
+        },
+        "textContent": "",
+        "children": []
+      },
+      {
+        "tagName": "noscript",
+        "classes": [],
+        "attributes": {},
+        "textContent": "Explore the most popular photos on 500px.",
+        "children": []
+      },
+      {
+        "tagName": "div",
+        "classes": [],
+        "attributes": {
+          "id": "root"
+        },
+        "textContent": "",
+        "children": [
+          {
+            "tagName": "div",
+            "classes": [
+              "Elements__StyledLoader-sc-1vbumce-0",
+              "gwyBmA"
+            ],
+            "attributes": {},
+            "textContent": "",
+            "children": []
+          }
+        ]
+      },
+      {
+        "tagName": "script",
+        "classes": [],
+        "attributes": {},
+        "textContent": "!function(o){function e(e){for(var c,f,t=e[0],d=e[1],r=e[2],a=0,n=[];a<t.length;a++)f=t[a],Object.pr",
+        "children": []
+      },
+      {
+        "tagName": "script",
+        "classes": [],
+        "attributes": {
+          "src": "/staticV2/js/14.bca70e27.chunk.js"
+        },
+        "textContent": "",
+        "children": []
+      },
+      {
+        "tagName": "script",
+        "classes": [],
+        "attributes": {
+          "src": "/staticV2/js/main.cffa5a74.chunk.js"
+        },
+        "textContent": "",
+        "children": []
+      }
+    ]
+  },
+  "uploadElements": {
+    "uploadZone": null,
+    "forms": []
+  }
+}

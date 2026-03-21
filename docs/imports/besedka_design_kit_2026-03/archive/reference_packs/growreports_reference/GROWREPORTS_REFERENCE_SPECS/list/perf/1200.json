@@ -1,0 +1,83 @@
+{
+  "paints": [
+    {
+      "name": "first-paint",
+      "entryType": "paint",
+      "startTime": 836,
+      "duration": 0
+    },
+    {
+      "name": "first-contentful-paint",
+      "entryType": "paint",
+      "startTime": 836,
+      "duration": 0
+    }
+  ],
+  "navigation": {
+    "name": "https://growdiaries.com/diaries",
+    "entryType": "navigation",
+    "startTime": 0,
+    "duration": 1483,
+    "initiatorType": "navigation",
+    "deliveryType": "",
+    "nextHopProtocol": "h2",
+    "renderBlockingStatus": "non-blocking",
+    "workerStart": 0,
+    "redirectStart": 0,
+    "redirectEnd": 0,
+    "fetchStart": 0.5,
+    "domainLookupStart": 0.5,
+    "domainLookupEnd": 0.5,
+    "connectStart": 0.5,
+    "secureConnectionStart": 0.5,
+    "connectEnd": 0.5,
+    "requestStart": 4,
+    "responseStart": 563.5,
+    "firstInterimResponseStart": 0,
+    "finalResponseHeadersStart": 563.5,
+    "responseEnd": 657.6999999880791,
+    "transferSize": 33827,
+    "encodedBodySize": 33527,
+    "decodedBodySize": 172473,
+    "responseStatus": 404,
+    "serverTiming": [
+      {
+        "name": "cfCacheStatus",
+        "duration": 0,
+        "description": "DYNAMIC"
+      },
+      {
+        "name": "cfOrigin",
+        "duration": 401,
+        "description": ""
+      },
+      {
+        "name": "cfEdge",
+        "duration": 18,
+        "description": ""
+      }
+    ],
+    "unloadEventStart": 567.3000000119209,
+    "unloadEventEnd": 567.3000000119209,
+    "domInteractive": 831.1999999880791,
+    "domContentLoadedEventStart": 1483,
+    "domContentLoadedEventEnd": 1483,
+    "domComplete": 1483,
+    "loadEventStart": 1483,
+    "loadEventEnd": 1483,
+    "type": "reload",
+    "redirectCount": 0,
+    "activationStart": 0,
+    "criticalCHRestart": 0,
+    "notRestoredReasons": null
+  },
+  "LCP": 1468,
+  "CLS": 0.001080636477623457,
+  "resources": {
+    "link": 223,
+    "script": 23,
+    "img": 1,
+    "xmlhttprequest": 1,
+    "fetch": 2
+  }
+}

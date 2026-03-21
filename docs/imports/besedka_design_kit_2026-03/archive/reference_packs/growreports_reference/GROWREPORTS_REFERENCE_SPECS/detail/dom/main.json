@@ -1,0 +1,116 @@
+{
+  "url": "https://growdiaries.com/diaries/236815-seedstockers-thunder-banana-auto-grow-journal-by-dabking",
+  "title": "Thunder Banana grow journal by Dabking - GrowDiaries",
+  "structure": {
+    "header": {
+      "selector": "generic[ref=e15]",
+      "navigation": {
+        "logo": "link[ref=e7]",
+        "menu_items": [
+          "Начать Мой Репорт",
+          "Главная",
+          "Репорты",
+          "Shorts",
+          "Вопросы",
+          "Конкурсы",
+          "Гроверы",
+          "Strains NEW",
+          "Seeds",
+          "Бридеры",
+          "Удобрения",
+          "Лампы",
+          "Equipment",
+          "Блог"
+        ],
+        "auth_section": "generic[ref=e63]"
+      }
+    },
+    "main_content": {
+      "selector": "generic[ref=e121]",
+      "hero": {
+        "selector": "generic[ref=e124]",
+        "title": "heading[ref=e126]",
+        "author_info": "generic[ref=e128]",
+        "stats": {
+          "followers": "generic[ref=e135]",
+          "likes": "generic[ref=e137]",
+          "comments": "generic[ref=e139]",
+          "views": "generic[ref=e141]",
+          "updated": "generic[ref=e143]"
+        },
+        "follow_button": "generic[ref=e148]"
+      },
+      "equipment_bar": {
+        "selector": "generic[ref=e149]",
+        "seed_info": "generic[ref=e150]",
+        "lights": ["generic[ref=e157]", "generic[ref=e165]"],
+        "growing_details": ["generic[ref=e175]", "generic[ref=e179]", "generic[ref=e189]", "generic[ref=e196]", "generic[ref=e203]"]
+      },
+      "timeline": {
+        "selector": "generic[ref=e210]",
+        "weeks": [
+          {
+            "type": "germination",
+            "selector": "generic[ref=e211]",
+            "title": "generic[ref=e212]",
+            "date": "generic[ref=e215]",
+            "image": "img[ref=e223]",
+            "author_note": "generic[ref=e226]",
+            "interactions": "generic[ref=e228]",
+            "methods": "generic[ref=e238]"
+          },
+          {
+            "type": "week",
+            "selector": "generic[ref=e247]",
+            "header": "generic[ref=e248]",
+            "gallery": "generic[ref=e255]",
+            "metrics": "generic[ref=e293]",
+            "author_note": "generic[ref=e361]",
+            "interactions": "generic[ref=e363]"
+          }
+        ]
+      }
+    },
+    "sidebar": {
+      "selector": "generic[ref=e2053]",
+      "week_navigation": {
+        "germination": "generic[ref=e2056]",
+        "vegetation_weeks": ["generic[ref=e2060]", "generic[ref=e2064]", "generic[ref=e2068]"],
+        "flowering_weeks": ["generic[ref=e2072]", "generic[ref=e2076]", "generic[ref=e2080]", "generic[ref=e2084]", "generic[ref=e2088]", "generic[ref=e2092]", "generic[ref=e2096]", "generic[ref=e2100]"],
+        "harvest": "generic[ref=e2105]"
+      }
+    },
+    "comments": {
+      "selector": "generic[ref=e1955]",
+      "form": "generic[ref=e1956]",
+      "list": "generic[ref=e1967]",
+      "individual_comments": [
+        "Martian[ref=e1976]",
+        "Ninjabuds[ref=e1989]",
+        "BarneyRumble420[ref=e2002]",
+        "Fatnastyz[ref=e2015]"
+      ]
+    },
+    "footer": {
+      "follow_section": "generic[ref=e2031]"
+    }
+  },
+  "interactive_elements": {
+    "clickable_week_numbers": ["e2058", "e2062", "e2066", "e2070", "e2074", "e2078", "e2082", "e2086", "e2090", "e2094", "e2098", "e2103", "e2108"],
+    "metric_chips": ["e296", "e301", "e306", "e311", "e316", "e321", "e326", "e331", "e336", "e341", "e346", "e351", "e356"],
+    "social_buttons": ["e229", "e231", "e233", "e236"],
+    "follow_buttons": ["e148", "e2039", "e2046"]
+  },
+  "semantic_roles": {
+    "navigation": "generic[ref=e16]",
+    "main": "generic[ref=e121]",
+    "contentinfo": "contentinfo[ref=e78]",
+    "headings": {
+      "h1": "heading[level=1][ref=e126]"
+    },
+    "links": {
+      "external": ["e114", "e2113", "e2116", "e2119", "e2122", "e2125", "e2128", "e2131", "e2134", "e2137", "e2140", "e2143", "e2146", "e2150"],
+      "internal": ["e7", "e17", "e20", "e23", "e26", "e29", "e32", "e35", "e38", "e41", "e44", "e47", "e50", "e53", "e56"]
+    }
+  }
+}

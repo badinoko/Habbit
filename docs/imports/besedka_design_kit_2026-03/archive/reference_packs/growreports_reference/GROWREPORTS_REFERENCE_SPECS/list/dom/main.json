@@ -1,0 +1,156 @@
+{
+  "url": "https://growdiaries.com/",
+  "title": "Cannabis Growers Community - Grow Diaries",
+  "viewport": {
+    "width": 764,
+    "height": 485
+  },
+  "structure": {
+    "header": {
+      "selector": "generic[ref=e15]",
+      "navigation": {
+        "logo": "link[ref=e7] - Growdiaries ru",
+        "main_menu": [
+          "Начать Мой Репорт",
+          "Главная",
+          "Репорты",
+          "Shorts",
+          "Вопросы",
+          "Конкурсы",
+          "Гроверы",
+          "Strains NEW",
+          "Seeds",
+          "Бридеры",
+          "Удобрения",
+          "Лампы",
+          "Equipment",
+          "Блог"
+        ],
+        "auth_section": "generic[ref=e62] - Логин, Регистрация"
+      }
+    },
+    "hero_section": {
+      "selector": "generic[ref=e111]",
+      "search_area": {
+        "logo": "img[ref=e114] - Growdiaries",
+        "subtitle": "Strains, Breeders, Nutrients",
+        "search_counter": "Search among XXXXX diaries",
+        "search_input": "textbox[ref=e118]",
+        "cta_button": "link[ref=e121] - Начать Мой Репорт"
+      }
+    },
+    "filter_section": {
+      "selector": "generic[ref=e124]",
+      "filter_chips": [
+        "Все",
+        "В помещении",
+        "Аутдор",
+        "Vegetation",
+        "Flowering",
+        "Харвестнутые",
+        "Флуо",
+        "ДНаТ",
+        "LED",
+        "LST",
+        "HST",
+        "СОГ",
+        "СКРОГ",
+        "Топпинг",
+        "ФИМинг",
+        "Мэйн-лайнинг",
+        "Дефолиация",
+        "12-12 от семечки"
+      ]
+    },
+    "main_grid": {
+      "selector": "generic[ref=e164]",
+      "diary_cards": [
+        {
+          "title": "Pyramid Tutankhamun Indoor 4x4 Summer",
+          "duration": "14 weeks",
+          "author": "MindFlowers68",
+          "strain": "Pyramid Seeds - Tutankhamon",
+          "activity": "6d ago · 2 комментария",
+          "link": "/diaries/274658-grow-journal-by-mindflowers68"
+        },
+        {
+          "title": "29.73oz Nearly 2LB",
+          "duration": "10 weeks",
+          "author": "BigDripFelgo",
+          "strain": "Premium Cultivars - Sour Diesel +2 сорта",
+          "activity": "5mo ago · 21 комментария",
+          "link": "/diaries/253696-og-kush-yellow-zushi-sour-diesel-grow-journal-by-bigdripfelgo"
+        }
+      ]
+    },
+    "sidebar_sections": {
+      "strains": {
+        "title": "Strains",
+        "top_strains": [
+          {
+            "name": "White Rhino",
+            "rating": "8.6/10",
+            "thc": "22%",
+            "cbd": "0.31%",
+            "harvests": "17 харвеста"
+          },
+          {
+            "name": "MK Ultra",
+            "rating": "8.4/10",
+            "thc": "20%",
+            "cbd": "0.5%",
+            "harvests": "11 харвеста"
+          }
+        ]
+      },
+      "shorts": {
+        "title": "Shorts",
+        "video_cards": [
+          {
+            "title": "Runtz Tournament",
+            "week": "Week 7"
+          },
+          {
+            "title": "Mint Runtz",
+            "week": "Week 13"
+          }
+        ]
+      },
+      "recent_harvests": {
+        "title": "Последние харвесты",
+        "harvest_cards": [
+          {
+            "title": "Smoking_Joe_Frasier's Natural Grow Diary – Fast Buds Outdoor Contest 2025",
+            "duration": "14 weeks",
+            "author": "Smoking_Joe_Frazier",
+            "activity": "19m ago · 14 комментария"
+          }
+        ]
+      },
+      "featured_brands": [
+        {
+          "name": "Dutch Passion",
+          "status": "Featured brand"
+        },
+        {
+          "name": "Sweet Seeds",
+          "status": "Featured brand"
+        }
+      ]
+    },
+    "footer": {
+      "selector": "contentinfo[ref=e77]",
+      "links": [
+        "Contact us",
+        "FAQ",
+        "Privacy",
+        "Terms",
+        "Advertising",
+        "Login",
+        "Sign Up"
+      ],
+      "social_media": "Facebook, Instagram, Pinterest",
+      "company_info": "GrοwD sοft s.r.ο., LιndΙeyοva 2822/10, Dejvιce, 160 00 Praha 6, Czech RepυbΙιc"
+    }
+  }
+}

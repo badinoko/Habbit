@@ -1,0 +1,64 @@
+{
+  "navigation": {
+    "loadEventEnd": 2057.5,
+    "domContentLoadedEventEnd": 1604.4000000357628,
+    "responseEnd": 543,
+    "domInteractive": 1604.4000000357628
+  },
+  "paint": {
+    "first-paint": 1808,
+    "first-contentful-paint": 1808
+  },
+  "resources": 116,
+  "imageLoadTimes": [
+    {
+      "src": "https://drscdn.500px.org/user_avatar/10599609/q%3D85_w%3D300_h%3D300/v2?webp=true&v=9&sig=19e3e3c63972ca92b396bd7daa8c5d29f036ac21332c1b7d8fb85e9f084ee0d4",
+      "complete": true,
+      "naturalWidth": 300,
+      "naturalHeight": 300
+    },
+    {
+      "src": "https://drscdn.500px.org/photo/1114093936/q%3D75_m%3D600_k%3D1/v2?sig=d74752880fecf682889d6582728827040ada1a9c956c2757e6eb51000fb2e58b",
+      "complete": true,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "src": "https://drscdn.500px.org/photo/1113978805/q%3D75_m%3D600/v2?sig=9d538f51d2df4514cfd09ae24226f824d0407657f9bca7e4edb059bd25145429",
+      "complete": true,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "src": "https://drscdn.500px.org/photo/1114424496/q%3D75_m%3D600_k%3D1/v2?sig=acb885040e5f1dafbac2532365db7b54ce68948f008d8407734efd5e20b530c1",
+      "complete": true,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "src": "https://drscdn.500px.org/photo/1114226506/q%3D75_m%3D600/v2?sig=50bf95d562fd01ce1d6e4fdb897525cca5433353a19cbcc04454122f8707f7d5",
+      "complete": true,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "src": "https://drscdn.500px.org/photo/1113234264/q%3D75_m%3D600_k%3D1/v2?sig=e249cda9b4e5ad4af1b3a26a1c928e520ead7a0c74604e820007811d42d146de",
+      "complete": true,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "src": "https://drscdn.500px.org/photo/1113073283/q%3D75_m%3D600/v2?sig=396d144b6bc05176dbab420bddeae75b8ad9674c557b611fe31ddce2ab3643ac",
+      "complete": true,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    },
+    {
+      "src": "https://drscdn.500px.org/photo/1112898869/q%3D75_m%3D600/v2?sig=6a8d38c121badc390ddc2b683bc6be8132e3a013a3451e016a3a417c862512aa",
+      "complete": true,
+      "naturalWidth": 0,
+      "naturalHeight": 0
+    }
+  ],
+  "timestamp": 1755228297365
+}
