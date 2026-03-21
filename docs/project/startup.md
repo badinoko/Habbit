@@ -75,4 +75,5 @@ Work from the real checkout so the next chat window can:
 - Imported Besedka redesign references live in `docs/imports/besedka_design_kit_2026-03/`.
 - Current local artifact inputs live in `docs/artifacts/` and `docs/prompts/cursor-prompt.md`.
 - Root `docs/` has been cleaned up so contracts, prompts, and reviews now live in dedicated subfolders.
+- Upstream proposal handoff note for the original author lives in `docs/reviews/upstream-proposal-v1.md`.
 - Screenshot baseline for redesign work lives in `docs/screenshots/current_state/README.md`.

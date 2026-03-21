@@ -26,6 +26,7 @@ This file is the only task-status source for HabitFlow lab work.
 | HF-009 | REVIEW | Clean up documentation navigation and distinguish overview documents | Docs root cleaned up into `contracts/`, `prompts/`, and `reviews/`; waiting for user validation of final handoff structure |
 | HF-010 | REVIEW | Implement HabitFlow frontend redesign wave from local artifacts | Shared shell, theme tokens, navbar switcher, partial fetch navigation, and auth overlay fixes are in place; v2 visual tuning is intentionally deferred |
 | HF-011 | NEXT | Prepare redesign v2 visual iteration | After v1 handoff, revisit typography, color balance, and visual polish in a separate chat window |
+| HF-012 | ACTIVE | Prepare upstream proposal handoff | Document how this fork differs from `Qwertyil/HabitFlow`, confirm upstream is read-only for us, and package a safe review path via `origin` + tag `v1` |
 
 ## Scope Reminder
 

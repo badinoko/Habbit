@@ -20,6 +20,7 @@ This file is the navigation index for documentation in this repository.
 - `docs/prompts/cursor-prompt.md` = reverse implementation prompt for Cursor based on the generated redesign artifacts.
 - `docs/artifacts/` = local HTML artifact pack that drives the current frontend implementation wave.
 - `docs/reviews/architecture-audit.md` = local architecture review snapshot for handoff/reference.
+- `docs/reviews/upstream-proposal-v1.md` = concise note for the original upstream author about what changed and how to review our fork safely.
 - `docs/imports/besedka_design_kit_2026-03/` = imported reference kit from Besedka.
 
 ## Naming Rule
