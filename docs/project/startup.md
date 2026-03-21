@@ -7,7 +7,7 @@ Updated: 2026-03-21
 - Primary local path: `C:\Users\user\Projects\HabitFlow-git`
 - Primary state: real git checkout with upstream history
 - Current branch: `main`
-- Git bootstrap to personal lab repo: local checkout prepared, push still pending verification
+- Git bootstrap to personal lab repo: verified
 - Reference snapshot still exists at `C:\Users\user\Projects\HabitFlow-master`
 - The reference snapshot was accidentally initialized as a standalone local git repo in Cursor and should not be treated as the canonical checkout
 
@@ -41,18 +41,17 @@ Work from the real checkout so the next chat window can:
 
 ## Immediate Next Actions
 
-1. Verify the local checkout remotes and push model:
-   - `upstream` = `Qwertyil/HabitFlow`
-   - `origin` = `badinoko/Habbit`
-2. Run the project locally and capture runtime baseline failures.
-3. Audit Google OAuth configuration and callback baseline.
-4. Capture HabitFlow current-state screenshots and page inventory.
-5. Prepare redesign invariants and an external-artifact prompt adapted from the Besedka kit.
+1. Run the project locally and capture runtime baseline failures.
+2. Audit Google OAuth configuration and callback baseline.
+3. Capture HabitFlow current-state screenshots and page inventory.
+4. Prepare redesign invariants and an external-artifact prompt adapted from the Besedka kit.
+5. Decide when the temporary folders `HabitFlow-master` and `HabitFlow-lab` can be removed.
 
 ## Notes
 
 - Do not work from `HabitFlow-master` unless reference files are needed.
-- Do not claim sync with GitHub until push to `origin` is actually verified.
+- The canonical working copy is `C:\Users\user\Projects\HabitFlow-git`.
+- Push to `origin/main` was verified on 2026-03-21.
 - Google OAuth is already implemented in code and should be audited as a real feature, not treated as a future stub.
 - Frontend redesign must respect current product scope from `frontend-redesign-contracts.md`.
 - Imported Besedka redesign references live in `docs/imports/besedka_design_kit_2026-03/`.
