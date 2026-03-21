@@ -35,3 +35,4 @@
 - Added `HF-011` as the next redesign-v2 track for later typography/color iteration in a separate session.
 - Prepared the repository for successor handoff with a versioned checkpoint tag plan; no task was marked `DONE`.
 - Verified that upstream `https://github.com/Qwertyil/HabitFlow` is fetchable but not writable from this workspace (`403` on dry-run push), then added `HF-012` and `docs/reviews/upstream-proposal-v1.md` so the original author can review our fork through `origin` and tag `v1` without any risk to upstream `master`.
+- Started `HF-013` to prune the now-obsolete Besedka import pack after adaptation: the repo keeps local HabitFlow artifacts and prompt history, while assistant handoff docs are being updated to stop referencing `docs/imports/`.

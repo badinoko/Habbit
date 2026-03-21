@@ -40,7 +40,6 @@ When preparing a new chat window, provide:
 - [docs README.md](docs/README.md)
 - [README.md](README.md)
 - [frontend-redesign-contracts.md](frontend-redesign-contracts.md)
-- [besedka_design_kit README.md](docs/imports/besedka_design_kit_2026-03/README.md)
 ```
 
 Then add:

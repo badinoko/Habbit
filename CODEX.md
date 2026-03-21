@@ -16,7 +16,6 @@ Last updated: 2026-03-21.
    - `docs/overview.mdc`
    - `docs/contracts/api_contract.mdc`
    - `docs/contracts/session_contract.mdc`
-   - `docs/imports/besedka_design_kit_2026-03/README.md`
 5. Code and tests
 
 ## 2. Repository Intent
@@ -70,7 +69,6 @@ The goal is to audit, stabilize, redesign, and improve the project without writi
    - `docs/overview.mdc`
    - `docs/contracts/api_contract.mdc`
    - `docs/contracts/session_contract.mdc`
-   - `docs/imports/besedka_design_kit_2026-03/README.md`
 5. Before implementation, determine which track the request belongs to:
    - bootstrap/git
    - runtime and infrastructure
@@ -99,7 +97,7 @@ The goal is to audit, stabilize, redesign, and improve the project without writi
    - run tests.
 3. Audit frontend structure and UX issues.
 4. Audit Google OAuth behavior end to end.
-5. Use the imported Besedka design kit as a visual/process reference during HabitFlow redesign.
+5. Use local HabitFlow artifacts, prompt history, and theme docs as the redesign reference set.
 6. Turn findings into implementation waves with small, testable changes.
 
 ## 8. Product Guardrails

@@ -20,13 +20,14 @@ This file is the only task-status source for HabitFlow lab work.
 | HF-003 | NEXT | Audit frontend defects and UX debt | Use `docs/screenshots/current_state/` plus direct browser checks to map layout and navigation defects |
 | HF-004 | BACKLOG | Audit Google OAuth flow | Verify config, callback flow, error states, and actual usability |
 | HF-005 | BACKLOG | Split findings into implementation waves | Convert audit output into small, testable work packages |
-| HF-006 | REVIEW | Import Besedka redesign knowledge base into HabitFlow docs | Reference pack copied into `docs/imports/besedka_design_kit_2026-03/`; needs user review and later cleanup |
+| HF-006 | REVIEW | Import Besedka redesign knowledge base into HabitFlow docs | Historical import step completed earlier; the bulky reference pack is now being pruned in `HF-013` after adaptation into local HabitFlow artifacts |
 | HF-007 | REVIEW | Capture HabitFlow current-state screenshots and page inventory | Captured 20 full-page screenshots in `docs/screenshots/current_state/` for desktop and mobile baseline review |
 | HF-008 | BACKLOG | Draft redesign invariants and external artifact prompt | Fix shell constraints first: sticky top navbar, disciplined sidebar behavior, compact theme switcher, mobile-first navigation |
 | HF-009 | REVIEW | Clean up documentation navigation and distinguish overview documents | Docs root cleaned up into `contracts/`, `prompts/`, and `reviews/`; waiting for user validation of final handoff structure |
 | HF-010 | REVIEW | Implement HabitFlow frontend redesign wave from local artifacts | Shared shell, theme tokens, navbar switcher, partial fetch navigation, and auth overlay fixes are in place; v2 visual tuning is intentionally deferred |
 | HF-011 | NEXT | Prepare redesign v2 visual iteration | After v1 handoff, revisit typography, color balance, and visual polish in a separate chat window |
 | HF-012 | ACTIVE | Prepare upstream proposal handoff | Document how this fork differs from `Qwertyil/HabitFlow`, confirm upstream is read-only for us, and package a safe review path via `origin` + tag `v1` |
+| HF-013 | ACTIVE | Prune imported redesign references after adaptation | Remove the obsolete Besedka import pack, keep only HabitFlow artifacts/prompts, and update handoff docs so successors see a lean repo |
 
 ## Scope Reminder
 

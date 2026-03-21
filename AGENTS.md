@@ -10,7 +10,6 @@ Entry point for assistants in this repository.
    - `docs/overview.mdc`
    - `docs/contracts/api_contract.mdc`
    - `docs/contracts/session_contract.mdc`
-   - `docs/imports/besedka_design_kit_2026-03/README.md`
 3. Critical laws:
    - `docs/overview.mdc` = product and architecture overview, not a task board.
    - Do not set any task to `DONE` without explicit user confirmation.
@@ -24,7 +23,6 @@ Entry point for assistants in this repository.
      - `origin` = personal lab repository controlled by the user
    - Preserve current product scope unless the user explicitly expands it.
    - Do not invent features forbidden by `frontend-redesign-contracts.md` such as task due dates, teams, reminders, or admin dashboards.
-   - Imported Besedka design materials are reference-only. Adapt them to HabitFlow instead of copying product semantics blindly.
 4. Shared process contract:
    - Follow `docs/operations/codex_workflow.md`.
 5. Session handoff files:

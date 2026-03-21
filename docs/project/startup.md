@@ -40,9 +40,8 @@ Updated: 2026-03-22
 9. `docs/contracts/api_contract.mdc`
 10. `docs/contracts/session_contract.mdc`
 11. `docs/contracts/theme-system.md`
-12. `docs/imports/besedka_design_kit_2026-03/README.md`
-13. `docs/prompts/artifacts-master-prompt.md`
-14. `docs/prompts/cursor-prompt.md`
+12. `docs/prompts/artifacts-master-prompt.md`
+13. `docs/prompts/cursor-prompt.md`
 
 ## Current Session Goal
 
@@ -72,7 +71,6 @@ Work from the real checkout so the next chat window can:
 - Avoid `8001` for future local HabitFlow launches on this machine; Besedka already occupies that port through Docker/WSL.
 - Google OAuth is already implemented in code and should be audited as a real feature, not treated as a future stub.
 - Frontend redesign must respect current product scope from `frontend-redesign-contracts.md`.
-- Imported Besedka redesign references live in `docs/imports/besedka_design_kit_2026-03/`.
 - Current local artifact inputs live in `docs/artifacts/` and `docs/prompts/cursor-prompt.md`.
 - Root `docs/` has been cleaned up so contracts, prompts, and reviews now live in dedicated subfolders.
 - Upstream proposal handoff note for the original author lives in `docs/reviews/upstream-proposal-v1.md`.

@@ -30,10 +30,10 @@
 5. `frontend-redesign-contracts.md` — **ключевой контракт для редизайна**
 6. `docs/overview.mdc` — продукт и архитектура, не task-board
 7. `docs/project/overview.md` — единственный task-dashboard
-8. `docs/api_contract.mdc` — HTTP API спецификация
-9. `docs/session_contract.mdc` — архитектура сессий
-10. `docs/imports/besedka_design_kit_2026-03/README.md` — ориентир по дизайн-киту
-11. `docs/artifacts-master-prompt.md` — мастер-промпт для вставки во вкладку Artifacts
+8. `docs/contracts/api_contract.mdc` — HTTP API спецификация
+9. `docs/contracts/session_contract.mdc` — архитектура сессий
+10. `docs/prompts/artifacts-master-prompt.md` — мастер-промпт для вставки во вкладку Artifacts
+11. `docs/prompts/cursor-prompt.md` — reverse prompt для Cursor
 
 ## 4. Что такое HabitFlow
 
@@ -121,23 +121,17 @@
 
 Иконки: Font Awesome 6.0.0.
 
-## 8. Ресурсы из Беседки (дизайн-кит)
+## 8. Локальные материалы редизайна
 
-В `docs/imports/besedka_design_kit_2026-03/` лежит 509 файлов — дизайн-система, промпты, артефакты и скриншоты из проекта «Беседка». Это **справочный материал**, а не прямой копипаст.
+После v1 handoff в репозитории оставлены только материалы, которые относятся к самому HabitFlow:
 
-Что полезно для HabitFlow:
-
-| Файл | Ценность |
-|------|----------|
-| `core/THEME_AND_UI_REFERENCE.md` | CSS-переменные, 5 тем, glassmorphism, паттерны UI |
-| `core/BESEDKA_SSOT_COMPONENTS.md` | Unified Button, Forms, Tabs, Grid, Card, Pagination |
-| `core/BREAKPOINTS_SSOT.md` | Брейкпоинты: 320 / 412 / 430 / 768 / 1024 / 1920 |
-| `artifacts/redesign_2026-03/DESIGN_SYSTEM.md` | Типографика, ботаническая палитра, сетки |
-| `artifacts/redesign_2026-03/DESIGN_DECISIONS.md` | Навбар, sticky bar, стадийные бейджи |
-| `artifacts/redesign_2026-03/PROMPT_WAVE2_IMPLEMENTATION.md` | 5-фазный гайд по имплементации |
-| `prompt_library/` | Переиспользуемые промпт-скаффолды |
-
-**Важно:** продуктовая семантика Беседки (галерея, гроу-репорты, ботаника) НЕ переносится. Адаптируем подходы, а не контент.
+| Путь | Назначение |
+|------|------------|
+| `docs/artifacts/` | HTML-артефакты экранов |
+| `docs/prompts/artifacts-master-prompt.md` | мастер-промпт для новых визуальных итераций |
+| `docs/prompts/cursor-prompt.md` | reverse prompt для имплементации |
+| `docs/contracts/theme-system.md` | SSOT по темам и дизайн-токенам |
+| `docs/screenshots/current_state/` | baseline-скриншоты для сравнения |
 
 ## 9. Контракт редизайна (краткая выжимка)
 
