@@ -15,6 +15,7 @@ Entry point for assistants in this repository.
    - Do not set any task to `DONE` without explicit user confirmation.
    - `docs/project/overview.md` is the only task-status source.
    - `docs/project/progress.md` is append-only during normal work.
+   - Oversized working docs should be archived into `docs/archive/` instead of being silently truncated or rewritten.
    - Do not rewrite old progress entries or remove tasks without explicit user approval.
    - Work from tasks that exist in `docs/project/overview.md`.
    - If the repo is opened from a ZIP snapshot and `.git` is missing, do not invent git state; report the limitation explicitly.

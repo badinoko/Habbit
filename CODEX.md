@@ -2,7 +2,7 @@
 
 Working playbook for Codex in HabitFlow.
 
-Last updated: 2026-03-21.
+Last updated: 2026-03-22.
 
 ## 1. Priority Order
 
@@ -37,6 +37,7 @@ The goal is to audit, stabilize, redesign, and improve the project without writi
 5. If work is implemented but not yet user-verified, use `REVIEW`, not `DONE`.
 6. Do not remove or silently rewrite task rows.
 7. Keep product scope aligned with the current backend and `frontend-redesign-contracts.md` unless the user explicitly expands scope.
+8. When `progress.md`, `overview.md`, or another long-lived working doc becomes unwieldy, archive the full snapshot under `docs/archive/` and continue from a lighter active file with cross-links.
 
 ## 4. Git Rules
 
@@ -76,6 +77,7 @@ The goal is to audit, stabilize, redesign, and improve the project without writi
    - backend/domain logic
    - auth/session/Google OAuth
    - tests/docs
+6. If an operational doc is approaching `1000+` lines, consider whether archive rotation is now part of the task.
 
 ## 6. Task Status Vocabulary
 
@@ -119,3 +121,14 @@ Every final handoff should state:
 2. what was intentionally not marked as done;
 3. what the user should verify next;
 4. whether the repo is a real git checkout or still a snapshot.
+
+## 10. Archive Policy
+
+Use `docs/archive/README.md` as the archive SSOT.
+
+Default rule:
+
+- freeze the old long file as-is;
+- store it in `docs/archive/...` with a date;
+- replace the active file with a readable continuation doc;
+- preserve cross-links between the live doc and the archived snapshot.

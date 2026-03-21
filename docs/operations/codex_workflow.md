@@ -25,6 +25,7 @@ Keep HabitFlow work reproducible across chat windows and avoid mixing three diff
 4. `docs/project/startup.md` is the first session-handoff file to read in a new chat.
 5. `docs/overview.mdc` holds product and architecture context, not task statuses.
 6. `README.md` and the contract files in `docs/*.mdc` describe the actual product and technical behavior.
+7. If `docs/project/progress.md`, `docs/project/overview.md`, or another working doc grows beyond normal session usability, archive the full snapshot into `docs/archive/` and continue from a lighter active file with cross-links.
 
 ## New Chat Handoff
 

@@ -14,6 +14,7 @@ Updated: 2026-03-22
 - Local Docker services for HabitFlow (`postgres` on `5430`, `redis` on `6370`) were later relaunched alongside Besedka without port conflicts
 - Current local UI check path used during handoff: `http://127.0.0.1:8010`
 - Current-state screenshot pack exists at `docs/screenshots/current_state/` with desktop and mobile full-page captures
+- v1/v1.0 tags now point to the current v2-planning base on `origin/main`
 
 ## Open This Folder
 
@@ -42,6 +43,10 @@ Updated: 2026-03-22
 11. `docs/contracts/theme-system.md`
 12. `docs/prompts/artifacts-master-prompt.md`
 13. `docs/prompts/cursor-prompt.md`
+14. `docs/reviews/v2-typography-research.md`
+15. `docs/reviews/v2-landing-reference-scan.md`
+16. `docs/reviews/v2-navbar-and-stats-notes.md`
+17. `docs/archive/README.md`
 
 ## Current Session Goal
 
@@ -50,15 +55,15 @@ Work from the real checkout so the next chat window can:
 1. recognize that this is HabitFlow, not Besedka;
 2. understand that `HabitFlow-master` is now only a reference snapshot;
 3. continue from a checkout linked to the user's own repository model;
-4. start a baseline audit of frontend issues, backend issues, and Google OAuth;
-5. keep Besedka redesign knowledge immediately available for HabitFlow adaptation.
+4. continue the planned `v2` redesign wave from the accepted `v1` base;
+5. use the current typography/navbar/stats research notes before writing new UI code.
 
 ## Immediate Next Actions
 
 1. Open `C:\Users\user\Projects\HabitFlow-git` in Cursor and continue only from that checkout.
-2. Audit frontend defects against `docs/screenshots/current_state/` and direct browser behavior.
-3. Audit Google OAuth configuration and callback baseline.
-4. Prepare redesign invariants and an external-artifact prompt adapted from the Besedka kit.
+2. Read `docs/reviews/v2-typography-research.md`, `docs/reviews/v2-landing-reference-scan.md`, and `docs/reviews/v2-navbar-and-stats-notes.md`.
+3. Turn `HF-011` and `HF-014` into concrete implementation decisions for navbar, homepage typography, and stats IA.
+4. Keep `docs/project/overview.md` and `docs/project/progress.md` current while leaving tasks in `REVIEW`/`ACTIVE` until user confirmation.
 5. If local HabitFlow runtime is needed again, use a port other than `8001`.
 
 ## Notes
@@ -73,5 +78,7 @@ Work from the real checkout so the next chat window can:
 - Frontend redesign must respect current product scope from `frontend-redesign-contracts.md`.
 - Current local artifact inputs live in `docs/artifacts/` and `docs/prompts/cursor-prompt.md`.
 - Root `docs/` has been cleaned up so contracts, prompts, and reviews now live in dedicated subfolders.
+- Oversized working docs should be rotated through `docs/archive/` according to `docs/archive/README.md`.
 - Upstream proposal handoff note for the original author lives in `docs/reviews/upstream-proposal-v1.md`.
 - Screenshot baseline for redesign work lives in `docs/screenshots/current_state/README.md`.
+- Current v2 research layer lives in `docs/reviews/v2-typography-research.md`, `docs/reviews/v2-landing-reference-scan.md`, and `docs/reviews/v2-navbar-and-stats-notes.md`.

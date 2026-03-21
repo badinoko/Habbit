@@ -11,6 +11,7 @@ This file is the navigation index for documentation in this repository.
 - `docs/project/startup.md` = new-session handoff and current workspace state.
 - `docs/project/overview.md` = the only task-status dashboard.
 - `docs/project/progress.md` = append-only work log.
+- `docs/archive/README.md` = archive policy and index for frozen large working documents.
 - `docs/operations/codex_workflow.md` = assistant workflow rules.
 
 ## Evidence And Inputs
@@ -21,6 +22,9 @@ This file is the navigation index for documentation in this repository.
 - `docs/artifacts/` = local HTML artifact pack that drives the current frontend implementation wave.
 - `docs/reviews/architecture-audit.md` = local architecture review snapshot for handoff/reference.
 - `docs/reviews/upstream-proposal-v1.md` = concise note for the original upstream author about what changed and how to review our fork safely.
+- `docs/reviews/v2-typography-research.md` = working note on Besedka typography and transferability into HabitFlow v2.
+- `docs/reviews/v2-landing-reference-scan.md` = external landing reference scan for v2 hierarchy, typography, and navbar direction.
+- `docs/reviews/v2-navbar-and-stats-notes.md` = direct user feedback notes on navbar density/readability and possible stats-page sticky section navigation.
 
 ## Naming Rule
 
