@@ -36,3 +36,4 @@
 - Prepared the repository for successor handoff with a versioned checkpoint tag plan; no task was marked `DONE`.
 - Verified that upstream `https://github.com/Qwertyil/HabitFlow` is fetchable but not writable from this workspace (`403` on dry-run push), then added `HF-012` and `docs/reviews/upstream-proposal-v1.md` so the original author can review our fork through `origin` and tag `v1` without any risk to upstream `master`.
 - Started `HF-013` to prune the now-obsolete Besedka import pack after adaptation: the repo keeps local HabitFlow artifacts and prompt history, while assistant handoff docs are being updated to stop referencing `docs/imports/`.
+- Shifted the v1 readiness checkpoint to the current `main` tip for handoff continuity, started the explicit v2 planning pass from that base, and opened `HF-014` to define typography and navbar direction before the next implementation wave.
