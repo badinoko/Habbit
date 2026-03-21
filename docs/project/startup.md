@@ -38,8 +38,10 @@ Updated: 2026-03-21
 8. `docs/project/progress.md` (`append-only log`)
 9. `docs/api_contract.mdc`
 10. `docs/session_contract.mdc`
-11. `docs/imports/besedka_design_kit_2026-03/README.md`
-12. `docs/artifacts-master-prompt.md`
+11. `docs/theme-system.md`
+12. `docs/imports/besedka_design_kit_2026-03/README.md`
+13. `docs/artifacts-master-prompt.md`
+14. `docs/cursor-prompt.md`
 
 ## Current Session Goal
 
@@ -70,4 +72,5 @@ Work from the real checkout so the next chat window can:
 - Google OAuth is already implemented in code and should be audited as a real feature, not treated as a future stub.
 - Frontend redesign must respect current product scope from `frontend-redesign-contracts.md`.
 - Imported Besedka redesign references live in `docs/imports/besedka_design_kit_2026-03/`.
+- Current local artifact inputs live in `docs/artifacts/` and `docs/cursor-prompt.md`.
 - Screenshot baseline for redesign work lives in `docs/screenshots/current_state/README.md`.

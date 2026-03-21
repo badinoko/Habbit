@@ -7,6 +7,7 @@ This file is the navigation index for documentation in this repository.
 - `docs/overview.mdc` = product and architecture overview.
 - `docs/api_contract.mdc` = HTTP and route contract.
 - `docs/session_contract.mdc` = auth/session contract.
+- `docs/theme-system.md` = SSOT for visual themes, theme tokens, and runtime theme switching.
 - `docs/project/startup.md` = new-session handoff and current workspace state.
 - `docs/project/overview.md` = the only task-status dashboard.
 - `docs/project/progress.md` = append-only work log.
@@ -16,6 +17,8 @@ This file is the navigation index for documentation in this repository.
 
 - `docs/screenshots/current_state/` = baseline UI captures for audit and redesign.
 - `docs/artifacts-master-prompt.md` = master prompt to paste into the Artifacts tab before visual exploration.
+- `docs/cursor-prompt.md` = reverse implementation prompt for Cursor based on the generated redesign artifacts.
+- `docs/artifacts/` = local HTML artifact pack that drives the current frontend implementation wave.
 - `docs/imports/besedka_design_kit_2026-03/` = imported reference kit from Besedka.
 
 ## Naming Rule
@@ -35,5 +38,6 @@ This file is the navigation index for documentation in this repository.
 7. `README.md`
 8. `frontend-redesign-contracts.md`
 9. `docs/overview.mdc`
-10. `docs/api_contract.mdc`
-11. `docs/session_contract.mdc`
+10. `docs/theme-system.md`
+11. `docs/api_contract.mdc`
+12. `docs/session_contract.mdc`

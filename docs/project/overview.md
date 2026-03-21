@@ -24,6 +24,7 @@ This file is the only task-status source for HabitFlow lab work.
 | HF-007 | REVIEW | Capture HabitFlow current-state screenshots and page inventory | Captured 20 full-page screenshots in `docs/screenshots/current_state/` for desktop and mobile baseline review |
 | HF-008 | BACKLOG | Draft redesign invariants and external artifact prompt | Fix shell constraints first: sticky top navbar, disciplined sidebar behavior, compact theme switcher, mobile-first navigation |
 | HF-009 | ACTIVE | Clean up documentation navigation and distinguish overview documents | Make product/architecture docs, task docs, prompt handoff docs, and reference imports easier to navigate without changing historical records |
+| HF-010 | ACTIVE | Implement HabitFlow frontend redesign wave from local artifacts | Shared shell, theme tokens, navbar switcher, and partial fetch navigation are wired; remaining work is fit-and-finish, mobile validation, and user review against artifacts |
 
 ## Scope Reminder
 

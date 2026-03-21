@@ -22,3 +22,7 @@
 - Added active task `HF-009` to track documentation navigation cleanup without rewriting historical records.
 - Indexed the user-provided Artifacts handoff file at `docs/artifacts-master-prompt.md` so future sessions can find the prompt from the normal docs entry points.
 - No task was marked `DONE`.
+- Started `HF-010` implementation from the local artifact pack in `docs/artifacts/` and `docs/cursor-prompt.md`: replaced the shared shell, redesigned core templates, added light/dark theme tokens plus navbar toggle, and switched filter/sort/theme navigation to partial fetch-based updates where feasible.
+- Added `docs/theme-system.md` as the SSOT for visual themes and linked it from the main documentation map and overview docs.
+- Verified the redesign with `compileall`, full `tests/api_unit`, `tests/api_unit/test_auth_router_html_unit.py`, `tests/api_unit/test_stats_router_unit.py`, `tests/integration/test_stats.py`, and `tests/integration/test_unauthorized_create_redirects.py` with one caveat: repeated integration runs can temporarily fail on this Windows host when Docker cannot immediately rebind PostgreSQL test port `5433`.
+- No task was marked `DONE`.
