@@ -23,6 +23,7 @@ This file is the only task-status source for HabitFlow lab work.
 | HF-006 | REVIEW | Import Besedka redesign knowledge base into HabitFlow docs | Reference pack copied into `docs/imports/besedka_design_kit_2026-03/`; needs user review and later cleanup |
 | HF-007 | REVIEW | Capture HabitFlow current-state screenshots and page inventory | Captured 20 full-page screenshots in `docs/screenshots/current_state/` for desktop and mobile baseline review |
 | HF-008 | BACKLOG | Draft redesign invariants and external artifact prompt | Fix shell constraints first: sticky top navbar, disciplined sidebar behavior, compact theme switcher, mobile-first navigation |
+| HF-009 | ACTIVE | Clean up documentation navigation and distinguish overview documents | Make product/architecture docs, task docs, prompt handoff docs, and reference imports easier to navigate without changing historical records |
 
 ## Scope Reminder
 

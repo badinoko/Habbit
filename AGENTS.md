@@ -4,6 +4,7 @@ Entry point for assistants in this repository.
 
 1. Read `CODEX.md` first.
 2. Primary project context:
+   - `docs/README.md`
    - `README.md`
    - `frontend-redesign-contracts.md`
    - `docs/overview.mdc`
@@ -11,6 +12,7 @@ Entry point for assistants in this repository.
    - `docs/session_contract.mdc`
    - `docs/imports/besedka_design_kit_2026-03/README.md`
 3. Critical laws:
+   - `docs/overview.mdc` = product and architecture overview, not a task board.
    - Do not set any task to `DONE` without explicit user confirmation.
    - `docs/project/overview.md` is the only task-status source.
    - `docs/project/progress.md` is append-only during normal work.

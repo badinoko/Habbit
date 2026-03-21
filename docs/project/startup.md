@@ -30,14 +30,16 @@ Updated: 2026-03-21
 
 1. `AGENTS.md`
 2. `CODEX.md`
-3. `README.md`
-4. `frontend-redesign-contracts.md`
-5. `docs/overview.mdc`
-6. `docs/api_contract.mdc`
-7. `docs/session_contract.mdc`
-8. `docs/project/overview.md`
-9. `docs/project/progress.md`
-10. `docs/imports/besedka_design_kit_2026-03/README.md`
+3. `docs/README.md`
+4. `README.md`
+5. `frontend-redesign-contracts.md`
+6. `docs/overview.mdc` (`product + architecture`)
+7. `docs/project/overview.md` (`task dashboard`)
+8. `docs/project/progress.md` (`append-only log`)
+9. `docs/api_contract.mdc`
+10. `docs/session_contract.mdc`
+11. `docs/imports/besedka_design_kit_2026-03/README.md`
+12. `docs/artifacts-master-prompt.md`
 
 ## Current Session Goal
 
@@ -61,6 +63,7 @@ Work from the real checkout so the next chat window can:
 
 - Do not work from `HabitFlow-master` unless reference files are needed.
 - The canonical working copy is `C:\Users\user\Projects\HabitFlow-git`.
+- `docs/overview.mdc` and `docs/project/overview.md` are different documents with different roles; do not use them interchangeably.
 - Push to `origin/main` was verified on 2026-03-21.
 - Cursor will still show hundreds of `untracked` files if the IDE is opened on `HabitFlow-master`; that is the wrong workspace, not a broken GitHub link.
 - Avoid `8001` for future local HabitFlow launches on this machine; Besedka already occupies that port through Docker/WSL.

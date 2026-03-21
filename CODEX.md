@@ -10,6 +10,7 @@ Last updated: 2026-03-21.
 2. This file
 3. `docs/operations/codex_workflow.md`
 4. Live project docs:
+   - `docs/README.md`
    - `README.md`
    - `frontend-redesign-contracts.md`
    - `docs/overview.mdc`
@@ -32,10 +33,11 @@ The goal is to audit, stabilize, redesign, and improve the project without writi
 
 1. No automatic `DONE` status changes without explicit user confirmation.
 2. `docs/project/overview.md` is the only task-status source.
-3. `docs/project/progress.md` is append-only.
-4. If work is implemented but not yet user-verified, use `REVIEW`, not `DONE`.
-5. Do not remove or silently rewrite task rows.
-6. Keep product scope aligned with the current backend and `frontend-redesign-contracts.md` unless the user explicitly expands scope.
+3. `docs/overview.mdc` is the product and architecture overview, not a task board.
+4. `docs/project/progress.md` is append-only.
+5. If work is implemented but not yet user-verified, use `REVIEW`, not `DONE`.
+6. Do not remove or silently rewrite task rows.
+7. Keep product scope aligned with the current backend and `frontend-redesign-contracts.md` unless the user explicitly expands scope.
 
 ## 4. Git Rules
 
@@ -58,6 +60,7 @@ The goal is to audit, stabilize, redesign, and improve the project without writi
    - `git branch --show-current`
    - `git remote -v`
 3. Read:
+   - `docs/README.md`
    - `docs/project/startup.md`
    - `docs/project/overview.md`
    - tail of `docs/project/progress.md`

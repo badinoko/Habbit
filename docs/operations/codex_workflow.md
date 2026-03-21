@@ -19,10 +19,12 @@ Keep HabitFlow work reproducible across chat windows and avoid mixing three diff
 
 ## Documentation Rules
 
-1. `docs/project/overview.md` holds task statuses.
-2. `docs/project/progress.md` is append-only.
-3. `docs/project/startup.md` is the first file to read in a new session.
-4. `README.md` and `docs/*.mdc` describe the actual product and technical contracts.
+1. `docs/README.md` is the map of the documentation tree.
+2. `docs/project/overview.md` holds task statuses only.
+3. `docs/project/progress.md` is append-only.
+4. `docs/project/startup.md` is the first session-handoff file to read in a new chat.
+5. `docs/overview.mdc` holds product and architecture context, not task statuses.
+6. `README.md` and the contract files in `docs/*.mdc` describe the actual product and technical behavior.
 
 ## New Chat Handoff
 
@@ -35,6 +37,7 @@ When preparing a new chat window, provide:
 - [startup.md](docs/project/startup.md)
 - [overview.md](docs/project/overview.md)
 - [progress.md](docs/project/progress.md)
+- [docs README.md](docs/README.md)
 - [README.md](README.md)
 - [frontend-redesign-contracts.md](frontend-redesign-contracts.md)
 - [besedka_design_kit README.md](docs/imports/besedka_design_kit_2026-03/README.md)

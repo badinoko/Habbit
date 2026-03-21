@@ -18,3 +18,7 @@
 - Recorded the external HabitFlow deployment URL `https://www.amir-vps.ru/` in startup docs for future audits and handoff.
 - Stopped the local HabitFlow runtime and `docker-compose` services after confirming they conflicted with Besedka on port `8001`; future local HabitFlow runs should use a different port.
 - No task was marked `DONE`.
+- Added `docs/README.md` as a navigation index and clarified across `AGENTS.md`, `CODEX.md`, `CLAUDE.md`, `README.md`, `docs/overview.mdc`, `docs/project/startup.md`, and `docs/operations/codex_workflow.md` that `docs/overview.mdc` is product/architecture context while `docs/project/overview.md` is the only task-status dashboard.
+- Added active task `HF-009` to track documentation navigation cleanup without rewriting historical records.
+- Indexed the user-provided Artifacts handoff file at `docs/artifacts-master-prompt.md` so future sessions can find the prompt from the normal docs entry points.
+- No task was marked `DONE`.

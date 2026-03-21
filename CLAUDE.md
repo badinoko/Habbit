@@ -16,20 +16,24 @@
 - Пользователь: Руслан (`badinoko07@gmail.com`)
 - Проект: HabitFlow — персональное веб-приложение для управления темами, задачами и привычками
 - Оригинальный автор: племянник Руслана (`Qwertyil/HabitFlow`)
-- Рабочая копия: локальный снапшот без `.git` (bootstrap ещё не выполнен)
+- Каноническая рабочая копия: `C:\Users\user\Projects\HabitFlow-git`
+- Git-состояние: реальный checkout на `main`, `origin = badinoko/Habbit`, `upstream = Qwertyil/HabitFlow`
 - Язык общения: русский
 - Язык UI: русский
 
 ## 3. Порядок чтения документов
 
 1. Этот файл
-2. `CODEX.md` — общий playbook (правила статусов, git, инварианты)
-3. `AGENTS.md` — точка входа для всех ассистентов
-4. `frontend-redesign-contracts.md` — **ключевой контракт для редизайна**
-5. `docs/overview.mdc` — архитектура продукта
-6. `docs/api_contract.mdc` — HTTP API спецификация
-7. `docs/session_contract.mdc` — архитектура сессий
-8. `docs/imports/besedka_design_kit_2026-03/README.md` — ориентир по дизайн-киту
+2. `docs/README.md` — карта документации и роли файлов
+3. `CODEX.md` — общий playbook (правила статусов, git, инварианты)
+4. `AGENTS.md` — точка входа для всех ассистентов
+5. `frontend-redesign-contracts.md` — **ключевой контракт для редизайна**
+6. `docs/overview.mdc` — продукт и архитектура, не task-board
+7. `docs/project/overview.md` — единственный task-dashboard
+8. `docs/api_contract.mdc` — HTTP API спецификация
+9. `docs/session_contract.mdc` — архитектура сессий
+10. `docs/imports/besedka_design_kit_2026-03/README.md` — ориентир по дизайн-киту
+11. `docs/artifacts-master-prompt.md` — мастер-промпт для вставки во вкладку Artifacts
 
 ## 4. Что такое HabitFlow
 
@@ -166,9 +170,10 @@
 
 1. Статус `DONE` — только после явного подтверждения пользователя
 2. `docs/project/overview.md` — единственный источник статусов задач
-3. `docs/project/progress.md` — только дополнение (append-only)
-4. Не пушить в `Qwertyil/HabitFlow`
-5. Продуктовый скоуп — только из `frontend-redesign-contracts.md`
+3. `docs/overview.mdc` — продуктово-архитектурный обзор, не task-board
+4. `docs/project/progress.md` — только дополнение (append-only)
+5. Не пушить в `Qwertyil/HabitFlow`
+6. Продуктовый скоуп — только из `frontend-redesign-contracts.md`
 
 ## 11. Как работать с артефактами
 
