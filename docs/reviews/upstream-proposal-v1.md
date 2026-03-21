@@ -1,36 +1,22 @@
-# Upstream Proposal: HabitFlow v1 Fork
+# Предложение Для Upstream: Форк HabitFlow v1
 
-This note explains what our fork changes relative to the upstream repository and how the original author can review it safely without risking the upstream `master` branch.
+Этот документ кратко объясняет, чем наш форк отличается от исходного репозитория и как удобнее всего посмотреть результат.
 
-## Repositories
+## Репозитории
 
-- Upstream source: `https://github.com/Qwertyil/HabitFlow`
-- Our fork/lab repository: `https://github.com/badinoko/Habbit`
-- Review checkpoint tag in our fork: `v1`
+- Исходный репозиторий: `https://github.com/Qwertyil/HabitFlow`
+- Наш лабораторный форк: `https://github.com/badinoko/Habbit`
+- Тег контрольной точки в нашем репозитории: `v1`
 
-## Upstream Safety
+## Что Посмотреть В Первую Очередь
 
-We verified that the upstream repository is readable but not writable from our side.
+Самый простой путь:
 
-- `git ls-remote upstream` works
-- `git push --dry-run upstream HEAD:refs/heads/codex-v1-proposal` fails with `403 Permission denied`
+- открыть наш репозиторий `https://github.com/badinoko/Habbit`
+- посмотреть тег `v1`
+- при желании открыть актуальный `main`, если нужен уже обновлённый handoff-документ и последующая чистка репозитория
 
-That means:
-
-- we did not modify upstream;
-- we cannot create a proposal branch there from this environment;
-- the safe review path is to share our repository or tag and let the upstream owner decide whether to pull anything in.
-
-## Recommended Review Path For The Upstream Author
-
-### Lowest-risk option
-
-Open our fork and inspect tag `v1`:
-
-- repo: `https://github.com/badinoko/Habbit`
-- tag: `v1`
-
-### If they want to compare locally
+## Если Хочется Сравнить Локально
 
 ```bash
 git clone https://github.com/Qwertyil/HabitFlow.git
@@ -40,69 +26,71 @@ git fetch proposal --tags
 git diff master..proposal/v1 -- src/templates src/static src/routers/stats.py docs README.md
 ```
 
-### If they want to cherry-pick only the handoff-ready UI wave
+## Если Нужны Только Основные Коммиты По Редизайну
 
-The two most relevant commits for the redesign package are:
+Наиболее важные коммиты:
 
-- `b5187ad` - `Implement HabitFlow redesign shell and theme system`
-- `2ded4fa` - `Prepare v1 handoff and docs cleanup`
+- `b5187ad` — основная имплементация нового shell, theme system и редизайна шаблонов
+- `2ded4fa` — handoff-подготовка и чистка документации
+- `1103da8` — поясняющий handoff-документ для сравнения с upstream
+- `bf7358c` — удаление тяжёлого reference pack и финальная чистка репозитория
 
-If they do not want the documentation cleanup, they can start by reviewing only `b5187ad`.
+Если нужен только сам редизайн без последующей документационной упаковки, смотреть в первую очередь стоит `b5187ad`.
 
-## What Changed In Product Terms
+## Что Изменилось По Продукту
 
-This fork does more than repaint templates, but it does not intentionally expand the core product scope.
+Этот форк не просто перекрашивает шаблоны, но и не расширяет продуктовый scope намеренно.
 
-### User-facing changes
+### Пользовательские изменения
 
-- New shared shell with sticky top navbar and a more deliberate page layout
-- Redesigned home, tasks, habits, themes, stats, auth, forms, and message screens
-- Light/dark visual theme switcher in the navbar
-- Better auth overlay behavior instead of layout-shifting auth pages
-- Partial client-side updates for list filters/sorts/theme navigation instead of full page reloads where feasible
+- Появился новый общий shell со sticky navbar и более собранной структурой страниц
+- Перерисованы главная, задачи, привычки, темы, статистика, auth-экраны, формы и системные сообщения
+- Добавлен light/dark switcher в верхнюю навигацию
+- Поведение входа и регистрации переведено на overlay-логику вместо layout-shift сценариев
+- Там, где это уместно, фильтры, сортировки и переключения обновляют контент без полного reload страницы
 
-### UX/implementation changes that support the redesign
+### Поддерживающие UX и implementation-изменения
 
-- Introduced semantic design tokens and a dedicated theme system
-- Added lightweight enhanced navigation logic in vanilla JS
-- Preserved existing server-rendered architecture instead of rewriting into SPA/frontend framework
-- Kept current product constraints: no teams, reminders, due dates, or admin dashboards added
+- Введены semantic design tokens и отдельная система тем
+- Добавлена лёгкая client-side логика на vanilla JS для partial navigation
+- Сохранена server-rendered архитектура, без переписывания проекта в SPA
+- Продуктовые ограничения сохранены: не добавлялись команды, напоминания, дедлайны или админские сценарии
 
-## What Changed In Code Terms
+## Что Изменилось В Коде
 
-### Added
+### Добавлено
 
 - `src/static/css/design-system.css`
 - `src/static/css/navbar.css`
 - `src/static/css/app-shell.css`
-- page-level CSS files for home/tasks/habits/themes/auth/message
-- `src/static/js/ui.js` for theme persistence and partial navigation
-- docs for contracts, prompts, reviews, screenshots, and handoff
+- page-level CSS для home, tasks, habits, themes, auth и message-страниц
+- `src/static/js/ui.js` для темы и частичных клиентских обновлений
+- handoff-документация по контрактам, промптам, ревью и структуре тем
 
-### Reworked
+### Существенно переработано
 
 - `src/templates/base.html`
-- list/form/auth/stats templates
-- several small vanilla JS files for filters, forms, and state updates
+- шаблоны списков, форм, auth и stats
+- несколько небольших vanilla JS файлов для фильтров, форм и обновления состояния
 
-### Small logic/architecture touchpoints
+### Небольшие логические и архитектурные изменения
 
-- `src/routers/stats.py` now passes `hide_sidebar=True` for the stats page shell behavior
-- Auth/template rendering now relies on a safer base-template fallback for missing sidebar stats context
-- The UI theme is intentionally browser-local (`localStorage`) rather than stored in server session
+- `src/routers/stats.py` теперь передаёт `hide_sidebar=True` для нужного поведения shell на странице статистики
+- auth/template rendering опирается на более безопасный fallback базового шаблона, если sidebar-context отсутствует
+- тема интерфейса хранится локально в браузере через `localStorage`, а не в server session
 
-These are implementation-support changes, not a backend domain redesign.
+Это не backend-redesign и не изменение доменной модели, а поддерживающие изменения вокруг UI.
 
-## What Did Not Change
+## Что Не Менялось
 
-- No database schema migration was added
-- No new domain entities were introduced
-- No intentional change to core task/habit business rules
-- No attempt was made to push directly into upstream
+- Не добавлялись новые миграции базы данных
+- Не добавлялись новые доменные сущности
+- Не менялись намеренно основные бизнес-правила задач и привычек
+- Не было прямых изменений в исходном upstream-репозитории
 
-## Documentation For Reviewers
+## Какие Файлы Полезно Прочитать
 
-If the upstream author wants a concise repo-local map, these files matter most:
+Если нужен короткий вход в наш вариант проекта, полезнее всего смотреть:
 
 - `README.md`
 - `docs/README.md`
@@ -110,11 +98,11 @@ If the upstream author wants a concise repo-local map, these files matter most:
 - `docs/reviews/architecture-audit.md`
 - `docs/project/overview.md`
 
-## Practical Recommendation
+## Практическая Рекомендация
 
-The simplest way to show the work is:
+Самый простой сценарий просмотра такой:
 
-1. send them the fork URL;
-2. point them to tag `v1`;
-3. mention that upstream was not touched and cannot be pushed from our side;
-4. point them to commit `b5187ad` if they only want the design implementation pass.
+1. открыть наш репозиторий;
+2. посмотреть тег `v1` как контрольную точку редизайна;
+3. при необходимости посмотреть `main`, если нужен уже более чистый репозиторий и переведённый handoff-документ;
+4. если интересует только главный редизайн-проход, начать с коммита `b5187ad`.
