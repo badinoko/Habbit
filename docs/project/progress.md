@@ -12,3 +12,7 @@
 - Created local git commit `f5d5a3a` (`Bootstrap HabitFlow lab workspace`) in `C:\Users\user\Projects\HabitFlow-git` and force-updated `origin/main` on `badinoko/Habbit` to that history.
 - Added tracking tasks for HabitFlow current-state capture and a redesign invariants/artifact-prompt pass.
 - No task was marked `DONE`.
+- Established a reproducible local baseline in `C:\Users\user\Projects\HabitFlow-git`: installed Poetry dependencies, started `postgres` and `redis`, ran Alembic migrations, launched the app on `http://127.0.0.1:8001`, and confirmed `/healthz/ready` returns OK.
+- Captured a full current-state screenshot pack under `docs/screenshots/current_state/` with 10 desktop and 10 mobile full-page screens plus a local README manifest.
+- Recorded in startup docs that `HabitFlow-master` remains an accidental standalone repo and should not be used as the canonical workspace in Cursor.
+- No task was marked `DONE`.

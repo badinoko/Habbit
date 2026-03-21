@@ -10,6 +10,8 @@ Updated: 2026-03-21
 - Git bootstrap to personal lab repo: verified
 - Reference snapshot still exists at `C:\Users\user\Projects\HabitFlow-master`
 - The reference snapshot was accidentally initialized as a standalone local git repo in Cursor and should not be treated as the canonical checkout
+- Runtime baseline is live in the canonical checkout: dependencies installed, `postgres` and `redis` started via Docker, migrations applied, app served locally on `http://127.0.0.1:8001`
+- Current-state screenshot pack exists at `docs/screenshots/current_state/` with desktop and mobile full-page captures
 
 ## Source References
 
@@ -41,17 +43,18 @@ Work from the real checkout so the next chat window can:
 
 ## Immediate Next Actions
 
-1. Run the project locally and capture runtime baseline failures.
+1. Audit frontend defects against `docs/screenshots/current_state/` and direct browser behavior.
 2. Audit Google OAuth configuration and callback baseline.
-3. Capture HabitFlow current-state screenshots and page inventory.
-4. Prepare redesign invariants and an external-artifact prompt adapted from the Besedka kit.
-5. Decide when the temporary folders `HabitFlow-master` and `HabitFlow-lab` can be removed.
+3. Prepare redesign invariants and an external-artifact prompt adapted from the Besedka kit.
+4. Decide when the temporary folders `HabitFlow-master` and `HabitFlow-lab` can be removed.
 
 ## Notes
 
 - Do not work from `HabitFlow-master` unless reference files are needed.
 - The canonical working copy is `C:\Users\user\Projects\HabitFlow-git`.
 - Push to `origin/main` was verified on 2026-03-21.
+- Cursor will still show hundreds of `untracked` files if the IDE is opened on `HabitFlow-master`; that is the wrong workspace, not a broken GitHub link.
 - Google OAuth is already implemented in code and should be audited as a real feature, not treated as a future stub.
 - Frontend redesign must respect current product scope from `frontend-redesign-contracts.md`.
 - Imported Besedka redesign references live in `docs/imports/besedka_design_kit_2026-03/`.
+- Screenshot baseline for redesign work lives in `docs/screenshots/current_state/README.md`.
