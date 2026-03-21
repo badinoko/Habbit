@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>HabitFlow — Темы</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #1A1F36; --accent: #6C63FF; --accent2: #8B84FF;
+  --mint: #00C9A7; --danger: #FF6B6B;
+  --bg: #F4F5FA; --surface: #FFFFFF; --border: #E8EAF0;
+  --text: #1A1F36; --muted: #8A90A8; --nav-h: 58px;
+}
+body { font-family: 'Onest', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+nav { position: sticky; top: 0; z-index: 100; background: var(--navy); height: var(--nav-h); display: flex; align-items: center; padding: 0 28px; gap: 32px; }
+.nav-logo { font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -.2px; display: flex; align-items: center; gap: 9px; text-decoration: none; }
+.nav-logo-dot { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--mint)); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; }
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-link { color: rgba(255,255,255,.55); font-size: 13.5px; font-weight: 500; text-decoration: none; padding: 6px 13px; border-radius: 7px; display: flex; align-items: center; gap: 6px; transition: color .15s, background .15s; }
+.nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+.nav-user { display: flex; align-items: center; gap: 9px; color: rgba(255,255,255,.75); font-size: 13px; cursor: pointer; padding: 6px 10px; border-radius: 8px; }
+.nav-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; }
+
+.page { max-width: 900px; margin: 0 auto; padding: 28px 24px 48px; }
+.page-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.page-title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 800; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 16px; border-radius: 9px; font-family: 'Onest', sans-serif; font-size: 13px; font-weight: 600; border: none; cursor: pointer; text-decoration: none; transition: opacity .15s; white-space: nowrap; line-height: 1; }
+.btn:hover { opacity: .85; }
+.btn-primary { background: linear-gradient(135deg, var(--accent), #8B5CF6); color: #fff; }
+.btn-ghost-sm { display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px; border-radius: 8px; font-family: 'Onest', sans-serif; font-size: 12.5px; font-weight: 500; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: background .12s, color .12s; line-height: 1; }
+.btn-ghost-sm:hover { background: var(--bg); color: var(--text); }
+.btn-danger-sm { display: inline-flex; align-items: center; gap: 5px; padding: 7px 13px; border-radius: 8px; font-family: 'Onest', sans-serif; font-size: 12.5px; font-weight: 500; border: 1.5px solid rgba(255,107,107,.25); background: rgba(255,107,107,.07); color: var(--danger); cursor: pointer; transition: background .12s; line-height: 1; }
+.btn-danger-sm:hover { background: rgba(255,107,107,.15); }
+
+.themes-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+.theme-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+  overflow: hidden; transition: box-shadow .15s, border-color .15s;
+}
+.theme-card:hover { box-shadow: 0 4px 18px rgba(0,0,0,.07); border-color: #D0D3E8; }
+
+.theme-card-header { padding: 20px 20px 16px; }
+.theme-color-bar { height: 4px; border-radius: 2px; margin-bottom: 16px; }
+.theme-name-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.theme-circle { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.theme-name { font-size: 16px; font-weight: 700; color: var(--text); }
+
+.theme-counters { display: flex; gap: 10px; }
+.counter-chip { display: flex; align-items: center; gap: 5px; background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 500; color: var(--muted); }
+.counter-chip i { font-size: 10px; }
+.counter-chip span { font-weight: 700; color: var(--text); }
+
+.theme-card-footer { padding: 14px 20px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
+
+/* empty card */
+.theme-card-new {
+  background: var(--surface); border: 2px dashed var(--border); border-radius: 16px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 32px 20px; gap: 10px; cursor: pointer; transition: border-color .15s;
+  min-height: 180px;
+}
+.theme-card-new:hover { border-color: var(--accent); }
+.theme-card-new i { font-size: 28px; color: var(--border); }
+.theme-card-new span { font-size: 13px; font-weight: 500; color: var(--muted); }
+.theme-card-new:hover i,
+.theme-card-new:hover span { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo"><div class="nav-logo-dot"><i class="fa-solid fa-chart-line"></i></div>HabitFlow</a>
+  <div class="nav-links">
+    <a href="#" class="nav-link"><i class="fa-regular fa-circle-check"></i> Задачи</a>
+    <a href="#" class="nav-link"><i class="fa-solid fa-arrow-trend-up"></i> Привычки</a>
+    <a href="#" class="nav-link"><i class="fa-solid fa-chart-bar"></i> Статистика</a>
+  </div>
+  <div class="nav-user">
+    <div class="nav-avatar">Р</div>
+    <span>ruslan@example.com</span>
+    <i class="fa-solid fa-chevron-down" style="font-size:10px;color:rgba(255,255,255,.4)"></i>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-top">
+    <div class="page-title">Мои темы</div>
+    <a href="#" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Добавить тему</a>
+  </div>
+
+  <div class="themes-grid">
+
+    <div class="theme-card">
+      <div class="theme-card-header">
+        <div class="theme-color-bar" style="background:#3B82F6"></div>
+        <div class="theme-name-row">
+          <div class="theme-circle" style="background:#3B82F6">Р</div>
+          <div class="theme-name">Работа</div>
+        </div>
+        <div class="theme-counters">
+          <div class="counter-chip"><i class="fa-regular fa-circle-check"></i><span>2</span> задачи</div>
+          <div class="counter-chip"><i class="fa-solid fa-arrow-trend-up"></i><span>1</span> привычка</div>
+        </div>
+      </div>
+      <div class="theme-card-footer">
+        <button class="btn-ghost-sm" style="flex:1"><i class="fa-regular fa-pen-to-square"></i> Изменить</button>
+        <button class="btn-danger-sm"><i class="fa-regular fa-trash-can"></i> Удалить</button>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-card-header">
+        <div class="theme-color-bar" style="background:#00C9A7"></div>
+        <div class="theme-name-row">
+          <div class="theme-circle" style="background:#00C9A7">З</div>
+          <div class="theme-name">Здоровье</div>
+        </div>
+        <div class="theme-counters">
+          <div class="counter-chip"><i class="fa-regular fa-circle-check"></i><span>1</span> задача</div>
+          <div class="counter-chip"><i class="fa-solid fa-arrow-trend-up"></i><span>1</span> привычка</div>
+        </div>
+      </div>
+      <div class="theme-card-footer">
+        <button class="btn-ghost-sm" style="flex:1"><i class="fa-regular fa-pen-to-square"></i> Изменить</button>
+        <button class="btn-danger-sm"><i class="fa-regular fa-trash-can"></i> Удалить</button>
+      </div>
+    </div>
+
+    <div class="theme-card">
+      <div class="theme-card-header">
+        <div class="theme-color-bar" style="background:#9B59B6"></div>
+        <div class="theme-name-row">
+          <div class="theme-circle" style="background:#9B59B6">У</div>
+          <div class="theme-name">Учёба</div>
+        </div>
+        <div class="theme-counters">
+          <div class="counter-chip"><i class="fa-regular fa-circle-check"></i><span>2</span> задачи</div>
+          <div class="counter-chip"><i class="fa-solid fa-arrow-trend-up"></i><span>0</span> привычек</div>
+        </div>
+      </div>
+      <div class="theme-card-footer">
+        <button class="btn-ghost-sm" style="flex:1"><i class="fa-regular fa-pen-to-square"></i> Изменить</button>
+        <button class="btn-danger-sm"><i class="fa-regular fa-trash-can"></i> Удалить</button>
+      </div>
+    </div>
+
+    <div class="theme-card-new" onclick="void(0)">
+      <i class="fa-solid fa-plus"></i>
+      <span>Добавить тему</span>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

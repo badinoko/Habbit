@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>HabitFlow — Формы</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #1A1F36; --accent: #6C63FF; --accent2: #8B84FF;
+  --mint: #00C9A7; --danger: #FF6B6B; --warn: #FFB347;
+  --bg: #F4F5FA; --surface: #FFFFFF; --border: #E8EAF0;
+  --text: #1A1F36; --muted: #8A90A8; --nav-h: 58px;
+}
+body { font-family: 'Onest', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+nav { position: sticky; top: 0; z-index: 100; background: var(--navy); height: var(--nav-h); display: flex; align-items: center; padding: 0 28px; gap: 32px; }
+.nav-logo { font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -.2px; display: flex; align-items: center; gap: 9px; text-decoration: none; }
+.nav-logo-dot { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--mint)); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; }
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-link { color: rgba(255,255,255,.55); font-size: 13.5px; font-weight: 500; text-decoration: none; padding: 6px 13px; border-radius: 7px; display: flex; align-items: center; gap: 6px; }
+.nav-user { display: flex; align-items: center; gap: 9px; color: rgba(255,255,255,.75); font-size: 13px; cursor: pointer; padding: 6px 10px; border-radius: 8px; }
+.nav-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; }
+
+/* demo switcher */
+.demo-bar { background: var(--navy); border-bottom: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px; }
+.demo-btn { padding: 5px 16px; border-radius: 7px; font-family: 'Onest', sans-serif; font-size: 12.5px; font-weight: 600; border: 1.5px solid rgba(255,255,255,.2); background: transparent; color: rgba(255,255,255,.5); cursor: pointer; transition: all .15s; }
+.demo-btn.active { background: rgba(108,99,255,.4); border-color: var(--accent2); color: #fff; }
+
+.page { max-width: 680px; margin: 0 auto; padding: 28px 24px 48px; }
+.form-panel { display: none; }
+.form-panel.active { display: block; }
+
+/* form header */
+.form-head { text-align: center; margin-bottom: 28px; }
+.form-head-icon { width: 52px; height: 52px; border-radius: 14px; margin: 0 auto 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; }
+.form-head-icon.task   { background: linear-gradient(135deg, var(--accent), #8B5CF6); }
+.form-head-icon.habit  { background: linear-gradient(135deg, var(--mint), #00A98C); }
+.form-title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+.form-sub   { font-size: 13.5px; color: var(--muted); }
+
+/* sections */
+.form-section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; margin-bottom: 16px; }
+.form-section-title { font-size: 13px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 18px; display: flex; align-items: center; gap: 7px; }
+.form-section-title i { color: var(--accent); font-size: 12px; }
+
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+.form-group:last-child { margin-bottom: 0; }
+.form-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.form-label .req { color: var(--danger); margin-left: 2px; }
+.form-hint { font-size: 12px; color: var(--muted); }
+.form-input, .form-textarea, .form-select {
+  border: 1.5px solid var(--border); border-radius: 9px; padding: 10px 14px;
+  font-family: 'Onest', sans-serif; font-size: 13.5px; color: var(--text);
+  background: var(--bg); transition: border-color .15s; outline: none;
+}
+.form-input:focus, .form-textarea:focus, .form-select:focus { border-color: var(--accent); background: #fff; }
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238A90A8' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; cursor: pointer; }
+
+/* theme grid */
+.theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.theme-option {
+  border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer; transition: all .15s; background: var(--bg);
+}
+.theme-option:hover { border-color: #B0B4D0; background: #fff; }
+.theme-option.selected { border-color: var(--accent); background: #EEF0FF; }
+.theme-option .t-dot { width: 14px; height: 14px; border-radius: 50%; }
+.theme-option .t-name { font-size: 11.5px; font-weight: 500; color: var(--muted); text-align: center; }
+.theme-option.selected .t-name { color: var(--accent); font-weight: 600; }
+
+/* priority grid */
+.priority-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.priority-option {
+  border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer; transition: all .15s; background: var(--bg);
+}
+.priority-option:hover { border-color: #B0B4D0; background: #fff; }
+.priority-option.selected-low    { border-color: var(--muted);  background: rgba(138,144,168,.08); }
+.priority-option.selected-medium { border-color: var(--warn);   background: rgba(255,179,71,.08); }
+.priority-option.selected-high   { border-color: var(--danger); background: rgba(255,107,107,.08); }
+.priority-icon { font-size: 18px; }
+.priority-name { font-size: 12px; font-weight: 600; color: var(--muted); }
+.selected-low    .priority-name { color: var(--muted); }
+.selected-medium .priority-name { color: #C87E00; }
+.selected-high   .priority-name { color: var(--danger); }
+
+/* schedule info */
+.schedule-hint { font-size: 12.5px; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; margin-top: 8px; }
+
+/* period row */
+.period-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; cursor: pointer; }
+.checkbox-row input { accent-color: var(--accent); width: 15px; height: 15px; }
+.checkbox-row span { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+/* form footer */
+.form-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 9px; font-family: 'Onest', sans-serif; font-size: 13.5px; font-weight: 600; border: none; cursor: pointer; text-decoration: none; transition: opacity .15s; line-height: 1; }
+.btn:hover { opacity: .85; }
+.btn-primary { background: linear-gradient(135deg, var(--accent), #8B5CF6); color: #fff; }
+.btn-back { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+.btn-back:hover { background: var(--bg); color: var(--text); opacity: 1; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo"><div class="nav-logo-dot"><i class="fa-solid fa-chart-line"></i></div>HabitFlow</a>
+  <div class="nav-links">
+    <a href="#" class="nav-link"><i class="fa-regular fa-circle-check"></i> Задачи</a>
+    <a href="#" class="nav-link"><i class="fa-solid fa-arrow-trend-up"></i> Привычки</a>
+    <a href="#" class="nav-link"><i class="fa-solid fa-chart-bar"></i> Статистика</a>
+  </div>
+  <div class="nav-user">
+    <div class="nav-avatar">Р</div>
+    <span>ruslan@example.com</span>
+  </div>
+</nav>
+
+<!-- demo switcher -->
+<div class="demo-bar">
+  <span style="color:rgba(255,255,255,.4);font-size:12px;margin-right:4px">Форма:</span>
+  <button class="demo-btn active" onclick="show('task')">Создание задачи</button>
+  <button class="demo-btn" onclick="show('habit')">Создание привычки</button>
+</div>
+
+<div class="page">
+
+  <!-- TASK FORM -->
+  <div class="form-panel active" id="panel-task">
+    <div class="form-head">
+      <div class="form-head-icon task"><i class="fa-regular fa-circle-check"></i></div>
+      <div class="form-title">Создание задачи</div>
+      <div class="form-sub">Добавьте задачу и назначьте ей тему и приоритет</div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title"><i class="fa-solid fa-circle-info"></i> Основная информация</div>
+      <div class="form-group">
+        <label class="form-label">Название<span class="req">*</span></label>
+        <input type="text" class="form-input" placeholder="Например: Подготовить отчёт">
+        <div class="form-hint">Максимум 46 символов</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Описание</label>
+        <textarea class="form-textarea" placeholder="Опишите задачу подробнее (необязательно)"></textarea>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title"><i class="fa-solid fa-palette"></i> Тема</div>
+      <div class="theme-grid" id="taskThemes">
+        <div class="theme-option selected" data-group="taskThemes">
+          <div class="t-dot" style="background:#8A90A8"></div>
+          <div class="t-name">Без темы</div>
+        </div>
+        <div class="theme-option" data-group="taskThemes">
+          <div class="t-dot" style="background:#3B82F6"></div>
+          <div class="t-name">Работа</div>
+        </div>
+        <div class="theme-option" data-group="taskThemes">
+          <div class="t-dot" style="background:#00C9A7"></div>
+          <div class="t-name">Здоровье</div>
+        </div>
+        <div class="theme-option" data-group="taskThemes">
+          <div class="t-dot" style="background:#9B59B6"></div>
+          <div class="t-name">Учёба</div>
+        </div>
+      </div>
+      <div class="form-hint" style="margin-top:8px">Выберите категорию для задачи</div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title"><i class="fa-solid fa-flag"></i> Приоритет<span style="color:var(--danger);margin-left:2px">*</span></div>
+      <div class="priority-grid" id="taskPriority">
+        <div class="priority-option selected-low">
+          <div class="priority-icon" style="color:var(--muted)"><i class="fa-solid fa-arrow-down"></i></div>
+          <div class="priority-name">Низкий</div>
+        </div>
+        <div class="priority-option">
+          <div class="priority-icon" style="color:var(--warn)"><i class="fa-solid fa-minus"></i></div>
+          <div class="priority-name">Средний</div>
+        </div>
+        <div class="priority-option">
+          <div class="priority-icon" style="color:var(--danger)"><i class="fa-solid fa-arrow-up"></i></div>
+          <div class="priority-name">Высокий</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-footer">
+      <button class="btn btn-back"><i class="fa-solid fa-arrow-left"></i> Назад</button>
+      <button class="btn btn-primary"><i class="fa-solid fa-plus"></i> Создать задачу</button>
+    </div>
+  </div>
+
+  <!-- HABIT FORM -->
+  <div class="form-panel" id="panel-habit">
+    <div class="form-head">
+      <div class="form-head-icon habit"><i class="fa-solid fa-arrow-trend-up"></i></div>
+      <div class="form-title">Создание привычки</div>
+      <div class="form-sub">Настройте расписание и отслеживайте серию выполнений</div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title"><i class="fa-solid fa-circle-info"></i> Основная информация</div>
+      <div class="form-group">
+        <label class="form-label">Название<span class="req">*</span></label>
+        <input type="text" class="form-input" placeholder="Например: Утренняя зарядка">
+        <div class="form-hint">Максимум 46 символов</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Описание</label>
+        <textarea class="form-textarea" placeholder="Необязательно, до 200 символов"></textarea>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title"><i class="fa-solid fa-palette"></i> Тема</div>
+      <div class="theme-grid" id="habitThemes">
+        <div class="theme-option selected" data-group="habitThemes">
+          <div class="t-dot" style="background:#8A90A8"></div>
+          <div class="t-name">Без темы</div>
+        </div>
+        <div class="theme-option" data-group="habitThemes">
+          <div class="t-dot" style="background:#3B82F6"></div>
+          <div class="t-name">Работа</div>
+        </div>
+        <div class="theme-option" data-group="habitThemes">
+          <div class="t-dot" style="background:#00C9A7"></div>
+          <div class="t-name">Здоровье</div>
+        </div>
+        <div class="theme-option" data-group="habitThemes">
+          <div class="t-dot" style="background:#9B59B6"></div>
+          <div class="t-name">Учёба</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title"><i class="fa-regular fa-calendar"></i> Расписание</div>
+      <div class="form-group">
+        <label class="form-label">Тип расписания<span class="req">*</span></label>
+        <select class="form-select" id="scheduleSelect" onchange="updateHint()">
+          <option value="daily">Ежедневно</option>
+          <option value="weekly">Дни недели</option>
+          <option value="monthly">Ежемесячно</option>
+          <option value="yearly">Ежегодно</option>
+          <option value="interval">Интервал</option>
+        </select>
+        <div class="schedule-hint" id="scheduleHint">Привычка выполняется каждый день.</div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title"><i class="fa-regular fa-clock"></i> Период выполнения</div>
+      <div class="period-row">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Начало периода</label>
+          <input type="date" class="form-input">
+          <div class="form-hint">Необязательно</div>
+        </div>
+        <div class="form-group" style="margin:0" id="endGroup">
+          <label class="form-label">Конец периода</label>
+          <input type="date" class="form-input" id="endInput">
+          <div class="form-hint">Необязательно</div>
+        </div>
+      </div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="infiniteCheck" onchange="toggleInfinite(this)">
+        <span>Бесконечный период</span>
+      </label>
+    </div>
+
+    <div class="form-footer">
+      <button class="btn btn-back"><i class="fa-solid fa-arrow-left"></i> Назад</button>
+      <button class="btn btn-primary"><i class="fa-solid fa-plus"></i> Создать привычку</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function show(type) {
+  document.querySelectorAll('.form-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.demo-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + type).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// theme option toggle
+document.querySelectorAll('.theme-option').forEach(opt => {
+  opt.addEventListener('click', () => {
+    const grp = opt.dataset.group;
+    document.querySelectorAll(`[data-group="${grp}"]`).forEach(o => o.classList.remove('selected'));
+    opt.classList.add('selected');
+  });
+});
+
+// priority toggle
+const hints = { low: 'selected-low', medium: 'selected-medium', high: 'selected-high' };
+document.querySelectorAll('#taskPriority .priority-option').forEach((opt, i) => {
+  const cls = ['selected-low','selected-medium','selected-high'][i];
+  opt.addEventListener('click', () => {
+    document.querySelectorAll('#taskPriority .priority-option').forEach(o => o.className = 'priority-option');
+    opt.classList.add(cls);
+  });
+});
+
+// schedule hints
+const schedHints = {
+  daily:    'Привычка выполняется каждый день.',
+  weekly:   'Выберите дни недели для выполнения привычки.',
+  monthly:  'Привычка повторяется раз в месяц в заданную дату.',
+  yearly:   'Привычка повторяется один раз в год.',
+  interval: 'Укажите интервал в днях между выполнениями.'
+};
+function updateHint() {
+  const v = document.getElementById('scheduleSelect').value;
+  document.getElementById('scheduleHint').textContent = schedHints[v];
+}
+
+function toggleInfinite(cb) {
+  const ei = document.getElementById('endInput');
+  ei.disabled = cb.checked;
+  ei.style.opacity = cb.checked ? '.4' : '1';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HabitFlow — Главная</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:    #1A1F36;
+  --accent:  #6C63FF;
+  --accent2: #8B84FF;
+  --mint:    #00C9A7;
+  --danger:  #FF6B6B;
+  --warn:    #FFB347;
+  --bg:      #F4F5FA;
+  --surface: #FFFFFF;
+  --border:  #E8EAF0;
+  --text:    #1A1F36;
+  --muted:   #8A90A8;
+  --sidebar-w: 260px;
+  --nav-h: 58px;
+
+  /* цвета тем */
+  --c-work:    #3B82F6;
+  --c-health:  #00C9A7;
+  --c-study:   #9B59B6;
+  --c-home:    #F97316;
+}
+
+body { font-family: 'Onest', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--navy); height: var(--nav-h);
+  display: flex; align-items: center; padding: 0 28px; gap: 32px;
+}
+.nav-logo {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 14px; font-weight: 700; color: #fff;
+  letter-spacing: -.2px; display: flex; align-items: center; gap: 9px;
+  text-decoration: none;
+}
+.nav-logo-dot {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--mint));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: #fff;
+}
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-link {
+  color: rgba(255,255,255,.55); font-size: 13.5px; font-weight: 500;
+  text-decoration: none; padding: 6px 13px; border-radius: 7px;
+  transition: color .15s, background .15s;
+}
+.nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+.nav-link.active { color: #fff; background: rgba(108,99,255,.35); }
+.nav-user {
+  display: flex; align-items: center; gap: 9px;
+  color: rgba(255,255,255,.75); font-size: 13px; cursor: pointer;
+  padding: 6px 10px; border-radius: 8px; transition: background .15s;
+}
+.nav-user:hover { background: rgba(255,255,255,.08); }
+.nav-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: #fff;
+}
+.nav-user-name { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── LAYOUT ── */
+.layout {
+  display: flex; min-height: calc(100vh - var(--nav-h));
+  max-width: 1280px; margin: 0 auto;
+  padding: 24px 24px 40px; gap: 20px;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0;
+  position: sticky; top: calc(var(--nav-h) + 24px);
+  height: fit-content; max-height: calc(100vh - var(--nav-h) - 48px);
+  overflow-y: auto; display: flex; flex-direction: column; gap: 16px;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.sb-card { background: var(--surface); border-radius: 14px; border: 1px solid var(--border); overflow: hidden; }
+.sb-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 10px; }
+.sb-title { font-size: 11px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); }
+.sb-action { font-size: 11.5px; color: var(--accent); font-weight: 500; text-decoration: none; cursor: pointer; }
+.sb-action:hover { text-decoration: underline; }
+
+.theme-list { padding: 4px 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.theme-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 8px; border-radius: 9px; cursor: pointer;
+  font-size: 13.5px; font-weight: 500; color: var(--text);
+  transition: background .12s;
+}
+.theme-item:hover { background: var(--bg); }
+.theme-item.selected { background: #EEF0FF; color: var(--accent); }
+.theme-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+/* статистика — все числа одним цветом */
+.stat-list { padding: 4px 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.stat-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 10px; background: var(--bg); border-radius: 9px;
+}
+.stat-val { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1; }
+.stat-val.dim { color: var(--muted); }
+.stat-label { font-size: 12px; color: var(--muted); text-align: right; }
+
+/* ── MAIN ── */
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 18px; }
+
+/* hero */
+.hero {
+  border-radius: 16px; overflow: hidden;
+  background: linear-gradient(135deg, var(--navy) 0%, #2D2B6E 60%, #3D1E6E 100%);
+  padding: 32px 36px; position: relative;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='20'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(108,99,255,.3); color: var(--accent2);
+  font-size: 11px; font-weight: 600; letter-spacing: .5px;
+  padding: 4px 10px; border-radius: 20px; margin-bottom: 12px;
+  border: 1px solid rgba(108,99,255,.3); text-transform: uppercase;
+}
+.hero h1 {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 22px; font-weight: 800; color: #fff;
+  line-height: 1.3; margin-bottom: 8px; position: relative;
+}
+.hero p { font-size: 14px; color: rgba(255,255,255,.55); max-width: 480px; position: relative; }
+.hero-badges {
+  position: absolute; right: 36px; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.hero-badge {
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+  border-radius: 10px; padding: 8px 14px;
+  display: flex; align-items: center; gap: 8px;
+  color: rgba(255,255,255,.8); font-size: 12.5px; font-weight: 500;
+}
+.hero-badge i { font-size: 13px; color: var(--accent2); }
+
+.content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+.card { background: var(--surface); border-radius: 14px; border: 1px solid var(--border); }
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
+}
+.card-title { font-size: 15px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.card-title i { font-size: 14px; color: var(--accent); }
+.card-link { font-size: 12.5px; color: var(--accent); font-weight: 500; text-decoration: none; cursor: pointer; }
+.card-link:hover { text-decoration: underline; }
+.card-body { padding: 8px 20px 16px; }
+
+/* ── TASK ITEM — без чекбокса, полоска = цвет темы ── */
+.task-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 10px 11px 14px;
+  border-radius: 9px; cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  transition: background .12s;
+}
+.task-item:last-child { border-bottom: none; }
+.task-item:hover { background: var(--bg); }
+.task-item::before {
+  content: ''; position: absolute; left: 0; top: 10px; bottom: 10px;
+  width: 3px; border-radius: 0 2px 2px 0;
+}
+/* цвет полоски = цвет темы */
+.task-item.theme-work::before   { background: var(--c-work); }
+.task-item.theme-health::before { background: var(--c-health); }
+.task-item.theme-study::before  { background: var(--c-study); }
+.task-item.theme-home::before   { background: var(--c-home); }
+.task-item.theme-none::before   { background: var(--border); }
+
+.task-info { flex: 1; min-width: 0; }
+.task-name { font-size: 13.5px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+.task-desc { font-size: 12px; color: var(--muted); }
+
+/* бейдж — цвет фона совпадает с цветом темы */
+.task-badge {
+  font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.badge-work   { background: rgba(59,130,246,.12);  color: var(--c-work); }
+.badge-health { background: rgba(0,201,167,.12);   color: var(--c-health); }
+.badge-study  { background: rgba(155,89,182,.12);  color: var(--c-study); }
+.badge-home   { background: rgba(249,115,22,.12);  color: var(--c-home); }
+
+/* ── HABIT ITEM ── */
+.habit-item { padding: 13px 0; border-bottom: 1px solid var(--border); }
+.habit-item:last-child { border-bottom: none; }
+.habit-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.habit-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+.habit-streak {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 12px; font-weight: 600; color: var(--muted);
+}
+.habit-streak i { font-size: 11px; color: var(--warn); }
+.habit-tags { display: flex; gap: 6px; margin-bottom: 10px; }
+.habit-tag { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 20px; }
+.tag-health { background: rgba(0,201,167,.12); color: var(--c-health); }
+.tag-daily  { background: rgba(108,99,255,.1); color: var(--accent); }
+.tag-work   { background: rgba(59,130,246,.12); color: var(--c-work); }
+
+.habit-progress { height: 4px; background: var(--bg); border-radius: 2px; margin-bottom: 10px; overflow: hidden; }
+.habit-progress-bar { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--mint), #00E5C5); }
+
+.habit-actions { display: flex; gap: 8px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 7px 14px; border-radius: 8px;
+  font-family: 'Onest', sans-serif;
+  font-size: 12.5px; font-weight: 600; border: none; cursor: pointer;
+  text-decoration: none; transition: opacity .15s, background .15s;
+  white-space: nowrap; line-height: 1;
+}
+.btn:hover { opacity: .85; }
+.btn-success { background: linear-gradient(135deg, var(--mint), #00E5C5); color: #fff; }
+.btn-ghost { background: transparent; color: var(--muted); border: 1.5px solid var(--border); }
+.btn-ghost:hover { background: var(--bg); color: var(--text); opacity: 1; }
+.btn-sm { padding: 6px 12px; font-size: 11.5px; }
+
+/* success progress bar */
+.stat-progress-wrap {
+  background: var(--bg); border-radius: 9px; padding: 9px 10px;
+  overflow: hidden;
+}
+.stat-progress-track {
+  height: 8px; border-radius: 4px; background: rgba(0,0,0,.07);
+  overflow: hidden; margin-bottom: 7px;
+}
+.stat-progress-fill {
+  height: 100%; border-radius: 4px;
+  transition: width .4s ease, background .4s ease;
+}
+.stat-progress-labels {
+  display: flex; align-items: center; justify-content: space-between;
+}
+.stat-progress-pct { font-size: 20px; font-weight: 700; line-height: 1; }
+.stat-progress-name { font-size: 12px; color: var(--muted); text-align: right; }
+
+/* quote */
+.quote-card {
+  background: linear-gradient(135deg, #FFFBF0, #FFF5D6);
+  border: 1px solid #FFE9A0; border-radius: 14px;
+  padding: 24px 28px; display: flex; gap: 18px; align-items: flex-start;
+}
+.quote-mark { font-size: 52px; line-height: .8; color: #FFD04A; font-family: Georgia, serif; flex-shrink: 0; margin-top: -4px; }
+.quote-text { font-size: 14.5px; font-style: italic; color: #6B5A00; line-height: 1.6; margin-bottom: 8px; }
+.quote-author { font-size: 12px; font-weight: 700; color: #B8860B; letter-spacing: .5px; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-dot"><i class="fa-solid fa-chart-line"></i></div>
+    HabitFlow
+  </a>
+  <div class="nav-links">
+    <a href="#" class="nav-link"><i class="fa-regular fa-square-check"></i> Задачи</a>
+    <a href="#" class="nav-link"><i class="fa-solid fa-arrow-trend-up"></i> Привычки</a>
+    <a href="#" class="nav-link"><i class="fa-solid fa-chart-bar"></i> Статистика</a>
+  </div>
+  <div class="nav-user">
+    <div class="nav-avatar">Р</div>
+    <span class="nav-user-name">ruslan@example.com</span>
+    <i class="fa-solid fa-chevron-down" style="font-size:10px;color:rgba(255,255,255,.4)"></i>
+  </div>
+</nav>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sb-card">
+      <div class="sb-header">
+        <span class="sb-title">Темы</span>
+        <a class="sb-action">Настроить</a>
+      </div>
+      <div class="theme-list">
+        <div class="theme-item selected">
+          <div class="theme-dot" style="background:var(--accent)"></div>
+          Все темы
+        </div>
+        <div class="theme-item">
+          <div class="theme-dot" style="background:var(--c-work)"></div>
+          Работа
+        </div>
+        <div class="theme-item">
+          <div class="theme-dot" style="background:var(--c-health)"></div>
+          Здоровье
+        </div>
+        <div class="theme-item">
+          <div class="theme-dot" style="background:var(--c-study)"></div>
+          Учёба
+        </div>
+        <div class="theme-item">
+          <div class="theme-dot" style="background:var(--c-home)"></div>
+          Дом
+        </div>
+      </div>
+    </div>
+
+    <div class="sb-card">
+      <div class="sb-header">
+        <span class="sb-title">Статистика</span>
+      </div>
+      <div class="stat-list">
+        <div class="stat-row">
+          <div class="stat-val">3</div>
+          <div class="stat-label">активных задачи</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-val">3</div>
+          <div class="stat-label">привычки всего</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-val">3</div>
+          <div class="stat-label">активных привычки</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-val">2</div>
+          <div class="stat-label">привычек на сегодня</div>
+        </div>
+        <div class="stat-progress-wrap" id="successBar" data-value="0">
+          <div class="stat-progress-track">
+            <div class="stat-progress-fill"></div>
+          </div>
+          <div class="stat-progress-labels">
+            <span class="stat-progress-pct"></span>
+            <span class="stat-progress-name">успех сегодня</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <div class="hero">
+      <div class="hero-tag"><i class="fa-solid fa-bolt"></i> Ежедневный дашборд</div>
+      <h1>Добро пожаловать,<br>Руслан!</h1>
+      <p>Управляй задачами и формируй привычки — день за днём.</p>
+      <div class="hero-badges">
+        <div class="hero-badge">
+          <i class="fa-regular fa-calendar"></i>
+          Суббота, 21 марта 2026
+        </div>
+        <div class="hero-badge">
+          <i class="fa-solid fa-fire-flame-curved"></i>
+          2 привычки на сегодня
+        </div>
+      </div>
+    </div>
+
+    <div class="content-grid">
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-regular fa-circle-check"></i> Задачи</div>
+          <a class="card-link">Все задачи →</a>
+        </div>
+        <div class="card-body">
+          <div class="task-item theme-health">
+            <div class="task-info">
+              <div class="task-name">Прогулка 30 минут</div>
+              <div class="task-desc">После обеда, без телефона</div>
+            </div>
+            <span class="task-badge badge-health">Здоровье</span>
+          </div>
+          <div class="task-item theme-work">
+            <div class="task-info">
+              <div class="task-name">Code review отчёта</div>
+              <div class="task-desc">Проверить PR по статистике</div>
+            </div>
+            <span class="task-badge badge-work">Работа</span>
+          </div>
+          <div class="task-item theme-work">
+            <div class="task-info">
+              <div class="task-name">Спланировать спринт</div>
+              <div class="task-desc">Разбить эпики, оценить риски</div>
+            </div>
+            <span class="task-badge badge-work">Работа</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="fa-solid fa-arrow-trend-up"></i> Привычки на сегодня</div>
+          <a class="card-link">Все привычки →</a>
+        </div>
+        <div class="card-body">
+          <div class="habit-item">
+            <div class="habit-top">
+              <div class="habit-name">Медитация</div>
+              <div class="habit-streak"><i class="fa-solid fa-fire-flame-curved"></i> 0 дн.</div>
+            </div>
+            <div class="habit-tags">
+              <span class="habit-tag tag-daily">Ежедневно</span>
+            </div>
+            <div class="habit-progress"><div class="habit-progress-bar" style="width:0%"></div></div>
+            <div class="habit-actions">
+              <button class="btn btn-ghost btn-sm"><i class="fa-regular fa-pen-to-square"></i> Изменить</button>
+              <button class="btn btn-success btn-sm" style="flex:1"><i class="fa-solid fa-check"></i> Выполнить</button>
+            </div>
+          </div>
+          <div class="habit-item">
+            <div class="habit-top">
+              <div class="habit-name">Утренняя зарядка</div>
+              <div class="habit-streak"><i class="fa-solid fa-fire-flame-curved"></i> 0 дн.</div>
+            </div>
+            <div class="habit-tags">
+              <span class="habit-tag tag-health">Здоровье</span>
+              <span class="habit-tag tag-daily">Ежедневно</span>
+            </div>
+            <div class="habit-progress"><div class="habit-progress-bar" style="width:0%"></div></div>
+            <div class="habit-actions">
+              <button class="btn btn-ghost btn-sm"><i class="fa-regular fa-pen-to-square"></i> Изменить</button>
+              <button class="btn btn-success btn-sm" style="flex:1"><i class="fa-solid fa-check"></i> Выполнить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="quote-card">
+      <div class="quote-mark">"</div>
+      <div>
+        <div class="quote-text">Not until we are lost do we begin to understand ourselves.</div>
+        <div class="quote-author">— Henry David Thoreau</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+(function() {
+  const bar = document.getElementById('successBar');
+  const val = parseInt(bar.dataset.value) || 0;
+  const fill = bar.querySelector('.stat-progress-fill');
+  const pct  = bar.querySelector('.stat-progress-pct');
+
+  // семантика: 0–33 красный, 34–66 жёлтый, 67–100 зелёный
+  let color;
+  if (val <= 33)      color = '#FF6B6B';
+  else if (val <= 66) color = '#FFB347';
+  else                color = '#00C9A7';
+
+  fill.style.width      = Math.max(val, val > 0 ? 4 : 0) + '%';
+  fill.style.background = color;
+  pct.style.color       = val === 0 ? 'var(--muted)' : color;
+  pct.textContent       = val + '%';
+})();
+</script>
+</body>
+</html>

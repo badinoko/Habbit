@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HabitFlow — Задачи</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:    #1A1F36;
+  --accent:  #6C63FF;
+  --accent2: #8B84FF;
+  --mint:    #00C9A7;
+  --danger:  #FF6B6B;
+  --warn:    #FFB347;
+  --bg:      #F4F5FA;
+  --surface: #FFFFFF;
+  --border:  #E8EAF0;
+  --text:    #1A1F36;
+  --muted:   #8A90A8;
+  --nav-h:   58px;
+
+  --c-work:   #3B82F6;
+  --c-health: #00C9A7;
+  --c-study:  #9B59B6;
+  --c-home:   #F97316;
+}
+
+body { font-family: 'Onest', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--navy); height: var(--nav-h);
+  display: flex; align-items: center; padding: 0 28px; gap: 32px;
+}
+.nav-logo {
+  font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 700; color: #fff;
+  letter-spacing: -.2px; display: flex; align-items: center; gap: 9px; text-decoration: none;
+}
+.nav-logo-dot {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--mint));
+  display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff;
+}
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-link {
+  color: rgba(255,255,255,.55); font-size: 13.5px; font-weight: 500;
+  text-decoration: none; padding: 6px 13px; border-radius: 7px; transition: color .15s, background .15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+.nav-link.active { color: #fff; background: rgba(108,99,255,.35); }
+.nav-user {
+  display: flex; align-items: center; gap: 9px; color: rgba(255,255,255,.75); font-size: 13px;
+  cursor: pointer; padding: 6px 10px; border-radius: 8px; transition: background .15s;
+}
+.nav-user:hover { background: rgba(255,255,255,.08); }
+.nav-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff;
+}
+
+/* ── PAGE ── */
+.page { max-width: 900px; margin: 0 auto; padding: 28px 24px 48px; }
+
+/* ── TOP BAR ── */
+.page-top {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+}
+.page-title {
+  font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 800; color: var(--text);
+}
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 16px; border-radius: 9px; font-family: 'Onest', sans-serif;
+  font-size: 13px; font-weight: 600; border: none; cursor: pointer;
+  text-decoration: none; transition: opacity .15s; white-space: nowrap; line-height: 1;
+}
+.btn:hover { opacity: .85; }
+.btn-primary { background: linear-gradient(135deg, var(--accent), #8B5CF6); color: #fff; }
+.btn-ghost-sm {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 6px 11px; border-radius: 7px; font-family: 'Onest', sans-serif;
+  font-size: 12px; font-weight: 500; border: 1.5px solid var(--border);
+  background: transparent; color: var(--muted); cursor: pointer; transition: background .12s, color .12s;
+  line-height: 1;
+}
+.btn-ghost-sm:hover { background: var(--bg); color: var(--text); }
+.btn-danger-sm {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  padding: 6px 11px; border-radius: 7px; font-family: 'Onest', sans-serif;
+  font-size: 12px; font-weight: 500; border: 1.5px solid rgba(255,107,107,.25);
+  background: rgba(255,107,107,.07); color: var(--danger); cursor: pointer; transition: background .12s;
+  line-height: 1;
+}
+.btn-danger-sm:hover { background: rgba(255,107,107,.15); }
+
+/* ── THEME PILLS ── */
+.theme-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.pill {
+  display: flex; align-items: center; gap: 7px;
+  padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border);
+  background: var(--surface); font-size: 13px; font-weight: 500; color: var(--muted);
+  cursor: pointer; transition: all .15s;
+}
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+.pill:hover { border-color: var(--accent); color: var(--text); }
+.pill.active { background: #EEF0FF; border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 18px;
+  display: flex; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 140px; }
+.filter-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.filter-select {
+  appearance: none; border: 1.5px solid var(--border); border-radius: 8px;
+  padding: 7px 30px 7px 11px; font-family: 'Onest', sans-serif;
+  font-size: 13px; color: var(--text); background: var(--bg)
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238A90A8' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")
+  no-repeat right 10px center; cursor: pointer;
+  transition: border-color .15s;
+}
+.filter-select:focus { outline: none; border-color: var(--accent); }
+
+.order-toggle { display: flex; gap: 0; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+.order-btn {
+  padding: 7px 14px; font-family: 'Onest', sans-serif;
+  font-size: 12.5px; font-weight: 500; color: var(--muted); background: var(--bg);
+  border: none; cursor: pointer; transition: background .12s, color .12s; line-height: 1;
+  display: flex; align-items: center; gap: 5px;
+}
+.order-btn.active { background: var(--accent); color: #fff; }
+.order-btn:not(.active):hover { background: #ECEDF5; color: var(--text); }
+
+.filter-divider { width: 1px; background: var(--border); align-self: stretch; }
+
+/* ── TASK LIST ── */
+.task-list { display: flex; flex-direction: column; gap: 10px; }
+
+.task-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  display: flex; align-items: stretch; overflow: hidden;
+  cursor: pointer; transition: box-shadow .15s, border-color .15s;
+}
+.task-card:hover { border-color: #D0D3E8; box-shadow: 0 3px 12px rgba(108,99,255,.08); }
+
+.task-stripe { width: 4px; flex-shrink: 0; }
+.task-stripe.work   { background: var(--c-work); }
+.task-stripe.health { background: var(--c-health); }
+.task-stripe.study  { background: var(--c-study); }
+.task-stripe.home   { background: var(--c-home); }
+.task-stripe.none   { background: var(--border); }
+
+.task-body { flex: 1; padding: 14px 16px; display: flex; align-items: center; gap: 16px; }
+.task-main { flex: 1; min-width: 0; }
+.task-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.task-desc { font-size: 12.5px; color: var(--muted); }
+
+.task-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+}
+.badge-date   { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.badge-work   { background: rgba(59,130,246,.1);  color: var(--c-work); }
+.badge-health { background: rgba(0,201,167,.1);   color: var(--c-health); }
+.badge-study  { background: rgba(155,89,182,.1);  color: var(--c-study); }
+.badge-home   { background: rgba(249,115,22,.1);  color: var(--c-home); }
+
+/* priority dot */
+.priority {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+}
+.priority-low    { background: rgba(138,144,168,.12); color: var(--muted); }
+.priority-medium { background: rgba(255,179,71,.15);  color: #C87E00; }
+.priority-high   { background: rgba(255,107,107,.13); color: #D94040; }
+
+.task-actions { display: flex; align-items: center; gap: 6px; padding-right: 14px; }
+
+/* ── EMPTY ── */
+.empty {
+  text-align: center; padding: 64px 20px;
+  background: var(--surface); border: 1.5px dashed var(--border); border-radius: 14px;
+}
+.empty i { font-size: 36px; color: var(--border); margin-bottom: 14px; display: block; }
+.empty h3 { font-size: 15px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+.empty p  { font-size: 13px; color: var(--muted); margin-bottom: 20px; }
+
+/* ── PAGINATION ── */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 24px; }
+.page-btn {
+  width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid var(--border);
+  background: var(--surface); color: var(--text); font-family: 'Onest', sans-serif;
+  font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .12s;
+}
+.page-btn:hover { border-color: var(--accent); color: var(--accent); }
+.page-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.page-btn.arrow { color: var(--muted); }
+.page-btn.arrow:hover { color: var(--accent); border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-dot"><i class="fa-solid fa-chart-line"></i></div>
+    HabitFlow
+  </a>
+  <div class="nav-links">
+    <a href="#" class="nav-link active"><i class="fa-regular fa-circle-check"></i> Задачи</a>
+    <a href="#" class="nav-link"><i class="fa-solid fa-arrow-trend-up"></i> Привычки</a>
+    <a href="#" class="nav-link"><i class="fa-solid fa-chart-bar"></i> Статистика</a>
+  </div>
+  <div class="nav-user">
+    <div class="nav-avatar">Р</div>
+    <span>ruslan@example.com</span>
+    <i class="fa-solid fa-chevron-down" style="font-size:10px;color:rgba(255,255,255,.4)"></i>
+  </div>
+</nav>
+
+<div class="page">
+
+  <!-- TOP -->
+  <div class="page-top">
+    <div class="page-title">Задачи</div>
+    <a href="#" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Добавить задачу</a>
+  </div>
+
+  <!-- THEME PILLS -->
+  <div class="theme-pills">
+    <div class="pill active"><div class="dot" style="background:var(--accent)"></div> Все темы</div>
+    <div class="pill"><div class="dot" style="background:var(--c-work)"></div> Работа</div>
+    <div class="pill"><div class="dot" style="background:var(--c-health)"></div> Здоровье</div>
+    <div class="pill"><div class="dot" style="background:var(--c-study)"></div> Учёба</div>
+    <div class="pill"><div class="dot" style="background:var(--c-home)"></div> Дом</div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="filter-label">Статус</div>
+      <select class="filter-select">
+        <option>Активные</option>
+        <option>Выполненные</option>
+        <option>Все</option>
+      </select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <div class="filter-label">Сортировка</div>
+      <select class="filter-select">
+        <option>По дате создания</option>
+        <option>По приоритету</option>
+        <option>По названию</option>
+      </select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group" style="flex:none">
+      <div class="filter-label">Порядок</div>
+      <div class="order-toggle">
+        <button class="order-btn"><i class="fa-solid fa-arrow-up-wide-short"></i> Возрастание</button>
+        <button class="order-btn active"><i class="fa-solid fa-arrow-down-wide-short"></i> Убывание</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASK LIST -->
+  <div class="task-list">
+
+    <div class="task-card">
+      <div class="task-stripe health"></div>
+      <div class="task-body">
+        <div class="task-main">
+          <div class="task-name">Прогулка 30 минут</div>
+          <div class="task-desc">После обеда, без телефона</div>
+        </div>
+        <div class="task-meta">
+          <span class="badge badge-date"><i class="fa-regular fa-calendar"></i> 21.03.2026</span>
+          <span class="badge badge-health">Здоровье</span>
+          <span class="priority priority-low">Низкий</span>
+        </div>
+      </div>
+      <div class="task-actions">
+        <button class="btn-ghost-sm"><i class="fa-regular fa-pen-to-square"></i></button>
+        <button class="btn-danger-sm"><i class="fa-regular fa-trash-can"></i></button>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-stripe work"></div>
+      <div class="task-body">
+        <div class="task-main">
+          <div class="task-name">Code review отчёта</div>
+          <div class="task-desc">Проверить PR по статистике и edge cases</div>
+        </div>
+        <div class="task-meta">
+          <span class="badge badge-date"><i class="fa-regular fa-calendar"></i> 21.03.2026</span>
+          <span class="badge badge-work">Работа</span>
+          <span class="priority priority-medium">Средний</span>
+        </div>
+      </div>
+      <div class="task-actions">
+        <button class="btn-ghost-sm"><i class="fa-regular fa-pen-to-square"></i></button>
+        <button class="btn-danger-sm"><i class="fa-regular fa-trash-can"></i></button>
+      </div>
+    </div>
+
+    <div class="task-card">
+      <div class="task-stripe work"></div>
+      <div class="task-body">
+        <div class="task-main">
+          <div class="task-name">Спланировать спринт</div>
+          <div class="task-desc">Разбить эпики, оценить риски, согласовать с командой</div>
+        </div>
+        <div class="task-meta">
+          <span class="badge badge-date"><i class="fa-regular fa-calendar"></i> 21.03.2026</span>
+          <span class="badge badge-work">Работа</span>
+          <span class="priority priority-high">Высокий</span>
+        </div>
+      </div>
+      <div class="task-actions">
+        <button class="btn-ghost-sm"><i class="fa-regular fa-pen-to-square"></i></button>
+        <button class="btn-danger-sm"><i class="fa-regular fa-trash-can"></i></button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PAGINATION -->
+  <div class="pagination">
+    <button class="page-btn arrow"><i class="fa-solid fa-chevron-left"></i></button>
+    <button class="page-btn active">1</button>
+    <button class="page-btn">2</button>
+    <button class="page-btn">3</button>
+    <button class="page-btn arrow"><i class="fa-solid fa-chevron-right"></i></button>
+  </div>
+
+</div>
+
+<script>
+// order toggle
+document.querySelectorAll('.order-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.order-toggle').querySelectorAll('.order-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+// theme pills
+document.querySelectorAll('.pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

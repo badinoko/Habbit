@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HabitFlow — Привычки</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #1A1F36; --accent: #6C63FF; --accent2: #8B84FF;
+  --mint: #00C9A7; --danger: #FF6B6B; --warn: #FFB347;
+  --bg: #F4F5FA; --surface: #FFFFFF; --border: #E8EAF0;
+  --text: #1A1F36; --muted: #8A90A8; --nav-h: 58px;
+  --c-work: #3B82F6; --c-health: #00C9A7; --c-study: #9B59B6; --c-home: #F97316;
+}
+body { font-family: 'Onest', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+nav {
+  position: sticky; top: 0; z-index: 100; background: var(--navy);
+  height: var(--nav-h); display: flex; align-items: center; padding: 0 28px; gap: 32px;
+}
+.nav-logo { font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -.2px; display: flex; align-items: center; gap: 9px; text-decoration: none; }
+.nav-logo-dot { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--mint)); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; }
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-link { color: rgba(255,255,255,.55); font-size: 13.5px; font-weight: 500; text-decoration: none; padding: 6px 13px; border-radius: 7px; transition: color .15s, background .15s; display: flex; align-items: center; gap: 6px; }
+.nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+.nav-link.active { color: #fff; background: rgba(108,99,255,.35); }
+.nav-user { display: flex; align-items: center; gap: 9px; color: rgba(255,255,255,.75); font-size: 13px; cursor: pointer; padding: 6px 10px; border-radius: 8px; transition: background .15s; }
+.nav-user:hover { background: rgba(255,255,255,.08); }
+.nav-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; }
+
+.page { max-width: 900px; margin: 0 auto; padding: 28px 24px 48px; }
+.page-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.page-title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 16px; border-radius: 9px; font-family: 'Onest', sans-serif; font-size: 13px; font-weight: 600; border: none; cursor: pointer; text-decoration: none; transition: opacity .15s; white-space: nowrap; line-height: 1; }
+.btn:hover { opacity: .85; }
+.btn-primary { background: linear-gradient(135deg, var(--accent), #8B5CF6); color: #fff; }
+.btn-success { background: linear-gradient(135deg, var(--mint), #00E5C5); color: #fff; }
+.btn-ghost-sm { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 11px; border-radius: 7px; font-family: 'Onest', sans-serif; font-size: 12px; font-weight: 500; border: 1.5px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: background .12s, color .12s; line-height: 1; }
+.btn-ghost-sm:hover { background: var(--bg); color: var(--text); }
+.btn-danger-sm { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 11px; border-radius: 7px; font-family: 'Onest', sans-serif; font-size: 12px; font-weight: 500; border: 1.5px solid rgba(255,107,107,.25); background: rgba(255,107,107,.07); color: var(--danger); cursor: pointer; transition: background .12s; line-height: 1; }
+.btn-danger-sm:hover { background: rgba(255,107,107,.15); }
+.btn-muted-sm { display: inline-flex; align-items: center; justify-content: center; gap: 5px; padding: 6px 11px; border-radius: 7px; font-family: 'Onest', sans-serif; font-size: 12px; font-weight: 500; border: 1.5px solid var(--border); background: var(--bg); color: var(--muted); cursor: default; line-height: 1; }
+
+.theme-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+.pill { display: flex; align-items: center; gap: 7px; padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--surface); font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; transition: all .15s; }
+.pill .dot { width: 8px; height: 8px; border-radius: 50%; }
+.pill:hover { border-color: var(--accent); color: var(--text); }
+.pill.active { background: #EEF0FF; border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+.filter-bar { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.filter-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 130px; }
+.filter-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+.filter-select { appearance: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 7px 30px 7px 11px; font-family: 'Onest', sans-serif; font-size: 13px; color: var(--text); background: var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238A90A8' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center; cursor: pointer; transition: border-color .15s; }
+.filter-select:focus { outline: none; border-color: var(--accent); }
+.order-toggle { display: flex; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+.order-btn { padding: 7px 13px; font-family: 'Onest', sans-serif; font-size: 12.5px; font-weight: 500; color: var(--muted); background: var(--bg); border: none; cursor: pointer; transition: background .12s, color .12s; line-height: 1; display: flex; align-items: center; gap: 5px; }
+.order-btn.active { background: var(--accent); color: #fff; }
+.order-btn:not(.active):hover { background: #ECEDF5; color: var(--text); }
+.filter-divider { width: 1px; background: var(--border); align-self: stretch; }
+
+/* habit cards */
+.habit-list { display: flex; flex-direction: column; gap: 12px; }
+
+.habit-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  overflow: hidden; transition: box-shadow .15s, border-color .15s;
+}
+.habit-card:hover { border-color: #D0D3E8; box-shadow: 0 3px 14px rgba(108,99,255,.07); }
+
+.habit-card-top { display: flex; align-items: stretch; }
+.habit-accent-bar { width: 4px; flex-shrink: 0; }
+.habit-accent-bar.work   { background: var(--c-work); }
+.habit-accent-bar.health { background: var(--c-health); }
+.habit-accent-bar.none   { background: var(--border); }
+
+.habit-card-body { flex: 1; padding: 15px 18px 14px; }
+
+.habit-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; }
+.habit-name-row { display: flex; align-items: center; gap: 10px; }
+.habit-name { font-size: 14.5px; font-weight: 700; color: var(--text); }
+
+.streak-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.streak-badge i { color: var(--warn); font-size: 11px; }
+.streak-badge.alive { color: var(--warn); }
+
+.habit-desc { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
+
+.habit-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
+.tag-work    { background: rgba(59,130,246,.1);  color: var(--c-work); }
+.tag-health  { background: rgba(0,201,167,.1);   color: var(--c-health); }
+.tag-daily   { background: rgba(108,99,255,.1);  color: var(--accent); }
+.tag-weekly  { background: rgba(255,179,71,.12); color: #C87E00; }
+.tag-period  { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+
+.habit-progress-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.habit-progress-track { flex: 1; height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+.habit-progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--mint), #00E5C5); }
+.habit-progress-pct { font-size: 12px; font-weight: 600; color: var(--muted); min-width: 36px; text-align: right; }
+
+.habit-actions { display: flex; align-items: center; gap: 8px; }
+.habit-actions .spacer { flex: 1; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo"><div class="nav-logo-dot"><i class="fa-solid fa-chart-line"></i></div>HabitFlow</a>
+  <div class="nav-links">
+    <a href="#" class="nav-link"><i class="fa-regular fa-circle-check"></i> Задачи</a>
+    <a href="#" class="nav-link active"><i class="fa-solid fa-arrow-trend-up"></i> Привычки</a>
+    <a href="#" class="nav-link"><i class="fa-solid fa-chart-bar"></i> Статистика</a>
+  </div>
+  <div class="nav-user">
+    <div class="nav-avatar">Р</div>
+    <span>ruslan@example.com</span>
+    <i class="fa-solid fa-chevron-down" style="font-size:10px;color:rgba(255,255,255,.4)"></i>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="page-top">
+    <div class="page-title">Привычки</div>
+    <a href="#" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Добавить привычку</a>
+  </div>
+
+  <div class="theme-pills">
+    <div class="pill active"><div class="dot" style="background:var(--accent)"></div> Все темы</div>
+    <div class="pill"><div class="dot" style="background:var(--c-work)"></div> Работа</div>
+    <div class="pill"><div class="dot" style="background:var(--c-health)"></div> Здоровье</div>
+    <div class="pill"><div class="dot" style="background:var(--c-study)"></div> Учёба</div>
+    <div class="pill"><div class="dot" style="background:var(--c-home)"></div> Дом</div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="filter-group">
+      <div class="filter-label">Статус</div>
+      <select class="filter-select"><option>Активные</option><option>Архивные</option><option>Все</option></select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <div class="filter-label">Периодичность</div>
+      <select class="filter-select"><option>Все</option><option>Ежедневно</option><option>Дни недели</option><option>Ежемесячно</option></select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <div class="filter-label">Сортировка</div>
+      <select class="filter-select"><option>По дате создания</option><option>По серии</option><option>По названию</option></select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group" style="flex:none">
+      <div class="filter-label">Порядок</div>
+      <div class="order-toggle">
+        <button class="order-btn"><i class="fa-solid fa-arrow-up-wide-short"></i> Возрастание</button>
+        <button class="order-btn active"><i class="fa-solid fa-arrow-down-wide-short"></i> Убывание</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="habit-list">
+
+    <!-- not today -->
+    <div class="habit-card">
+      <div class="habit-card-top">
+        <div class="habit-accent-bar work"></div>
+        <div class="habit-card-body">
+          <div class="habit-header">
+            <div>
+              <div class="habit-name-row">
+                <div class="habit-name">Техдолг по пятницам</div>
+                <div class="streak-badge"><i class="fa-solid fa-fire-flame-curved"></i> 0 дн.</div>
+              </div>
+              <div class="habit-desc">Мелкий рефакторинг и чистка зависимостей</div>
+            </div>
+          </div>
+          <div class="habit-tags">
+            <span class="tag tag-work">Работа</span>
+            <span class="tag tag-weekly">Пн, Вт, Ср, Чт, Пт</span>
+            <span class="tag tag-period"><i class="fa-regular fa-calendar"></i> 03.03 — 05.05.2026</span>
+          </div>
+          <div class="habit-progress-row">
+            <div class="habit-progress-track"><div class="habit-progress-fill" style="width:0%"></div></div>
+            <div class="habit-progress-pct">0%</div>
+          </div>
+          <div class="habit-actions">
+            <button class="btn-ghost-sm"><i class="fa-regular fa-pen-to-square"></i> Изменить</button>
+            <span class="spacer"></span>
+            <button class="btn-muted-sm"><i class="fa-regular fa-clock"></i> Не на сегодня</button>
+            <button class="btn-danger-sm"><i class="fa-regular fa-trash-can"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- done today -->
+    <div class="habit-card">
+      <div class="habit-card-top">
+        <div class="habit-accent-bar none"></div>
+        <div class="habit-card-body">
+          <div class="habit-header">
+            <div>
+              <div class="habit-name-row">
+                <div class="habit-name">Медитация</div>
+                <div class="streak-badge"><i class="fa-solid fa-fire-flame-curved"></i> 0 дн.</div>
+              </div>
+              <div class="habit-desc">Дыхание 10 минут</div>
+            </div>
+          </div>
+          <div class="habit-tags">
+            <span class="tag tag-daily">Ежедневно</span>
+            <span class="tag tag-period"><i class="fa-regular fa-calendar"></i> 03.03 — 05.05.2026</span>
+          </div>
+          <div class="habit-progress-row">
+            <div class="habit-progress-track"><div class="habit-progress-fill" style="width:0%"></div></div>
+            <div class="habit-progress-pct">0%</div>
+          </div>
+          <div class="habit-actions">
+            <button class="btn-ghost-sm"><i class="fa-regular fa-pen-to-square"></i> Изменить</button>
+            <span class="spacer"></span>
+            <button class="btn btn-success" style="font-size:12.5px;padding:7px 16px"><i class="fa-solid fa-check"></i> Сделано сегодня</button>
+            <button class="btn-danger-sm"><i class="fa-regular fa-trash-can"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- done today with health theme -->
+    <div class="habit-card">
+      <div class="habit-card-top">
+        <div class="habit-accent-bar health"></div>
+        <div class="habit-card-body">
+          <div class="habit-header">
+            <div>
+              <div class="habit-name-row">
+                <div class="habit-name">Утренняя зарядка</div>
+                <div class="streak-badge alive"><i class="fa-solid fa-fire-flame-curved"></i> 5 дн.</div>
+              </div>
+              <div class="habit-desc">10 минут разминки до завтрака</div>
+            </div>
+          </div>
+          <div class="habit-tags">
+            <span class="tag tag-health">Здоровье</span>
+            <span class="tag tag-daily">Ежедневно</span>
+            <span class="tag tag-period"><i class="fa-regular fa-calendar"></i> 03.03 — 05.05.2026</span>
+          </div>
+          <div class="habit-progress-row">
+            <div class="habit-progress-track"><div class="habit-progress-fill" style="width:62%"></div></div>
+            <div class="habit-progress-pct" style="color:var(--mint)">62%</div>
+          </div>
+          <div class="habit-actions">
+            <button class="btn-ghost-sm"><i class="fa-regular fa-pen-to-square"></i> Изменить</button>
+            <span class="spacer"></span>
+            <button class="btn btn-success" style="font-size:12.5px;padding:7px 16px"><i class="fa-solid fa-check"></i> Сделано сегодня</button>
+            <button class="btn-danger-sm"><i class="fa-regular fa-trash-can"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.order-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.closest('.order-toggle').querySelectorAll('.order-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+document.querySelectorAll('.pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>

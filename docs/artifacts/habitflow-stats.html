@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HabitFlow — Статистика</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #1A1F36; --accent: #6C63FF; --accent2: #8B84FF;
+  --mint: #00C9A7; --danger: #FF6B6B; --warn: #FFB347;
+  --bg: #F4F5FA; --surface: #FFFFFF; --border: #E8EAF0;
+  --text: #1A1F36; --muted: #8A90A8; --nav-h: 58px;
+  --c-work: #3B82F6; --c-health: #00C9A7; --c-study: #9B59B6; --c-home: #F97316;
+}
+body { font-family: 'Onest', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+nav { position: sticky; top: 0; z-index: 100; background: var(--navy); height: var(--nav-h); display: flex; align-items: center; padding: 0 28px; gap: 32px; }
+.nav-logo { font-family: 'Unbounded', sans-serif; font-size: 14px; font-weight: 700; color: #fff; letter-spacing: -.2px; display: flex; align-items: center; gap: 9px; text-decoration: none; }
+.nav-logo-dot { width: 28px; height: 28px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--mint)); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #fff; }
+.nav-links { display: flex; gap: 4px; flex: 1; }
+.nav-link { color: rgba(255,255,255,.55); font-size: 13.5px; font-weight: 500; text-decoration: none; padding: 6px 13px; border-radius: 7px; transition: color .15s, background .15s; display: flex; align-items: center; gap: 6px; }
+.nav-link:hover { color: #fff; background: rgba(255,255,255,.08); }
+.nav-link.active { color: #fff; background: rgba(108,99,255,.35); }
+.nav-user { display: flex; align-items: center; gap: 9px; color: rgba(255,255,255,.75); font-size: 13px; cursor: pointer; padding: 6px 10px; border-radius: 8px; }
+.nav-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #fff; }
+
+.page { max-width: 1100px; margin: 0 auto; padding: 28px 24px 48px; }
+
+/* period toggle */
+.stats-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+.page-title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); }
+.period-toggle { display: flex; background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+.period-btn { padding: 7px 18px; font-family: 'Onest', sans-serif; font-size: 13px; font-weight: 500; color: var(--muted); background: transparent; border: none; cursor: pointer; transition: all .15s; }
+.period-btn.active { background: var(--accent); color: #fff; }
+.period-btn:not(.active):hover { background: var(--bg); color: var(--text); }
+
+/* KPI grid */
+.kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 16px 18px; }
+.kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 10px; }
+.kpi-val { font-family: 'Unbounded', sans-serif; font-size: 26px; font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 6px; }
+.kpi-val.accent { color: var(--accent); }
+.kpi-val.mint   { color: var(--mint); }
+.kpi-val.warn   { color: var(--warn); }
+.kpi-desc { font-size: 11.5px; color: var(--muted); line-height: 1.4; }
+
+/* sections */
+.section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; margin-bottom: 16px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.section-title { font-size: 15px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; }
+.section-title i { color: var(--accent); }
+.section-period { font-size: 12px; font-weight: 500; color: var(--muted); background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+
+/* pulse block */
+.pulse-block { background: linear-gradient(135deg, var(--navy) 0%, #2D2B6E 100%); border-radius: 12px; padding: 20px; color: #fff; }
+.pulse-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.5); margin-bottom: 6px; }
+.pulse-pct { font-family: 'Unbounded', sans-serif; font-size: 36px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+.pulse-sub { font-size: 12.5px; color: rgba(255,255,255,.55); margin-bottom: 14px; }
+.pulse-track { height: 6px; background: rgba(255,255,255,.15); border-radius: 3px; overflow: hidden; }
+.pulse-fill  { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent2), var(--mint)); }
+.pulse-mini { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 14px; }
+.pulse-mini-item { background: rgba(255,255,255,.08); border-radius: 8px; padding: 8px 10px; text-align: center; }
+.pulse-mini-val { font-size: 18px; font-weight: 700; color: #fff; }
+.pulse-mini-lbl { font-size: 10.5px; color: rgba(255,255,255,.45); margin-top: 2px; }
+
+/* stats table */
+.stat-table { display: flex; flex-direction: column; gap: 8px; }
+.stat-row2 { display: flex; align-items: center; justify-content: space-between; font-size: 13px; padding: 2px 0; }
+.stat-row2-label { color: var(--muted); }
+.stat-row2-val { font-weight: 600; color: var(--text); }
+
+/* bar rows */
+.bar-list { display: flex; flex-direction: column; gap: 10px; }
+.bar-item { display: flex; flex-direction: column; gap: 5px; }
+.bar-item-top { display: flex; justify-content: space-between; font-size: 12.5px; }
+.bar-item-label { font-weight: 500; color: var(--text); }
+.bar-item-val { font-weight: 600; color: var(--muted); }
+.bar-track { height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; }
+.bar-accent { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.bar-mint   { background: linear-gradient(90deg, var(--mint), #00E5C5); }
+.bar-warn   { background: linear-gradient(90deg, var(--warn), #FFC96A); }
+
+/* focus block */
+.focus-block { background: linear-gradient(135deg, #00A98C 0%, #00C9A7 100%); border-radius: 12px; padding: 20px; color: #fff; }
+.focus-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.6); margin-bottom: 6px; }
+.focus-pct { font-family: 'Unbounded', sans-serif; font-size: 36px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+.focus-sub { font-size: 12.5px; color: rgba(255,255,255,.65); margin-bottom: 14px; }
+.focus-track { height: 6px; background: rgba(255,255,255,.25); border-radius: 3px; overflow: hidden; }
+.focus-fill  { height: 100%; border-radius: 3px; background: rgba(255,255,255,.7); }
+.focus-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.focus-mini { background: rgba(255,255,255,.15); border-radius: 8px; padding: 8px 10px; }
+.focus-mini-val { font-size: 16px; font-weight: 700; color: #fff; }
+.focus-mini-lbl { font-size: 10.5px; color: rgba(255,255,255,.55); margin-top: 2px; }
+
+/* daily trend dots */
+.trend-grid { display: flex; flex-wrap: wrap; gap: 4px; }
+.trend-dot { width: 12px; height: 12px; border-radius: 3px; background: var(--bg); border: 1px solid var(--border); }
+.trend-dot.done { background: var(--mint); border-color: var(--mint); }
+.trend-dot.partial { background: rgba(0,201,167,.35); border-color: var(--mint); }
+
+/* insight cards */
+.insight-list { display: flex; flex-direction: column; gap: 10px; }
+.insight-card { display: flex; align-items: flex-start; gap: 12px; padding: 13px 15px; background: var(--bg); border-radius: 10px; border: 1px solid var(--border); }
+.insight-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.insight-icon.warn { background: rgba(255,179,71,.15); color: var(--warn); }
+.insight-icon.mint { background: rgba(0,201,167,.12); color: var(--mint); }
+.insight-body { flex: 1; }
+.insight-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.insight-desc { font-size: 12px; color: var(--muted); }
+
+/* themes section */
+.theme-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.theme-stat-card { border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; }
+.theme-stat-name { display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.theme-dot { width: 9px; height: 9px; border-radius: 50%; }
+.theme-counts { display: flex; gap: 10px; }
+.theme-count { font-size: 11.5px; color: var(--muted); }
+.theme-count span { font-weight: 600; color: var(--text); }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo"><div class="nav-logo-dot"><i class="fa-solid fa-chart-line"></i></div>HabitFlow</a>
+  <div class="nav-links">
+    <a href="#" class="nav-link"><i class="fa-regular fa-circle-check"></i> Задачи</a>
+    <a href="#" class="nav-link"><i class="fa-solid fa-arrow-trend-up"></i> Привычки</a>
+    <a href="#" class="nav-link active"><i class="fa-solid fa-chart-bar"></i> Статистика</a>
+  </div>
+  <div class="nav-user">
+    <div class="nav-avatar">Р</div>
+    <span>ruslan@example.com</span>
+    <i class="fa-solid fa-chevron-down" style="font-size:10px;color:rgba(255,255,255,.4)"></i>
+  </div>
+</nav>
+
+<div class="page">
+
+  <div class="stats-topbar">
+    <div class="page-title">Статистика</div>
+    <div class="period-toggle">
+      <button class="period-btn">7 дней</button>
+      <button class="period-btn active">30 дней</button>
+      <button class="period-btn">90 дней</button>
+      <button class="period-btn">Всё время</button>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label">Активных задач</div>
+      <div class="kpi-val accent">3</div>
+      <div class="kpi-desc">Текущий статус пользователя</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Выполненных задач</div>
+      <div class="kpi-val">2</div>
+      <div class="kpi-desc">За выбранный период</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Всего привычек</div>
+      <div class="kpi-val">3</div>
+      <div class="kpi-desc">Включая архивные</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Активных привычек</div>
+      <div class="kpi-val mint">3</div>
+      <div class="kpi-desc">Только актуальные сегодня</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">На сегодня</div>
+      <div class="kpi-val warn">2</div>
+      <div class="kpi-desc">Привычек запланировано</div>
+    </div>
+  </div>
+
+  <!-- TASKS SECTION -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><i class="fa-regular fa-circle-check"></i> Задачи</div>
+      <span class="section-period">30 дней</span>
+    </div>
+    <div class="two-col">
+      <div class="pulse-block">
+        <div class="pulse-label">Пульс задач</div>
+        <div class="pulse-pct">40%</div>
+        <div class="pulse-sub">Закрыто 2 из 5 задач</div>
+        <div class="pulse-track"><div class="pulse-fill" style="width:40%"></div></div>
+        <div class="pulse-mini">
+          <div class="pulse-mini-item"><div class="pulse-mini-val">3</div><div class="pulse-mini-lbl">Активные</div></div>
+          <div class="pulse-mini-item"><div class="pulse-mini-val">5</div><div class="pulse-mini-lbl">Создано</div></div>
+          <div class="pulse-mini-item"><div class="pulse-mini-val">2</div><div class="pulse-mini-lbl">Закрыто</div></div>
+        </div>
+      </div>
+      <div>
+        <div class="stat-table" style="margin-bottom:20px">
+          <div class="stat-row2"><span class="stat-row2-label">Всего</span><span class="stat-row2-val">5</span></div>
+          <div class="stat-row2"><span class="stat-row2-label">Активные</span><span class="stat-row2-val">3</span></div>
+          <div class="stat-row2"><span class="stat-row2-label">Выполненные</span><span class="stat-row2-val">2</span></div>
+          <div class="stat-row2"><span class="stat-row2-label">Completion rate</span><span class="stat-row2-val">40%</span></div>
+          <div class="stat-row2"><span class="stat-row2-label">Создано за 30 дней</span><span class="stat-row2-val">5</span></div>
+          <div class="stat-row2"><span class="stat-row2-label">Завершено за 30 дней</span><span class="stat-row2-val">2</span></div>
+        </div>
+        <div class="two-col" style="gap:14px">
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px">По приоритетам</div>
+            <div class="bar-list">
+              <div class="bar-item"><div class="bar-item-top"><span class="bar-item-label">Низкий</span><span class="bar-item-val">1</span></div><div class="bar-track"><div class="bar-fill bar-accent" style="width:20%"></div></div></div>
+              <div class="bar-item"><div class="bar-item-top"><span class="bar-item-label">Средний</span><span class="bar-item-val">2</span></div><div class="bar-track"><div class="bar-fill bar-warn" style="width:40%"></div></div></div>
+              <div class="bar-item"><div class="bar-item-top"><span class="bar-item-label">Высокий</span><span class="bar-item-val">2</span></div><div class="bar-track"><div class="bar-fill bar-mint" style="width:40%"></div></div></div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px">По темам</div>
+            <div class="bar-list">
+              <div class="bar-item"><div class="bar-item-top"><span class="bar-item-label">Работа</span><span class="bar-item-val">2</span></div><div class="bar-track"><div class="bar-fill bar-accent" style="width:40%"></div></div></div>
+              <div class="bar-item"><div class="bar-item-top"><span class="bar-item-label">Учёба</span><span class="bar-item-val">2</span></div><div class="bar-track"><div class="bar-fill bar-accent" style="width:40%"></div></div></div>
+              <div class="bar-item"><div class="bar-item-top"><span class="bar-item-label">Здоровье</span><span class="bar-item-val">1</span></div><div class="bar-track"><div class="bar-fill bar-mint" style="width:20%"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HABITS SECTION -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><i class="fa-solid fa-arrow-trend-up"></i> Привычки</div>
+      <span class="section-period">30 дней</span>
+    </div>
+    <div class="two-col" style="margin-bottom:20px">
+      <div class="focus-block">
+        <div class="focus-label">Фокус периода</div>
+        <div class="focus-pct">0%</div>
+        <div class="focus-sub">Осталось закрыть 2 привычки из 2</div>
+        <div class="focus-track"><div class="focus-fill" style="width:0%"></div></div>
+        <div class="focus-grid">
+          <div class="focus-mini"><div class="focus-mini-val">0%</div><div class="focus-mini-lbl">Сегодня</div></div>
+          <div class="focus-mini"><div class="focus-mini-val">0%</div><div class="focus-mini-lbl">За 30 дней</div></div>
+        </div>
+      </div>
+      <div class="stat-table">
+        <div class="stat-row2"><span class="stat-row2-label">Всего</span><span class="stat-row2-val">3</span></div>
+        <div class="stat-row2"><span class="stat-row2-label">Активные</span><span class="stat-row2-val">3</span></div>
+        <div class="stat-row2"><span class="stat-row2-label">Архивные</span><span class="stat-row2-val">0</span></div>
+        <div class="stat-row2"><span class="stat-row2-label">На сегодня</span><span class="stat-row2-val">2</span></div>
+        <div class="stat-row2"><span class="stat-row2-label">Выполнено сегодня</span><span class="stat-row2-val">0</span></div>
+        <div class="stat-row2"><span class="stat-row2-label">Success rate 7d</span><span class="stat-row2-val">0%</span></div>
+        <div class="stat-row2"><span class="stat-row2-label">Success rate 30d</span><span class="stat-row2-val">0%</span></div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px">По расписанию</div>
+        <div class="bar-list">
+          <div class="bar-item"><div class="bar-item-top"><span class="bar-item-label">Ежедневно</span><span class="bar-item-val">2</span></div><div class="bar-track"><div class="bar-fill bar-mint" style="width:67%"></div></div></div>
+          <div class="bar-item"><div class="bar-item-top"><span class="bar-item-label">Дни недели</span><span class="bar-item-val">1</span></div><div class="bar-track"><div class="bar-fill bar-accent" style="width:33%"></div></div></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px">Daily trend</div>
+        <div class="trend-grid" id="trendGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- THEMES + INSIGHTS -->
+  <div class="two-col">
+    <div class="section" style="margin-bottom:0">
+      <div class="section-header">
+        <div class="section-title"><i class="fa-solid fa-palette"></i> Темы</div>
+        <span class="section-period">Топ-5</span>
+      </div>
+      <div style="background:rgba(108,99,255,.07);border:1px solid rgba(108,99,255,.15);border-radius:10px;padding:14px 16px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--accent);margin-bottom:4px">Самая загруженная тема</div>
+        <div style="font-family:'Unbounded',sans-serif;font-size:17px;font-weight:800;color:var(--text)">Работа</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">2 активных задачи</div>
+      </div>
+      <div class="theme-cards">
+        <div class="theme-stat-card">
+          <div class="theme-stat-name"><div class="theme-dot" style="background:var(--c-study)"></div> Учёба</div>
+          <div class="theme-counts"><span class="theme-count"><span>2</span> задачи</span></div>
+        </div>
+        <div class="theme-stat-card">
+          <div class="theme-stat-name"><div class="theme-dot" style="background:var(--c-work)"></div> Работа</div>
+          <div class="theme-counts"><span class="theme-count"><span>2</span> задачи</span></div>
+        </div>
+        <div class="theme-stat-card">
+          <div class="theme-stat-name"><div class="theme-dot" style="background:var(--c-health)"></div> Здоровье</div>
+          <div class="theme-counts"><span class="theme-count"><span>1</span> задача</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-bottom:0">
+      <div class="section-header">
+        <div class="section-title"><i class="fa-solid fa-lightbulb"></i> Инсайты</div>
+        <span class="section-period">Авто</span>
+      </div>
+      <div class="insight-list">
+        <div class="insight-card">
+          <div class="insight-icon warn"><i class="fa-solid fa-arrow-trend-up"></i></div>
+          <div class="insight-body">
+            <div class="insight-title">Осталось привычек на сегодня</div>
+            <div class="insight-desc">2 из 2 — не выполнено ни одной</div>
+          </div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-icon mint"><i class="fa-solid fa-trophy"></i></div>
+          <div class="insight-body">
+            <div class="insight-title">Самая загруженная тема</div>
+            <div class="insight-desc">Работа: 2 активных задачи</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// period toggle
+document.querySelectorAll('.period-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+// trend dots
+const grid = document.getElementById('trendGrid');
+for (let i = 0; i < 30; i++) {
+  const dot = document.createElement('div');
+  dot.className = 'trend-dot' + (Math.random() > .7 ? ' done' : Math.random() > .6 ? ' partial' : '');
+  grid.appendChild(dot);
+}
+</script>
+</body>
+</html>
