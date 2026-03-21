@@ -14,8 +14,8 @@ Last updated: 2026-03-21.
    - `README.md`
    - `frontend-redesign-contracts.md`
    - `docs/overview.mdc`
-   - `docs/api_contract.mdc`
-   - `docs/session_contract.mdc`
+   - `docs/contracts/api_contract.mdc`
+   - `docs/contracts/session_contract.mdc`
    - `docs/imports/besedka_design_kit_2026-03/README.md`
 5. Code and tests
 
@@ -68,8 +68,8 @@ The goal is to audit, stabilize, redesign, and improve the project without writi
    - `README.md`
    - `frontend-redesign-contracts.md`
    - `docs/overview.mdc`
-   - `docs/api_contract.mdc`
-   - `docs/session_contract.mdc`
+   - `docs/contracts/api_contract.mdc`
+   - `docs/contracts/session_contract.mdc`
    - `docs/imports/besedka_design_kit_2026-03/README.md`
 5. Before implementation, determine which track the request belongs to:
    - bootstrap/git

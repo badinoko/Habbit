@@ -26,3 +26,11 @@
 - Added `docs/theme-system.md` as the SSOT for visual themes and linked it from the main documentation map and overview docs.
 - Verified the redesign with `compileall`, full `tests/api_unit`, `tests/api_unit/test_auth_router_html_unit.py`, `tests/api_unit/test_stats_router_unit.py`, `tests/integration/test_stats.py`, and `tests/integration/test_unauthorized_create_redirects.py` with one caveat: repeated integration runs can temporarily fail on this Windows host when Docker cannot immediately rebind PostgreSQL test port `5433`.
 - No task was marked `DONE`.
+
+## 2026-03-22
+
+- Applied follow-up navbar/auth polish from user feedback: denser navbar controls, larger typography, stable scrollbar gutter handling, and auth overlay behavior that no longer shifts layout.
+- Verified that local HabitFlow infrastructure (`postgres` on `5430`, `redis` on `6370`) can coexist with the user's Besedka stack on this machine.
+- Reorganized `docs/` for handoff: moved contracts into `docs/contracts/`, prompts into `docs/prompts/`, and the architecture audit into `docs/reviews/`, then updated references in repo docs and handoff files.
+- Added `HF-011` as the next redesign-v2 track for later typography/color iteration in a separate session.
+- Prepared the repository for successor handoff with a versioned checkpoint tag plan; no task was marked `DONE`.

@@ -1,6 +1,6 @@
 # Theme System
 
-`docs/theme-system.md` is the SSOT for HabitFlow UI theming.
+`docs/contracts/theme-system.md` is the SSOT for HabitFlow UI theming.
 
 ## Current Contract
 

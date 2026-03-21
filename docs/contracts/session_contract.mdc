@@ -47,7 +47,7 @@ UI session используется для вспомогательного со
 - `selected_theme` обновляется из query-параметра `theme` на страницах со shared template context.
 - Если в UI session сохранена тема, которой больше нет у пользователя, фильтр автоматически очищается.
 - `google_oauth` записывается перед редиректом на Google и удаляется при callback независимо от исхода обработки.
-- Визуальная light/dark тема переключается только на клиенте через `localStorage["habitflow-ui-theme"]` и `html[data-ui-theme]`; источник истины по ней находится в `docs/theme-system.md`.
+- Визуальная light/dark тема переключается только на клиенте через `localStorage["habitflow-ui-theme"]` и `html[data-ui-theme]`; источник истины по ней находится в `docs/contracts/theme-system.md`.
 
 ## 4. Auth session
 

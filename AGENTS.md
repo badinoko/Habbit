@@ -8,8 +8,8 @@ Entry point for assistants in this repository.
    - `README.md`
    - `frontend-redesign-contracts.md`
    - `docs/overview.mdc`
-   - `docs/api_contract.mdc`
-   - `docs/session_contract.mdc`
+   - `docs/contracts/api_contract.mdc`
+   - `docs/contracts/session_contract.mdc`
    - `docs/imports/besedka_design_kit_2026-03/README.md`
 3. Critical laws:
    - `docs/overview.mdc` = product and architecture overview, not a task board.
