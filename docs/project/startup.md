@@ -10,13 +10,21 @@ Updated: 2026-03-21
 - Git bootstrap to personal lab repo: verified
 - Reference snapshot still exists at `C:\Users\user\Projects\HabitFlow-master`
 - The reference snapshot was accidentally initialized as a standalone local git repo in Cursor and should not be treated as the canonical checkout
-- Runtime baseline is live in the canonical checkout: dependencies installed, `postgres` and `redis` started via Docker, migrations applied, app served locally on `http://127.0.0.1:8001`
+- Reproducible runtime baseline was established in the canonical checkout: dependencies installed, `postgres` and `redis` started via Docker, migrations applied, app served locally, `/healthz/ready` returned OK
+- The local HabitFlow runtime was then intentionally stopped because port `8001` conflicts with the user's Besedka stack on this machine
 - Current-state screenshot pack exists at `docs/screenshots/current_state/` with desktop and mobile full-page captures
+
+## Open This Folder
+
+- Open `C:\Users\user\Projects\HabitFlow-git` in Cursor.
+- Do not use `C:\Users\user\Projects\HabitFlow-master` as the active workspace.
+- If Cursor shows hundreds of `untracked` files, the wrong folder is open.
 
 ## Source References
 
 - Original upstream repository: `https://github.com/Qwertyil/HabitFlow.git`
 - Intended personal lab repository: `https://github.com/badinoko/Habbit`
+- External HabitFlow deployment: `https://www.amir-vps.ru/`
 
 ## Read First
 
@@ -43,10 +51,11 @@ Work from the real checkout so the next chat window can:
 
 ## Immediate Next Actions
 
-1. Audit frontend defects against `docs/screenshots/current_state/` and direct browser behavior.
-2. Audit Google OAuth configuration and callback baseline.
-3. Prepare redesign invariants and an external-artifact prompt adapted from the Besedka kit.
-4. Decide when the temporary folders `HabitFlow-master` and `HabitFlow-lab` can be removed.
+1. Open `C:\Users\user\Projects\HabitFlow-git` in Cursor and continue only from that checkout.
+2. Audit frontend defects against `docs/screenshots/current_state/` and direct browser behavior.
+3. Audit Google OAuth configuration and callback baseline.
+4. Prepare redesign invariants and an external-artifact prompt adapted from the Besedka kit.
+5. If local HabitFlow runtime is needed again, use a port other than `8001`.
 
 ## Notes
 
@@ -54,6 +63,7 @@ Work from the real checkout so the next chat window can:
 - The canonical working copy is `C:\Users\user\Projects\HabitFlow-git`.
 - Push to `origin/main` was verified on 2026-03-21.
 - Cursor will still show hundreds of `untracked` files if the IDE is opened on `HabitFlow-master`; that is the wrong workspace, not a broken GitHub link.
+- Avoid `8001` for future local HabitFlow launches on this machine; Besedka already occupies that port through Docker/WSL.
 - Google OAuth is already implemented in code and should be audited as a real feature, not treated as a future stub.
 - Frontend redesign must respect current product scope from `frontend-redesign-contracts.md`.
 - Imported Besedka redesign references live in `docs/imports/besedka_design_kit_2026-03/`.
