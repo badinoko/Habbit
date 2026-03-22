@@ -27,5 +27,5 @@ Screen set:
 - 14 register
 
 Seeded users:
-- desktop capture user: `currentstate.c06ea772a8024903@example.com`
-- mobile capture user: `currentstate.c06ea772a8024903@example.com`
+- desktop capture user: `currentstate.0f5bd5edcbb542ab@example.com`
+- mobile capture user: `currentstate.0f5bd5edcbb542ab@example.com`
