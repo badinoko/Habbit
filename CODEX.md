@@ -4,7 +4,25 @@ Working playbook for Codex in HabitFlow.
 
 Last updated: 2026-03-22.
 
-## 1. Priority Order
+## 1. Role Of This File
+
+This file is an assistant playbook, not a project status board.
+
+Do not use it as the source for:
+
+- active task status;
+- progress history;
+- product architecture decisions;
+- release notes.
+
+Canonical sources:
+
+- `docs/project/overview.md` = the only task-status source
+- `docs/project/progress.md` = append-only work log
+- `docs/overview.mdc` = product and architecture overview
+- `docs/README.md` = docs navigation map
+
+## 2. Priority Order
 
 1. `AGENTS.md`
 2. This file
@@ -18,16 +36,6 @@ Last updated: 2026-03-22.
    - `docs/contracts/session_contract.mdc`
 5. Code and tests
 
-## 2. Repository Intent
-
-This workspace is an independent lab around HabitFlow.
-
-- Original source repository: `https://github.com/Qwertyil/HabitFlow.git`
-- Intended personal lab repository: `https://github.com/badinoko/Habbit`
-- Default collaboration language: Russian
-
-The goal is to audit, stabilize, redesign, and improve the project without writing to the original upstream repository.
-
 ## 3. Hard Invariants
 
 1. No automatic `DONE` status changes without explicit user confirmation.
@@ -37,92 +45,63 @@ The goal is to audit, stabilize, redesign, and improve the project without writi
 5. If work is implemented but not yet user-verified, use `REVIEW`, not `DONE`.
 6. Do not remove or silently rewrite task rows.
 7. Keep product scope aligned with the current backend and `frontend-redesign-contracts.md` unless the user explicitly expands scope.
-8. When `progress.md`, `overview.md`, or another long-lived working doc becomes unwieldy, archive the full snapshot under `docs/archive/` and continue from a lighter active file with cross-links.
+8. If a long-lived working doc becomes unwieldy, archive it under `docs/archive/` instead of silently rewriting history.
 
 ## 4. Git Rules
 
 1. Never push to `Qwertyil/HabitFlow`.
-2. Preferred remote model after bootstrap:
+2. Preferred remote model:
    - `upstream` -> `https://github.com/Qwertyil/HabitFlow.git`
    - `origin` -> `https://github.com/badinoko/Habbit`
 3. Push only on explicit user command.
-4. If `.git` is missing, treat the folder as a plain snapshot:
-   - do not claim branch state,
-   - do not claim sync state,
-   - do not invent remotes,
-   - do record that bootstrap is still pending.
+4. If `.git` is missing, treat the folder as a plain snapshot and report that limitation explicitly.
 
 ## 5. Startup Checklist
 
-1. Check whether `.git` exists.
-2. If it exists, inspect:
-   - `git status --short`
-   - `git branch --show-current`
-   - `git remote -v`
-3. Read:
+1. Confirm this is a real git checkout.
+2. Read:
    - `docs/README.md`
    - `docs/project/startup.md`
    - `docs/project/overview.md`
    - tail of `docs/project/progress.md`
-4. Re-read product and technical context:
+3. Re-read product and technical context:
    - `README.md`
    - `frontend-redesign-contracts.md`
    - `docs/overview.mdc`
    - `docs/contracts/api_contract.mdc`
    - `docs/contracts/session_contract.mdc`
-5. Before implementation, determine which track the request belongs to:
-   - bootstrap/git
-   - runtime and infrastructure
-   - frontend/UI
-   - backend/domain logic
-   - auth/session/Google OAuth
-   - tests/docs
-6. If an operational doc is approaching `1000+` lines, consider whether archive rotation is now part of the task.
+4. Work only from tasks that exist in `docs/project/overview.md`.
 
-## 5.1 Local Runtime Rule
+## 6. Local Runtime Rule
 
 For live browser verification in this repo, treat `http://127.0.0.1:8010` as the intended local HabitFlow URL.
 
-- Before trusting any browser result, check which process owns port `8010`.
+- Before trusting browser output, check which process owns port `8010`.
 - Prefer a long-lived `uvicorn ... --reload` process for local work.
 - `Ctrl+F5` only refreshes browser assets; it does not reload stale Python route/schema code.
-- Frontend changes can appear on an old server process while backend changes still remain stale, so mixed states are possible.
-- If browser UI and backend behavior disagree, restart the real `8010` app process first, then re-test.
-- Use `scripts/run_local_8010.cmd` for a predictable local launch instead of improvising per-session process commands.
+- Frontend changes can appear on an old server process while backend changes remain stale.
+- If browser UI and backend behavior disagree, restart the real `8010` app process first.
+- Use `scripts/run_local_8010.cmd` for a predictable local launch.
 
-## 6. Task Status Vocabulary
+## 7. Task Status Vocabulary
 
-- `BACKLOG` = known but not selected
-- `NEXT` = candidate for the next working session
-- `ACTIVE` = currently in progress
-- `REVIEW` = implemented or prepared, waiting for user validation
-- `BLOCKED` = cannot proceed without user input or external dependency
-- `DONE` = user explicitly confirmed
-
-## 7. Current Focus Areas
-
-1. Convert the local snapshot into a real git workspace connected to personal lab remotes.
-2. Establish a reproducible local baseline:
-   - install dependencies,
-   - start PostgreSQL and Redis,
-   - run migrations,
-   - boot the app,
-   - run tests.
-3. Audit frontend structure and UX issues.
-4. Audit Google OAuth behavior end to end.
-5. Use local HabitFlow artifacts, prompt history, and theme docs as the redesign reference set.
-6. Turn findings into implementation waves with small, testable changes.
+- `BACKLOG`
+- `NEXT`
+- `ACTIVE`
+- `REVIEW`
+- `BLOCKED`
+- `DONE` only after explicit user confirmation
 
 ## 8. Product Guardrails
 
 Keep these assumptions unless the user says otherwise:
 
 - personal app, not a team product;
-- server-rendered web UI, not a SPA rewrite by default;
-- tasks have priorities but no due dates;
-- habits carry recurrence complexity and deserve careful UX;
-- theme filter is a cross-screen navigation pattern;
-- statistics are lightweight summaries, not advanced analytics.
+- server-rendered web UI by default;
+- no invented due dates, reminders, teams, or admin layers;
+- habits carry the main recurrence complexity;
+- theme filtering remains a cross-screen navigation pattern;
+- statistics stay lightweight unless the user explicitly expands scope.
 
 ## 9. Session-End Report
 
@@ -132,14 +111,3 @@ Every final handoff should state:
 2. what was intentionally not marked as done;
 3. what the user should verify next;
 4. whether the repo is a real git checkout or still a snapshot.
-
-## 10. Archive Policy
-
-Use `docs/archive/README.md` as the archive SSOT.
-
-Default rule:
-
-- freeze the old long file as-is;
-- store it in `docs/archive/...` with a date;
-- replace the active file with a readable continuation doc;
-- preserve cross-links between the live doc and the archived snapshot.

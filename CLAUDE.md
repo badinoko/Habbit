@@ -1,291 +1,60 @@
 # CLAUDE.md
 
-Рабочий справочник для Claude в десктопном приложении (Cowork / Artifacts).
+Короткий operational guide для Claude Desktop / Cowork.
 
 Последнее обновление: 2026-03-22.
 
-## 1. Контекст среды
+## Роль файла
 
-Этот файл создан для работы в **Claude Desktop (Cowork mode)** и **Claude Code (CLI)**.
-Параллельно в Cursor IDE работает другой ассистент (Codex), который готовит промпты, скриншоты и контракты для передачи сюда.
+Этот файл не является:
 
-Основные задачи сессий: **визуальный редизайн UI**, имплементация v2 polish wave, аудит безопасности и UX.
+- task-board;
+- продуктовым overview;
+- журналом прогресса;
+- сводкой всех экранов и решений.
 
-## 2. Кто я и где я
+Для этого есть canonical docs:
 
-- Пользователь: Руслан (`badinoko07@gmail.com`)
-- Проект: HabitFlow — персональное веб-приложение для управления темами, задачами и привычками
-- Оригинальный автор: племянник Руслана (`Qwertyil/HabitFlow`)
+- `docs/project/overview.md` — статусы задач;
+- `docs/project/progress.md` — append-only журнал;
+- `docs/overview.mdc` — продукт и архитектура;
+- `docs/README.md` — карта документации.
+
+## Что читать сначала
+
+1. `docs/README.md`
+2. `CODEX.md`
+3. `AGENTS.md`
+4. `frontend-redesign-contracts.md`
+5. `docs/overview.mdc`
+6. `docs/project/overview.md`
+7. `docs/project/progress.md`
+
+## Практические правила
+
 - Каноническая рабочая копия: `C:\Users\user\Projects\HabitFlow-git`
-- Git-состояние: реальный checkout на `main`, `origin = badinoko/Habbit`, `upstream = Qwertyil/HabitFlow`
 - Язык общения: русский
 - Язык UI: русский
+- Не использовать `CLAUDE.md` как источник статусов задач
+- Не дублировать сюда progress notes, release notes или screen inventory
+- При сомнениях по текущему состоянию проекта всегда доверять `docs/project/overview.md` и `docs/project/progress.md`
 
-## 3. Порядок чтения документов
+## Runtime-памятка
 
-1. Этот файл
-2. `docs/README.md` — карта документации и роли файлов
-3. `CODEX.md` — общий playbook (правила статусов, git, инварианты)
-4. `AGENTS.md` — точка входа для всех ассистентов
-5. `frontend-redesign-contracts.md` — **ключевой контракт для редизайна**
-6. `docs/overview.mdc` — продукт и архитектура, не task-board
-7. `docs/project/overview.md` — единственный task-dashboard
-8. `docs/contracts/api_contract.mdc` — HTTP API спецификация
-9. `docs/contracts/session_contract.mdc` — архитектура сессий
-10. `docs/prompts/artifacts-master-prompt.md` — мастер-промпт для вставки во вкладку Artifacts
-11. `docs/prompts/cursor-prompt.md` — reverse prompt для Cursor
-12. `docs/reviews/v2-direction.md` — решения по типографике, навбару и stats IA для v2
-13. `docs/reviews/upstream-proposal-v2-draft.md` — дельта v2 над v1.0 для upstream handoff
-14. `docs/archive/README.md` — политика архивации oversized working docs
+- Локальный URL для живой проверки: `http://127.0.0.1:8010`
+- Перед browser-smoke проверять, что реальный HabitFlow-процесс поднят именно там
+- `Ctrl+F5` обновляет только браузер, но не Python backend
+- Для предсказуемого локального старта использовать `scripts/run_local_8010.cmd`
 
-## 3.1 Runtime-памятка
+## Где искать артефакты
 
-Для живой проверки HabitFlow локальный URL по умолчанию: `http://127.0.0.1:8010`.
+- `docs/screenshots/current_state/` — актуальный screenshot baseline
+- `docs/screenshots/current_state/inventory.md` — перечень UI-state для screenshot coverage
+- `docs/reviews/v2-direction.md` — зафиксированные v2 design decisions
+- `docs/reviews/upstream-proposal-v2-draft.md` — накопительная delta v2 относительно v1.0
 
-- Перед browser-smoke всегда проверять, какой процесс держит `8010`.
-- Опираться на долгоживущий `uvicorn --reload`, а не на случайный старый процесс.
-- `Ctrl+F5` обновляет только браузер; stale Python backend после этого не “оживает”.
-- В HabitFlow возможна смешанная картина: новые шаблоны/CSS/JS уже видны, а backend-контракт всё ещё старый. В таком случае нужен restart app-процесса, а не повторные обновления страницы.
-- Для предсказуемого локального старта использовать `scripts/run_local_8010.cmd`.
+## Для visual work в Artifacts
 
-## 4. Что такое HabitFlow
-
-Персональное веб-приложение для ежедневного планирования:
-
-- **Темы** — цветные категории для группировки задач и привычек
-- **Задачи** — одноразовые дела с приоритетом (low / medium / high), без дедлайнов
-- **Привычки** — повторяющиеся действия с 5 типами расписания и трекингом стриков
-- **Статистика** — сводка по задачам и привычкам за период (7д / 30д / 90д / всё время)
-
-Технически: FastAPI + Jinja2 (server-rendered), PostgreSQL, Redis, SQLAlchemy 2.x async.
-
-## 5. Карта экранов
-
-### Навбар (все страницы)
-- Логотип `HabitFlow` (ведёт на `/`) + иконка chart-line
-- Ссылки: Главная, Задачи, Привычки, Статистика
-- Справа: дропдаун с email пользователя и кнопкой «Выход»
-- Для гостей: ссылка «Войти» вместо дропдауна
-
-### Главная глубина (4 страницы)
-
-| Экран | URL | Описание |
-|-------|-----|----------|
-| Главная (Dashboard) | `/` | Приветствие, 5 последних задач, 4 привычки на сегодня, цитата, сайдбар с темами и статистикой |
-| Задачи | `/tasks/` | Список задач с фильтрами (статус, сортировка), пагинация, кнопка «Добавить задачу» |
-| Привычки | `/habits/` | Список привычек с фильтрами (статус, тип расписания, сортировка), пагинация |
-| Статистика | `/stats` | KPI-карточки, пульс задач, фокус привычек, разбивка по темам, инсайты |
-
-### Вторая глубина (формы)
-
-| Экран | URL | Описание |
-|-------|-----|----------|
-| Создание задачи | `/tasks/new` | Название, описание, выбор темы (radio-сетка), приоритет (3 варианта) |
-| Редактирование задачи | `/tasks/{id}/edit` | Та же форма, предзаполненная |
-| Создание привычки | `/habits/new` | Название, описание, тема, тип расписания + конфиг, период (начало/конец) |
-| Редактирование привычки | `/habits/{id}/edit` | Та же форма, предзаполненная |
-
-### Аутентификация
-
-| Экран | URL | Описание |
-|-------|-----|----------|
-| Вход | `/auth/login` | Email + пароль, опционально Google OAuth |
-| Регистрация | `/auth/register` | Email + пароль (мин. 8 символов) |
-
-### Управление темами
-
-| Экран | URL | Описание |
-|-------|-----|----------|
-| Темы | `/themes/` | Сетка карточек тем с цветами, счётчиками задач/привычек |
-
-### Системные
-
-| Экран | Описание |
-|-------|----------|
-| Сообщение / Ошибка | Универсальная страница с иконкой и текстом |
-
-## 6. Текущая цветовая схема
-
-```
---primary:      #3498db  (синий)
---primary-dark: #2980b9
---secondary:    #2ecc71  (зелёный, успех)
---danger:       #e74c3c  (красный)
---warning:      #f39c12  (оранжевый)
---dark:         #2c3e50  (тёмно-серый, текст)
---light:        #ecf0f1  (светло-серый, фоны)
---gray:         #95a5a6
---gray-light:   #bdc3c7
-```
-
-Приоритеты: high = `#e74c3c`, medium = `#f39c12`, low = `#95a5a6`
-
-## 7. Текущая компонентная система
-
-- **Card** — белый фон, border-radius 12px, тень, 1.5rem padding
-- **Card Header** — flex space-between, заголовок + ссылка/кнопка
-- **Кнопки** — primary (синий градиент), outline (белый с рамкой), danger (красный), link (текстовая)
-- **Формы** — form-group (flex column), form-section (заголовок с иконкой), form-control (стандартный инпут)
-- **Бейджи/Чипы** — тема (цветной фон 20% + рамка 40%), приоритет (иконка + текст), дата (календарь)
-- **Empty State** — иконка + заголовок + описание + CTA-кнопка, пунктирная рамка
-- **Алерты** — error (красный) и success (зелёный) с иконками
-- **Пагинация** — кнопки Prev/Next + номера страниц
-- **Сайдбар** — 300px, sticky, темы (radio-фильтр) + статистика (5 метрик)
-
-Иконки: Font Awesome 6.0.0.
-
-## 8. Локальные материалы редизайна
-
-После v1 handoff в репозитории оставлены только материалы, которые относятся к самому HabitFlow.
-Besedka-импорт удалён (HF-013). Текущая структура:
-
-| Путь | Назначение |
-|------|------------|
-| `docs/artifacts/` | HTML-артефакты экранов |
-| `docs/prompts/artifacts-master-prompt.md` | мастер-промпт для новых визуальных итераций |
-| `docs/prompts/cursor-prompt.md` | reverse prompt для имплементации |
-| `docs/contracts/theme-system.md` | SSOT по темам и дизайн-токенам |
-| `docs/contracts/api_contract.mdc` | HTTP API спецификация |
-| `docs/contracts/session_contract.mdc` | архитектура сессий |
-| `docs/screenshots/current_state/` | baseline-скриншоты для сравнения |
-| `docs/reviews/v2-direction.md` | единый baseline для v2 (типографика, навбар, stats IA) |
-| `docs/reviews/v2-typography-research.md` | исследование шрифтов (Onest, Cormorant Garamond) |
-| `docs/reviews/v2-landing-reference-scan.md` | внешние референсы (Linear, Raycast, Stripe) |
-| `docs/reviews/v2-navbar-and-stats-notes.md` | обратная связь пользователя по навбару и stats |
-| `docs/reviews/upstream-proposal-v2-draft.md` | дельта v2 для upstream handoff |
-| `docs/archive/README.md` | политика архивации длинных working docs |
-
-## 9. Контракт редизайна (краткая выжимка)
-
-Источник: `frontend-redesign-contracts.md`
-
-### Что разрешено
-- Визуальный редизайн всех существующих экранов
-- Адаптивная вёрстка (mobile-first)
-- Темизация (CSS-переменные, light/dark)
-- Улучшение UX-паттернов (empty states, loading, feedback)
-
-### Что запрещено изобретать
-- Дедлайны у задач
-- Подзадачи
-- Напоминания / уведомления
-- Команды и совместная работа
-- Админ-панели
-- Продвинутая аналитика
-- Повторяющиеся задачи (отдельно от привычек)
-
-### Валидационные ограничения
-- Название темы: макс. 24 символа
-- Название задачи/привычки: макс. 46 символов
-- Описание привычки: макс. 200 символов
-- Пароль: 8–256 символов
-- Конец привычки не раньше начала
-- Еженедельные привычки: минимум 1 день
-
-## 10. Инварианты из CODEX.md
-
-1. Статус `DONE` — только после явного подтверждения пользователя
-2. `docs/project/overview.md` — единственный источник статусов задач
-3. `docs/overview.mdc` — продуктово-архитектурный обзор, не task-board
-4. `docs/project/progress.md` — только дополнение (append-only)
-5. Не пушить в `Qwertyil/HabitFlow`
-6. Продуктовый скоуп — только из `frontend-redesign-contracts.md`
-
-## 11. Как работать с артефактами
-
-### Стратегия
-Мы работаем в Claude Desktop (Cowork). Для визуального редизайна используем вкладку **Artifacts** — создаём standalone HTML-файлы, которые отрисовывают каждый экран.
-
-### Формат артефакта
-Каждый экран = один `.html` файл:
-- Встроенный CSS (внутри `<style>`)
-- Встроенный JS (внутри `<script>`)
-- Семантическая разметка
-- Font Awesome через CDN
-- Google Fonts через CDN (если нужно)
-- Адаптивность через media queries
-- Русскоязычный контент
-
-### Именование
-```
-habitflow-home.html
-habitflow-tasks-list.html
-habitflow-tasks-form.html
-habitflow-habits-list.html
-habitflow-habits-form.html
-habitflow-stats.html
-habitflow-login.html
-habitflow-register.html
-habitflow-themes.html
-```
-
-### Данные для артефактов
-Использовать реалистичные моковые данные на русском языке:
-- Темы: «Работа» (#3498db), «Здоровье» (#2ecc71), «Учёба» (#9b59b6), «Дом» (#e67e22)
-- Задачи: «Подготовить отчёт», «Купить продукты», «Записаться к врачу»
-- Привычки: «Утренняя зарядка» (daily), «Чтение книги» (daily), «Бег» (weekly: Пн, Ср, Пт)
-- Пользователь: `ruslan@example.com`
-
-## 12. Передача контекста в Artifacts
-
-Для переноса работы во вкладку Artifacts нужен один большой промпт, который включает:
-
-1. **Роль и контекст** — кто мы, что делаем, для чего
-2. **Карту экранов** — список всех страниц с описанием
-3. **Дизайн-систему** — цвета, типографика, компоненты, отступы
-4. **Контракт** — что можно, что нельзя
-5. **Моковые данные** — темы, задачи, привычки
-6. **Ссылку на текущий экран** — какой именно артефакт рисуем
-
-Формат: один markdown-блок, который можно вставить как сообщение в Artifacts.
-
-## 13. Текущее состояние проекта
-
-v1 редизайн реализован и отгружен. v2 polish wave в процессе.
-
-Актуальный трек задач: **`docs/project/overview.md`** (единственный источник статусов).
-
-### Ключевые активные задачи
-
-| ID | Статус | Описание |
-|----|--------|----------|
-| HF-016 | ACTIVE | Baseline security pass: серверная валидация имён, security headers, deploy-facing hardening notes |
-| HF-017 | ACTIVE | Stats expansion pass: dropdown periods, UX-polish, period-aware aggregations, tabbed screenshot coverage |
-
-### Что уже реализовано в v2
-
-- Типографика: Onest (UI) + Cormorant Garamond (hero display)
-- Навбар: компактные pills, упрощённый user dropdown (только «Выход»)
-- Stats: sticky section-switcher с пятью панелями, compact toolbar
-- Stats ranges: `Неделя / Месяц / Квартал / Всё время`; для `Квартал` в привычках используется недельная динамика, для `Всё время` — месячная
-- Формы: единый pipeline валидации и сабмита, удалён legacy `update.js`
-- Модальные окна: общий confirm-modal вместо native `window.confirm`
-- Overflow: truncation с ellipsis для длинных пользовательских строк
-- Cache-busting для статических ресурсов
-
-### Актуальный screenshot baseline
-
-- Папка: `docs/screenshots/current_state/`
-- Инвентарь: `docs/screenshots/current_state/inventory.md`
-- Набор: `14` состояний на desktop и `14` на mobile
-- `/stats` больше нельзя считать одним экраном для review: отдельными состояниями считаются `overview`, `tasks`, `habits`, `themes`, `insights`
-
-## 14. Безопасность
-
-### Аудит (2026-03-22)
-
-| Область | Статус |
-|---------|--------|
-| Jinja2 autoescaping | Включён глобально, `\|safe` не используется |
-| SQL-инъекции | Нет — ORM + параметризованные запросы |
-| CSRF-защита | `secrets.token_urlsafe(32)`, constant-time compare |
-| Сессии/куки | HttpOnly, SameSite=lax, Redis-хранилище |
-| Open Redirect | Защищён через `_normalize_next()` |
-| XSS через innerHTML | Исправлено 2026-03-22 (ui.js → DOM API) |
-| Серверная валидация имён | Добавлена для тем / задач / привычек: пустые после trim, control characters и `<` / `>` запрещены |
-| CSP | Базовый nonce-based CSP уже добавлен в `main.py` / `base.html` |
-
-### Известные пробелы (TODO)
-
-- Прод: включить `AUTH_SESSION_HTTPS_ONLY=true` и `UI_SESSION_HTTPS_ONLY=true` в реальном production-конфиге
-- При желании усилить CSP после стабилизации фронта: сузить список разрешённых источников и отдельно пересмотреть внешние CDN-зависимости
+- Использовать `docs/prompts/artifacts-master-prompt.md`
+- Соблюдать `frontend-redesign-contracts.md`
+- Не изобретать запрещённые product features
