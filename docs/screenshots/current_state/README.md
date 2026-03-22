@@ -1,7 +1,7 @@
 # HabitFlow Current State Screenshots
 
-Captured on: 2026-03-21
-Base URL: `http://127.0.0.1:8001`
+Captured on: 2026-03-22
+Base URL: `http://127.0.0.1:8010`
 
 This folder is the baseline screenshot pack for redesign and frontend audit work.
 Use it together with `docs/project/overview.md` and the imported Besedka reference kit.
@@ -23,5 +23,5 @@ Screen set:
 - 10 register
 
 Seeded users:
-- desktop capture user: `currentstate.62472e5d34bc4402@example.com`
-- mobile capture user: `currentstate.f45525409df5407b@example.com`
+- desktop capture user: `currentstate.ebe1e812e1944fdd@example.com`
+- mobile capture user: `currentstate.6982df576dec441c@example.com`

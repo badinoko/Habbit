@@ -21,7 +21,7 @@ This file is the only task-status source for HabitFlow lab work.
 | HF-004 | BACKLOG | Audit Google OAuth flow | Verify config, callback flow, error states, and actual usability |
 | HF-005 | BACKLOG | Split findings into implementation waves | Convert audit output into small, testable work packages |
 | HF-006 | REVIEW | Import Besedka redesign knowledge base into HabitFlow docs | Historical import step completed earlier; the bulky reference pack is now being pruned in `HF-013` after adaptation into local HabitFlow artifacts |
-| HF-007 | REVIEW | Capture HabitFlow current-state screenshots and page inventory | Captured 20 full-page screenshots in `docs/screenshots/current_state/` for desktop and mobile baseline review |
+| HF-007 | REVIEW | Capture HabitFlow current-state screenshots and page inventory | Refreshed the 20-shot desktop/mobile baseline pack on `2026-03-22` from the live local app at `http://127.0.0.1:8010`; use `docs/screenshots/current_state/` for current UI review instead of the older v1-era set |
 | HF-008 | BACKLOG | Draft redesign invariants and external artifact prompt | Fix shell constraints first: sticky top navbar, disciplined sidebar behavior, compact theme switcher, mobile-first navigation |
 | HF-009 | REVIEW | Clean up documentation navigation and distinguish overview documents | Docs root cleaned up into `contracts/`, `prompts/`, and `reviews/`; waiting for user validation of final handoff structure |
 | HF-010 | REVIEW | Implement HabitFlow frontend redesign wave from local artifacts | Shared shell, theme tokens, navbar switcher, partial fetch navigation, and auth overlay fixes are in place; v2 visual tuning is intentionally deferred |

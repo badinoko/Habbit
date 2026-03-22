@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from datetime import date
 from pathlib import Path
 from uuid import uuid4
 
@@ -99,6 +100,7 @@ async def capture_auth_set(browser: Browser, base: str, kind: str) -> str:
 
 async def main() -> int:
     base = os.environ.get("SCREENSHOT_BASE_URL", "http://127.0.0.1:8001").rstrip("/")
+    captured_on = date.today().isoformat()
     DESKTOP_DIR.mkdir(parents=True, exist_ok=True)
     MOBILE_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -118,8 +120,11 @@ async def main() -> int:
             [
                 "# HabitFlow Current State Screenshots",
                 "",
-                "Captured on: 2026-03-21",
+                f"Captured on: {captured_on}",
                 f"Base URL: `{base}`",
+                "",
+                "This folder is the baseline screenshot pack for redesign and frontend audit work.",
+                "Use it together with `docs/project/overview.md` and the imported Besedka reference kit.",
                 "",
                 "Viewports:",
                 f"- desktop: `{DESKTOP_VIEWPORT['width']}x{DESKTOP_VIEWPORT['height']}`",
