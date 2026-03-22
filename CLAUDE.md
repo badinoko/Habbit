@@ -2,14 +2,14 @@
 
 Рабочий справочник для Claude в десктопном приложении (Cowork / Artifacts).
 
-Последнее обновление: 2026-03-21.
+Последнее обновление: 2026-03-22.
 
 ## 1. Контекст среды
 
-Этот файл создан для работы в **Claude Desktop (Cowork mode)**.
+Этот файл создан для работы в **Claude Desktop (Cowork mode)** и **Claude Code (CLI)**.
 Параллельно в Cursor IDE работает другой ассистент (Codex), который готовит промпты, скриншоты и контракты для передачи сюда.
 
-Основная задача Cowork-сессий: **визуальный редизайн UI** — создание HTML-артефактов для всех экранов HabitFlow.
+Основные задачи сессий: **визуальный редизайн UI**, имплементация v2 polish wave, аудит безопасности и UX.
 
 ## 2. Кто я и где я
 
@@ -34,6 +34,9 @@
 9. `docs/contracts/session_contract.mdc` — архитектура сессий
 10. `docs/prompts/artifacts-master-prompt.md` — мастер-промпт для вставки во вкладку Artifacts
 11. `docs/prompts/cursor-prompt.md` — reverse prompt для Cursor
+12. `docs/reviews/v2-direction.md` — решения по типографике, навбару и stats IA для v2
+13. `docs/reviews/upstream-proposal-v2-draft.md` — дельта v2 над v1.0 для upstream handoff
+14. `docs/archive/README.md` — политика архивации oversized working docs
 
 ## 4. Что такое HabitFlow
 
@@ -123,7 +126,8 @@
 
 ## 8. Локальные материалы редизайна
 
-После v1 handoff в репозитории оставлены только материалы, которые относятся к самому HabitFlow:
+После v1 handoff в репозитории оставлены только материалы, которые относятся к самому HabitFlow.
+Besedka-импорт удалён (HF-013). Текущая структура:
 
 | Путь | Назначение |
 |------|------------|
@@ -131,7 +135,15 @@
 | `docs/prompts/artifacts-master-prompt.md` | мастер-промпт для новых визуальных итераций |
 | `docs/prompts/cursor-prompt.md` | reverse prompt для имплементации |
 | `docs/contracts/theme-system.md` | SSOT по темам и дизайн-токенам |
+| `docs/contracts/api_contract.mdc` | HTTP API спецификация |
+| `docs/contracts/session_contract.mdc` | архитектура сессий |
 | `docs/screenshots/current_state/` | baseline-скриншоты для сравнения |
+| `docs/reviews/v2-direction.md` | единый baseline для v2 (типографика, навбар, stats IA) |
+| `docs/reviews/v2-typography-research.md` | исследование шрифтов (Onest, Cormorant Garamond) |
+| `docs/reviews/v2-landing-reference-scan.md` | внешние референсы (Linear, Raycast, Stripe) |
+| `docs/reviews/v2-navbar-and-stats-notes.md` | обратная связь пользователя по навбару и stats |
+| `docs/reviews/upstream-proposal-v2-draft.md` | дельта v2 для upstream handoff |
+| `docs/archive/README.md` | политика архивации длинных working docs |
 
 ## 9. Контракт редизайна (краткая выжимка)
 
@@ -217,18 +229,44 @@ habitflow-themes.html
 
 Формат: один markdown-блок, который можно вставить как сообщение в Artifacts.
 
-## 13. Трек задач Cowork-сессии
+## 13. Текущее состояние проекта
 
-| Шаг | Статус | Описание |
-|-----|--------|----------|
-| 1 | DONE | Глубокое погружение в проект |
-| 2 | DONE | Создание CLAUDE.md |
-| 3 | NEXT | Подготовка мастер-промпта для Artifacts |
-| 4 | BACKLOG | Артефакт: Главная (Dashboard) |
-| 5 | BACKLOG | Артефакт: Задачи (список) |
-| 6 | BACKLOG | Артефакт: Привычки (список) |
-| 7 | BACKLOG | Артефакт: Статистика |
-| 8 | BACKLOG | Артефакт: Формы (задачи + привычки) |
-| 9 | BACKLOG | Артефакт: Аутентификация |
-| 10 | BACKLOG | Артефакт: Темы |
-| 11 | BACKLOG | Сборка и финализация дизайн-системы |
+v1 редизайн реализован и отгружен. v2 polish wave в процессе.
+
+Актуальный трек задач: **`docs/project/overview.md`** (единственный источник статусов).
+
+### Ключевые активные задачи
+
+| ID | Статус | Описание |
+|----|--------|----------|
+| HF-011 | ACTIVE | v2 visual iteration (типографика, цветовой баланс, навбар) |
+| HF-014 | ACTIVE | v2 typography и navbar direction |
+
+### Что уже реализовано в v2
+
+- Типографика: Onest (UI) + Cormorant Garamond (hero display)
+- Навбар: компактные pills, упрощённый user dropdown (только «Выход»)
+- Stats: sticky section-switcher с пятью панелями, compact toolbar
+- Формы: единый pipeline валидации и сабмита, удалён legacy `update.js`
+- Модальные окна: общий confirm-modal вместо native `window.confirm`
+- Overflow: truncation с ellipsis для длинных пользовательских строк
+- Cache-busting для статических ресурсов
+
+## 14. Безопасность
+
+### Аудит (2026-03-22)
+
+| Область | Статус |
+|---------|--------|
+| Jinja2 autoescaping | Включён глобально, `\|safe` не используется |
+| SQL-инъекции | Нет — ORM + параметризованные запросы |
+| CSRF-защита | `secrets.token_urlsafe(32)`, constant-time compare |
+| Сессии/куки | HttpOnly, SameSite=lax, Redis-хранилище |
+| Open Redirect | Защищён через `_normalize_next()` |
+| XSS через innerHTML | Исправлено 2026-03-22 (ui.js → DOM API) |
+
+### Известные пробелы (TODO)
+
+- Серверная валидация: запретить HTML-теги (`<`, `>`) и control characters в названиях тем/задач/привычек
+- CSP-заголовки: добавить Content Security Policy
+- Прод: `AUTH_SESSION_HTTPS_ONLY=true`
