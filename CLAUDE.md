@@ -23,12 +23,12 @@
 ## Что читать сначала
 
 1. `docs/README.md`
-2. `CODEX.md`
-3. `AGENTS.md`
-4. `frontend-redesign-contracts.md`
-5. `docs/overview.mdc`
-6. `docs/project/overview.md`
-7. `docs/project/progress.md`
+2. `AGENTS.md`
+3. `frontend-redesign-contracts.md`
+4. `docs/overview.mdc`
+5. `docs/project/overview.md`
+6. `docs/project/progress.md`
+7. `docs/reviews/upstream-proposal-v2-draft.md`
 
 ## Практические правила
 
@@ -51,7 +51,7 @@
 - `docs/screenshots/current_state/` — актуальный screenshot baseline
 - `docs/screenshots/current_state/inventory.md` — перечень UI-state для screenshot coverage
 - `docs/reviews/v2-direction.md` — зафиксированные v2 design decisions
-- `docs/reviews/upstream-proposal-v2-draft.md` — накопительная delta v2 относительно v1.0
+- `docs/reviews/upstream-proposal-v2-draft.md` — накопительная delta v1→v2→v3
 
 ## Для visual work в Artifacts
 
