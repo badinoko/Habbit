@@ -46,7 +46,9 @@ Updated: 2026-03-22
 14. `docs/reviews/v2-typography-research.md`
 15. `docs/reviews/v2-landing-reference-scan.md`
 16. `docs/reviews/v2-navbar-and-stats-notes.md`
-17. `docs/archive/README.md`
+17. `docs/reviews/v2-direction.md`
+18. `docs/reviews/upstream-proposal-v2-draft.md`
+19. `docs/archive/README.md`
 
 ## Current Session Goal
 
@@ -62,7 +64,7 @@ Work from the real checkout so the next chat window can:
 
 1. Open `C:\Users\user\Projects\HabitFlow-git` in Cursor and continue only from that checkout.
 2. Read `docs/reviews/v2-typography-research.md`, `docs/reviews/v2-landing-reference-scan.md`, and `docs/reviews/v2-navbar-and-stats-notes.md`.
-3. Turn `HF-011` and `HF-014` into concrete implementation decisions for navbar, homepage typography, and stats IA.
+3. Use `docs/reviews/v2-direction.md` as the implementation baseline for navbar, homepage typography, and stats IA.
 4. Keep `docs/project/overview.md` and `docs/project/progress.md` current while leaving tasks in `REVIEW`/`ACTIVE` until user confirmation.
 5. If local HabitFlow runtime is needed again, use a port other than `8001`.
 
@@ -80,5 +82,7 @@ Work from the real checkout so the next chat window can:
 - Root `docs/` has been cleaned up so contracts, prompts, and reviews now live in dedicated subfolders.
 - Oversized working docs should be rotated through `docs/archive/` according to `docs/archive/README.md`.
 - Upstream proposal handoff note for the original author lives in `docs/reviews/upstream-proposal-v1.md`.
+- Current release-prep delta log for `v2.0` lives in `docs/reviews/upstream-proposal-v2-draft.md`.
 - Screenshot baseline for redesign work lives in `docs/screenshots/current_state/README.md`.
 - Current v2 research layer lives in `docs/reviews/v2-typography-research.md`, `docs/reviews/v2-landing-reference-scan.md`, and `docs/reviews/v2-navbar-and-stats-notes.md`.
+- Current v2 decision baseline lives in `docs/reviews/v2-direction.md`.

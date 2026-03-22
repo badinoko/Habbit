@@ -26,9 +26,9 @@ This file is the only task-status source for HabitFlow lab work.
 | HF-009 | REVIEW | Clean up documentation navigation and distinguish overview documents | Docs root cleaned up into `contracts/`, `prompts/`, and `reviews/`; waiting for user validation of final handoff structure |
 | HF-010 | REVIEW | Implement HabitFlow frontend redesign wave from local artifacts | Shared shell, theme tokens, navbar switcher, partial fetch navigation, and auth overlay fixes are in place; v2 visual tuning is intentionally deferred |
 | HF-011 | ACTIVE | Prepare redesign v2 visual iteration | v1 checkpoint is accepted as the base; next wave starts from typography, color balance, and navbar polish with Besedka homepage screenshots as a visual reference |
-| HF-012 | REVIEW | Prepare upstream proposal handoff | Upstream comparison note exists, Russian handoff doc is in place, and the result is now shown from `origin/main`; waiting only for user validation of the presentation path |
+| HF-012 | REVIEW | Prepare upstream proposal handoff | v1 handoff note exists and `docs/reviews/upstream-proposal-v2-draft.md` now captures the v2-over-v1.0 delta set, including shell/stats/theme redesign work, form reliability fixes, delete-modal behavior, and content-safety observations; waiting for user validation of the final presentation path |
 | HF-013 | REVIEW | Prune imported redesign references after adaptation | Obsolete Besedka import pack removed; only HabitFlow artifacts/prompts/contracts remain for successor work |
-| HF-014 | ACTIVE | Define redesign v2 typography and navbar direction | Research notes live in `docs/reviews/v2-typography-research.md`, `docs/reviews/v2-landing-reference-scan.md`, and `docs/reviews/v2-navbar-and-stats-notes.md`; next step is to turn them into concrete navbar, stats IA, and type decisions |
+| HF-014 | ACTIVE | Define redesign v2 typography and navbar direction | Unified direction now lives in `docs/reviews/v2-direction.md`; implementation wave should follow its type-role, navbar-density, and stats-IA decisions |
 | HF-015 | REVIEW | Establish archive policy for oversized working docs | Added `docs/archive/README.md` and updated assistant workflow docs so `progress.md`, `overview.md`, and similar long-lived files are archived instead of silently bloating forever |
 
 ## Scope Reminder

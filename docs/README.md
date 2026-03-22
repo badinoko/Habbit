@@ -22,6 +22,8 @@ This file is the navigation index for documentation in this repository.
 - `docs/artifacts/` = local HTML artifact pack that drives the current frontend implementation wave.
 - `docs/reviews/architecture-audit.md` = local architecture review snapshot for handoff/reference.
 - `docs/reviews/upstream-proposal-v1.md` = concise note for the original upstream author about what changed and how to review our fork safely.
+- `docs/reviews/upstream-proposal-v2-draft.md` = accumulating draft of what changed in v2 relative to the public `v1.0` baseline and what should later go into the next upstream handoff.
+- `docs/reviews/v2-direction.md` = unified decision doc for v2 typography roles, navbar density, homepage hierarchy, and stats IA.
 - `docs/reviews/v2-typography-research.md` = working note on Besedka typography and transferability into HabitFlow v2.
 - `docs/reviews/v2-landing-reference-scan.md` = external landing reference scan for v2 hierarchy, typography, and navbar direction.
 - `docs/reviews/v2-navbar-and-stats-notes.md` = direct user feedback notes on navbar density/readability and possible stats-page sticky section navigation.
