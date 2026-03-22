@@ -157,6 +157,9 @@ img {
 }
 
 .hero-title,
+.page-hero-title,
+.form-hero-title,
+.stats-hero-title,
 .display-serif {
   font-family: "Cormorant Garamond", serif;
 }

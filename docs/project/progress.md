@@ -104,3 +104,18 @@
 - Added one more `/stats` polish pass after live user feedback: the sticky-toolbar controls are now less pill-like and more rectangular than the main navbar buttons, so the section switcher reads as a distinct control layer rather than visually blending into the top navigation.
 - Re-verified the current `/stats` pass with `.venv\\Scripts\\pytest.exe tests\\api_unit\\test_stats_router_unit.py -q`, `.venv\\Scripts\\pytest.exe tests\\integration\\test_stats.py -q`, and a live Playwright check on `http://127.0.0.1:8010/stats?range=30d#stats-habits`, confirming that the sticky-bar buttons now differ from the top navbar (`14px` radius vs `999px`) while the expanded range flows still render correctly.
 - After user feedback, reduced `CODEX.md` and `CLAUDE.md` back to their intended role: short assistant playbooks with rules, runtime notes, and links to canonical docs. Removed the accidental duplication of task-board, progress-log, screen-map, and broad project-overview content that should live in `docs/project/*`, `docs/overview.mdc`, and the review docs instead.
+
+### v3.0 visual identity pass
+
+- Transferred the visual character from the homepage hero to all internal pages: `/tasks`, `/habits`, `/themes`, `/stats` and all create/edit forms now have gradient hero-banners with Cormorant Garamond titles.
+- Each page section has its own gradient scheme: tasks (navy→purple), habits (teal→mint), themes (purple→orange), stats (indigo→blue).
+- Enhanced task and habit cards with 5px colored accent bars, `color-mix()` gradient backgrounds, and hover effects tied to the card's theme color.
+- Added per-section color accents to `/stats` panels: colored `border-top` and subtle radial-gradient backgrounds per section (tasks=purple, habits=mint, themes=orange, insights=blue).
+- Form heroes (`/tasks/new`, `/habits/new`, `/themes/new` and edit variants) received compact gradient headers with icons matching their section color.
+- After user feedback: removed eyebrow badges from all heroes (they duplicated the title and made headers too tall), unified hero heights across all pages.
+- Redesigned the theme color picker: replaced hex-code card grid with large 48px round color swatches, added checkmark selection indicator, rainbow conic-gradient for "Random" option.
+- Expanded the theme color palette from 8 to 11 colors (added pink #E91E63, cyan #00BCD4, lime #8BC34A) for better visual coverage and single-row desktop fit.
+- Removed the homepage eyebrow badge ("Ежедневный дашборд") for consistency.
+- All changes verified in both light and dark mode via Playwright screenshots.
+- Updated `docs/reviews/upstream-proposal-v2-draft.md` with a full v3 delta section for upstream handoff.
+- Tagged as `v3.0`.

@@ -1,3 +1,47 @@
+/* ── Stats Hero ── */
+
+.stats-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 28px 32px;
+  border-radius: var(--radius-lg);
+  color: #fff;
+  background: linear-gradient(135deg, #0f1a3e 0%, #1a2860 50%, #2a3a78 100%);
+  box-shadow: var(--shadow-md);
+}
+
+.stats-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 85% 15%, rgba(59, 130, 246, 0.18), transparent 28%),
+    radial-gradient(circle at 5% 90%, rgba(108, 99, 255, 0.14), transparent 30%);
+  pointer-events: none;
+}
+
+.stats-hero-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 620px;
+}
+
+.stats-hero-title {
+  margin: 0;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 46px;
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+.stats-hero-lead {
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
 .stats-page {
   display: grid;
   gap: 18px;
@@ -242,6 +286,36 @@
   gap: 18px;
   padding: 22px 24px;
   background: linear-gradient(180deg, var(--surface), var(--bg-tinted));
+  border-top: 3px solid var(--accent);
+}
+
+/* Per-section color accents */
+.stats-section-card[data-stats-panel="tasks"] {
+  border-top-color: var(--accent);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(108, 99, 255, 0.05), transparent 30%),
+    linear-gradient(180deg, var(--surface), var(--bg-tinted));
+}
+
+.stats-section-card[data-stats-panel="habits"] {
+  border-top-color: var(--mint);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 201, 167, 0.05), transparent 30%),
+    linear-gradient(180deg, var(--surface), var(--bg-tinted));
+}
+
+.stats-section-card[data-stats-panel="themes"] {
+  border-top-color: var(--warn);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 179, 71, 0.05), transparent 30%),
+    linear-gradient(180deg, var(--surface), var(--bg-tinted));
+}
+
+.stats-section-card[data-stats-panel="insights"] {
+  border-top-color: var(--info);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.05), transparent 30%),
+    linear-gradient(180deg, var(--surface), var(--bg-tinted));
 }
 
 .stats-section-heading {
@@ -667,6 +741,15 @@
 }
 
 @media (max-width: 760px) {
+  .stats-hero {
+    padding: 22px 18px;
+  }
+
+  .stats-hero-title {
+    font-size: 34px;
+    line-height: 1;
+  }
+
   .stats-toolbar {
     top: calc(var(--nav-h) + 14px);
     padding: 10px;
