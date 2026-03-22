@@ -13,10 +13,11 @@
 {% block title %}Статистика - HabitFlow{% endblock %}
 
 {% block content %}
-{% set current_period_label = "30 дней" if page_data.range == "30d" else "7 дней" %}
-{% set current_created_value = page_data.tasks.created_in_30d if page_data.range == "30d" else page_data.tasks.created_in_7d %}
-{% set current_completed_value = page_data.tasks.completed_in_30d if page_data.range == "30d" else page_data.tasks.completed_in_7d %}
-{% set current_habit_success = page_data.habits.success_rate_30d if page_data.range == "30d" else page_data.habits.success_rate_7d %}
+{% set range_labels = {"7d": "7 дней", "30d": "30 дней", "90d": "90 дней", "all": "Всё время"} %}
+{% set current_period_label = range_labels.get(page_data.range, "7 дней") %}
+{% set current_created_value = {"7d": page_data.tasks.created_in_7d, "30d": page_data.tasks.created_in_30d, "90d": page_data.tasks.created_in_90d, "all": page_data.tasks.total}.get(page_data.range, page_data.tasks.created_in_7d) %}
+{% set current_completed_value = {"7d": page_data.tasks.completed_in_7d, "30d": page_data.tasks.completed_in_30d, "90d": page_data.tasks.completed_in_90d, "all": page_data.tasks.completed}.get(page_data.range, page_data.tasks.completed_in_7d) %}
+{% set current_habit_success = {"7d": page_data.habits.success_rate_7d, "30d": page_data.habits.success_rate_30d, "90d": page_data.habits.success_rate_90d, "all": page_data.habits.success_rate_all}.get(page_data.range, page_data.habits.success_rate_7d) %}
 {% set remaining_habits = page_data.habits.due_today - page_data.habits.completed_today %}
 {% if remaining_habits < 0 %}
     {% set remaining_habits = 0 %}
@@ -46,10 +47,21 @@
                 <span>Инсайты</span>
             </button>
         </nav>
-        <div class="stats-range-filter" aria-label="Выбор периода статистики">
-            <a href="/stats?range=7d" class="stats-range-link {% if page_data.range == '7d' %}active{% endif %}" data-enhanced-nav="true">7 дней</a>
-            <a href="/stats?range=30d" class="stats-range-link {% if page_data.range == '30d' %}active{% endif %}" data-enhanced-nav="true">30 дней</a>
-        </div>
+        <details class="stats-range-filter">
+            <summary class="stats-range-trigger" aria-label="Выбор периода статистики">
+                <span class="stats-range-trigger-copy">
+                    <span class="stats-range-trigger-label">Период</span>
+                    <strong>{{ current_period_label }}</strong>
+                </span>
+                <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+            </summary>
+            <div class="stats-range-menu">
+                <a href="/stats?range=7d" class="stats-range-link {% if page_data.range == '7d' %}active{% endif %}" data-enhanced-nav="true">7 дней</a>
+                <a href="/stats?range=30d" class="stats-range-link {% if page_data.range == '30d' %}active{% endif %}" data-enhanced-nav="true">30 дней</a>
+                <a href="/stats?range=90d" class="stats-range-link {% if page_data.range == '90d' %}active{% endif %}" data-enhanced-nav="true">90 дней</a>
+                <a href="/stats?range=all" class="stats-range-link {% if page_data.range == 'all' %}active{% endif %}" data-enhanced-nav="true">Всё время</a>
+            </div>
+        </details>
     </div>
 
     <div class="stats-layout">
@@ -118,8 +130,8 @@
                             <div class="stats-summary-row"><span>Активные</span><strong>{{ page_data.tasks.active }}</strong></div>
                             <div class="stats-summary-row"><span>Выполненные</span><strong>{{ page_data.tasks.completed }}</strong></div>
                             <div class="stats-summary-row"><span>Completion rate</span><strong>{{ page_data.tasks.completion_rate }}%</strong></div>
-                            <div class="stats-summary-row"><span>{% if page_data.range == "30d" %}Создано за 30 дней{% else %}Создано за 7 дней{% endif %}</span><strong>{{ current_created_value }}</strong></div>
-                            <div class="stats-summary-row"><span>{% if page_data.range == "30d" %}Завершено за 30 дней{% else %}Завершено за 7 дней{% endif %}</span><strong>{{ current_completed_value }}</strong></div>
+                            <div class="stats-summary-row"><span>{% if page_data.range == "30d" %}Создано за 30 дней{% elif page_data.range == "90d" %}Создано за 90 дней{% elif page_data.range == "all" %}Создано за всё время{% else %}Создано за 7 дней{% endif %}</span><strong>{{ current_created_value }}</strong></div>
+                            <div class="stats-summary-row"><span>{% if page_data.range == "30d" %}Завершено за 30 дней{% elif page_data.range == "90d" %}Завершено за 90 дней{% elif page_data.range == "all" %}Завершено за всё время{% else %}Завершено за 7 дней{% endif %}</span><strong>{{ current_completed_value }}</strong></div>
                             <div class="stats-summary-row"><span>Среднее время до выполнения</span><strong>{% if page_data.tasks.avg_completion_time_hours is not none %}{{ page_data.tasks.avg_completion_time_hours }} ч{% else %}-{% endif %}</strong></div>
                         </div>
                     </div>
@@ -208,6 +220,8 @@
                     <div class="stats-summary-row"><span>Success rate сегодня</span><strong>{{ page_data.habits.success_rate_today }}%</strong></div>
                     <div class="stats-summary-row"><span>Success rate 7d</span><strong>{{ page_data.habits.success_rate_7d }}%</strong></div>
                     <div class="stats-summary-row"><span>Success rate 30d</span><strong>{{ page_data.habits.success_rate_30d }}%</strong></div>
+                    <div class="stats-summary-row"><span>Success rate 90d</span><strong>{{ page_data.habits.success_rate_90d }}%</strong></div>
+                    <div class="stats-summary-row"><span>Success rate all</span><strong>{{ page_data.habits.success_rate_all }}%</strong></div>
                 </div>
             </div>
 

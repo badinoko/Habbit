@@ -82,8 +82,10 @@ async def stats_client() -> AsyncGenerator[tuple[AsyncClient, dict[str, object]]
             by_theme={"Без темы": 2, "Работа": 1},
             created_in_7d=2,
             created_in_30d=3,
+            created_in_90d=4,
             completed_in_7d=1,
             completed_in_30d=1,
+            completed_in_90d=1,
             avg_completion_time_hours=12.0,
         ),
         habits=HabitStatisticsPage(
@@ -95,6 +97,8 @@ async def stats_client() -> AsyncGenerator[tuple[AsyncClient, dict[str, object]]
             success_rate_today=50,
             success_rate_7d=67,
             success_rate_30d=72,
+            success_rate_90d=74,
+            success_rate_all=75,
             schedule_type_distribution={"Ежедневно": 2, "Дни недели": 1},
             completions_by_day=[
                 {"label": "01.01", "value": 1},
@@ -171,9 +175,14 @@ async def test_get_stats_returns_html_and_sets_current_page(
     assert "Фокус периода" in response.text
     assert "Создано за 7 дней" in response.text
     assert "Создано за 30 дней" not in response.text
+    assert "Всё время" in response.text
     assert "Success rate 30d" in response.text
+    assert "Success rate 90d" in response.text
+    assert "Success rate all" in response.text
     assert "Самая загруженная тема" in response.text
     assert 'class="stats-insight-list"' in response.text
+    assert "Content-Security-Policy" in response.headers
+    assert "script-src 'self' 'nonce-" in response.headers["Content-Security-Policy"]
     context = captured["context"]
     assert isinstance(context, dict)
     assert context["current_page"] == "stats"
@@ -212,6 +221,24 @@ async def test_get_stats_supports_30d_range(
     assert isinstance(context["page_data"], StatisticsPageData)
     assert context["page_data"].range == "30d"
     assert captured["statistics_service"].selected_range == "30d"
+
+
+async def test_get_stats_supports_90d_and_all_ranges(
+    stats_client: tuple[AsyncClient, dict[str, object]],
+) -> None:
+    client, captured = stats_client
+
+    response_90d = await client.get("/stats?range=90d")
+    assert_html_response(response_90d, status_code=200)
+    assert "Создано за 90 дней" in response_90d.text
+    assert '/stats?range=90d' in response_90d.text
+    assert captured["statistics_service"].selected_range == "90d"
+
+    response_all = await client.get("/stats?range=all")
+    assert_html_response(response_all, status_code=200)
+    assert "Создано за всё время" in response_all.text
+    assert '/stats?range=all' in response_all.text
+    assert captured["statistics_service"].selected_range == "all"
 
 
 async def test_get_stats_rejects_invalid_range(

@@ -57,16 +57,16 @@ Work from the real checkout so the next chat window can:
 1. recognize that this is HabitFlow, not Besedka;
 2. understand that `HabitFlow-master` is now only a reference snapshot;
 3. continue from a checkout linked to the user's own repository model;
-4. continue the planned `v2` redesign wave from the accepted `v1` base;
-5. use the current typography/navbar/stats research notes before writing new UI code.
+4. treat the visual `v2.0` release as confirmed and move into the next backend-oriented pass;
+5. continue the active `HF-016` and `HF-017` tracks for baseline security hardening and expanded stats periods.
 
 ## Immediate Next Actions
 
 1. Open `C:\Users\user\Projects\HabitFlow-git` in Cursor and continue only from that checkout.
-2. Read `docs/reviews/v2-typography-research.md`, `docs/reviews/v2-landing-reference-scan.md`, and `docs/reviews/v2-navbar-and-stats-notes.md`.
-3. Use `docs/reviews/v2-direction.md` as the implementation baseline for navbar, homepage typography, and stats IA.
-4. Keep `docs/project/overview.md` and `docs/project/progress.md` current while leaving tasks in `REVIEW`/`ACTIVE` until user confirmation.
-5. If local HabitFlow runtime is needed again, use a port other than `8001`.
+2. Read `docs/project/overview.md` first: `HF-011` and `HF-014` are closed, while `HF-016` and `HF-017` are now the active implementation tracks.
+3. Treat `docs/reviews/v2-direction.md` and `docs/reviews/upstream-proposal-v2-draft.md` as historical v2 references, not as the only current work scope.
+4. Keep `docs/project/overview.md` and `docs/project/progress.md` current while leaving new tracks in `ACTIVE`/`REVIEW` until explicit user confirmation.
+5. If local HabitFlow runtime is needed again, use a port other than `8001`, and do not assume the long-running `8010` process has auto-reloaded after new code changes.
 
 ## Notes
 
@@ -86,3 +86,4 @@ Work from the real checkout so the next chat window can:
 - Screenshot baseline for redesign work lives in `docs/screenshots/current_state/README.md`.
 - Current v2 research layer lives in `docs/reviews/v2-typography-research.md`, `docs/reviews/v2-landing-reference-scan.md`, and `docs/reviews/v2-navbar-and-stats-notes.md`.
 - Current v2 decision baseline lives in `docs/reviews/v2-direction.md`.
+- The current post-v2 implementation focus is no longer purely visual: backend/security hardening and stats-range expansion are tracked as `HF-016` and `HF-017`.

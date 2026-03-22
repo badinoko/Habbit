@@ -24,6 +24,7 @@ from src.schemas.habits import (
 )
 from src.schemas.statistics import HabitStatisticsPage, StatsBreakdownItem, StatsRange
 from src.schemas.themes import ThemeInDB
+from src.validation import validate_user_facing_name
 
 NO_THEME_LABEL = "Без темы"
 SCHEDULE_TYPE_LABELS = {
@@ -42,6 +43,10 @@ class HabitService:
         self.theme_repo = theme_repo
 
     async def create_habit(self, habit_data: HabitCreateAPI) -> HabitInDB:
+        validated_name = validate_user_facing_name(
+            habit_data.name,
+            field_label="Название привычки",
+        )
         if habit_data.theme_id:
             theme = await self.theme_repo.get_by_id(habit_data.theme_id)
             if not theme:
@@ -52,7 +57,7 @@ class HabitService:
             habit_data.schedule_config,
         )
         create_data = HabitCreate(
-            name=habit_data.name,
+            name=validated_name,
             description=habit_data.description,
             theme_id=habit_data.theme_id,
             schedule_type=habit_data.schedule_type,
@@ -88,6 +93,12 @@ class HabitService:
         raw_data = habit_data.model_dump(exclude_unset=True)
         if not raw_data:
             return old_habit
+
+        if "name" in raw_data:
+            raw_data["name"] = validate_user_facing_name(
+                raw_data["name"],
+                field_label="Название привычки",
+            )
 
         if "theme_id" in raw_data:
             theme_id = raw_data["theme_id"]
@@ -409,9 +420,21 @@ class HabitService:
         top_theme_counts: dict[str, int] = {}
         streak_candidates: list[tuple[int, str, datetime, UUID]] = []
 
-        selected_period_days = 30 if selected_range == "30d" else 7
-        trend_start = self._period_start(today, selected_period_days)
-        trend_counts = dict.fromkeys(self._iter_period_dates(trend_start, today), 0)
+        all_time_start = self._all_time_period_start(habits, completion_dates_by_habit, today)
+        selected_period_days = {
+            "7d": 7,
+            "30d": 30,
+            "90d": 90,
+        }.get(selected_range)
+
+        if selected_period_days is None:
+            trend_start = all_time_start
+            trend_counts_by_month = dict.fromkeys(
+                self._iter_period_months(trend_start, today), 0
+            )
+        else:
+            trend_start = self._period_start(today, selected_period_days)
+            trend_counts = dict.fromkeys(self._iter_period_dates(trend_start, today), 0)
 
         due_today = 0
         completed_today = 0
@@ -420,7 +443,10 @@ class HabitService:
             completion_dates = completion_dates_by_habit[habit.id]
             for completed_on in completion_dates:
                 if trend_start <= completed_on <= today:
-                    trend_counts[completed_on] += 1
+                    if selected_period_days is None:
+                        trend_counts_by_month[(completed_on.year, completed_on.month)] += 1
+                    else:
+                        trend_counts[completed_on] += 1
 
         for habit in active_habits:
             completion_dates = completion_dates_by_habit[habit.id]
@@ -479,18 +505,42 @@ class HabitService:
                 period_end=today,
                 respect_archive=False,
             ),
+            success_rate_90d=self._calculate_period_success_rate(
+                habits=habits,
+                completion_dates_by_habit=completion_dates_by_habit,
+                period_start=self._period_start(today, 90),
+                period_end=today,
+                respect_archive=False,
+            ),
+            success_rate_all=self._calculate_period_success_rate(
+                habits=habits,
+                completion_dates_by_habit=completion_dates_by_habit,
+                period_start=all_time_start,
+                period_end=today,
+                respect_archive=False,
+            ),
             schedule_type_distribution={
                 SCHEDULE_TYPE_LABELS[schedule_type]: count
                 for schedule_type, count in schedule_type_counts.items()
                 if count > 0
             },
-            completions_by_day=[
-                StatsBreakdownItem(
-                    label=current_day.strftime("%d.%m"),
-                    value=trend_counts[current_day],
-                )
-                for current_day in self._iter_period_dates(trend_start, today)
-            ],
+            completions_by_day=(
+                [
+                    StatsBreakdownItem(
+                        label=f"{month:02d}.{str(year)[-2:]}",
+                        value=trend_counts_by_month[(year, month)],
+                    )
+                    for year, month in self._iter_period_months(trend_start, today)
+                ]
+                if selected_period_days is None
+                else [
+                    StatsBreakdownItem(
+                        label=current_day.strftime("%d.%m"),
+                        value=trend_counts[current_day],
+                    )
+                    for current_day in self._iter_period_dates(trend_start, today)
+                ]
+            ),
             top_streaks=[
                 StatsBreakdownItem(label=name, value=streak)
                 for streak, name, _, _ in sorted(
@@ -643,6 +693,36 @@ class HabitService:
             period_start + timedelta(days=day_offset)
             for day_offset in range((period_end - period_start).days + 1)
         ]
+
+    def _iter_period_months(
+        self, period_start: date, period_end: date
+    ) -> list[tuple[int, int]]:
+        year = period_start.year
+        month = period_start.month
+        result: list[tuple[int, int]] = []
+
+        while (year, month) <= (period_end.year, period_end.month):
+            result.append((year, month))
+            year, month = (year + 1, 1) if month == 12 else (year, month + 1)
+
+        return result
+
+    def _all_time_period_start(
+        self,
+        habits: list[HabitInDB],
+        completion_dates_by_habit: dict[UUID, set[date]],
+        today: date,
+    ) -> date:
+        candidates = [
+            self._schedule_anchor_date(habit)
+            for habit in habits
+        ]
+        candidates.extend(
+            completed_on
+            for completion_dates in completion_dates_by_habit.values()
+            for completed_on in completion_dates
+        )
+        return min(candidates, default=today)
 
     def _calculate_success_rate(self, completed: int, due: int) -> int:
         return round((completed / due) * 100) if due else 0
