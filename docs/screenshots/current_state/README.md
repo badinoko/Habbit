@@ -14,7 +14,7 @@ Screen set:
 - 01 home dashboard
 - 02 tasks list
 - 03 habits list
-- 04 stats
+- 04 stats (habits tab)
 - 05 themes list
 - 06 task form
 - 07 habit form

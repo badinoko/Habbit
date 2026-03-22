@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="ru">
-{% set asset_v = "v2-20260322c" %}
+{% set asset_v = "v2-20260322e" %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -87,7 +87,7 @@
                 </button>
 
                 {% if current_user %}
-                <details class="nav-user-menu">
+                <details class="nav-user-menu" data-close-on-outside-click="true">
                     <summary class="nav-user-trigger" title="{{ current_user_display_name or current_user.email }}">
                         <span class="nav-avatar">{{ user_initial }}</span>
                         <span class="nav-user-copy">

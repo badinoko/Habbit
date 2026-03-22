@@ -31,7 +31,7 @@ This file is the only task-status source for HabitFlow lab work.
 | HF-014 | DONE | Define redesign v2 typography and navbar direction | The direction in `docs/reviews/v2-direction.md` was implemented and user-validated through the final v2 release pass, including navbar density, homepage hierarchy, and stats IA |
 | HF-015 | REVIEW | Establish archive policy for oversized working docs | Added `docs/archive/README.md` and updated assistant workflow docs so `progress.md`, `overview.md`, and similar long-lived files are archived instead of silently bloating forever |
 | HF-016 | ACTIVE | Harden input validation and baseline web security | Add shared server-side validation for user-facing names, wire baseline security headers, and prepare deploy-facing notes for secure prod flags without regressing current forms or API flows |
-| HF-017 | ACTIVE | Expand stats periods and replace pills with dropdown control | Rework `/stats` period selection into a mobile-friendly dropdown, add broader supported ranges, and keep section switching/hash behavior stable across period changes |
+| HF-017 | ACTIVE | Expand stats periods and replace pills with dropdown control | `/stats` now has a dropdown-based period control; current follow-up is smoothing the UX around it (outside-click close, clearer Russian period labels, habits layout/copy polish) while keeping `7d/30d/90d/all` backend support stable after local runtime restarts |
 
 ## Scope Reminder
 

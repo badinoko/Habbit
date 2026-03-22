@@ -79,6 +79,17 @@ The goal is to audit, stabilize, redesign, and improve the project without writi
    - tests/docs
 6. If an operational doc is approaching `1000+` lines, consider whether archive rotation is now part of the task.
 
+## 5.1 Local Runtime Rule
+
+For live browser verification in this repo, treat `http://127.0.0.1:8010` as the intended local HabitFlow URL.
+
+- Before trusting any browser result, check which process owns port `8010`.
+- Prefer a long-lived `uvicorn ... --reload` process for local work.
+- `Ctrl+F5` only refreshes browser assets; it does not reload stale Python route/schema code.
+- Frontend changes can appear on an old server process while backend changes still remain stale, so mixed states are possible.
+- If browser UI and backend behavior disagree, restart the real `8010` app process first, then re-test.
+- Use `scripts/run_local_8010.cmd` for a predictable local launch instead of improvising per-session process commands.
+
 ## 6. Task Status Vocabulary
 
 - `BACKLOG` = known but not selected

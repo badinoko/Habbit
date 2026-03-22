@@ -28,9 +28,9 @@ async def test_get_stats_page_smoke(client: AsyncClient) -> None:
     assert 'class="stats-kpi-grid"' in response.text
     assert "Пульс задач" in response.text
     assert "Фокус периода" in response.text
-    assert "Создано за 7 дней" in response.text
-    assert "Создано за 30 дней" not in response.text
-    assert "Daily trend" in response.text
+    assert "Создано за неделю" in response.text
+    assert "Создано за месяц" not in response.text
+    assert "Дневная динамика" in response.text
     assert "Топ тем по числу привычек" in response.text
     assert 'class="stats-insight-list"' in response.text
 
@@ -132,9 +132,9 @@ async def test_stats_page_shows_owner_task_aggregates_only(
     _assert_task_stat_value(response.text, "Всего", "2")
     _assert_task_stat_value(response.text, "Активные", "1")
     _assert_task_stat_value(response.text, "Выполненные", "1")
-    _assert_task_stat_value(response.text, "Completion rate", "50%")
-    _assert_task_stat_value(response.text, "Создано за 7 дней", "2")
-    _assert_task_stat_value(response.text, "Завершено за 7 дней", "1")
+    _assert_task_stat_value(response.text, "Процент выполнения", "50%")
+    _assert_task_stat_value(response.text, "Создано за неделю", "2")
+    _assert_task_stat_value(response.text, "Завершено за неделю", "1")
     assert "Статистика Работа" in response.text
     assert "Без темы" in response.text
     assert "Чужая тема" not in response.text
@@ -147,10 +147,10 @@ async def test_stats_page_switches_task_period_labels_for_30d(
     response = await client.get("/stats?range=30d")
 
     assert_html_response(response, status_code=200)
-    assert "Создано за 30 дней" in response.text
-    assert "Создано за 7 дней" not in response.text
-    assert "Завершено за 30 дней" in response.text
-    assert "Завершено за 7 дней" not in response.text
+    assert "Создано за месяц" in response.text
+    assert "Создано за неделю" not in response.text
+    assert "Завершено за месяц" in response.text
+    assert "Завершено за неделю" not in response.text
 
 
 async def test_stats_page_supports_90d_and_all_ranges(
@@ -158,8 +158,8 @@ async def test_stats_page_supports_90d_and_all_ranges(
 ) -> None:
     response_90d = await client.get("/stats?range=90d")
     assert_html_response(response_90d, status_code=200)
-    assert "Создано за 90 дней" in response_90d.text
-    assert "Завершено за 90 дней" in response_90d.text
+    assert "Создано за квартал" in response_90d.text
+    assert "Завершено за квартал" in response_90d.text
 
     response_all = await client.get("/stats?range=all")
     assert_html_response(response_all, status_code=200)
@@ -237,8 +237,8 @@ async def test_stats_page_shows_owner_habit_history_only(
     _assert_habit_stat_value(response.text, "Архивные", "1")
     _assert_habit_stat_value(response.text, "На сегодня", "2")
     _assert_habit_stat_value(response.text, "Выполнено сегодня", "2")
-    _assert_habit_stat_value(response.text, "Success rate сегодня", "100%")
-    _assert_habit_stat_value(response.text, "Success rate 7d", "40%")
+    _assert_habit_stat_value(response.text, "Успех сегодня", "100%")
+    _assert_habit_stat_value(response.text, "Успех за неделю", "40%")
     _assert_habit_stat_value(response.text, today.strftime("%d.%m"), "2")
     _assert_habit_stat_value(response.text, (today - timedelta(days=1)).strftime("%d.%m"), "2")
     assert "Фокус" in response.text
@@ -321,4 +321,4 @@ async def test_stats_page_sidebar_matches_home_sidebar_for_shared_metrics(
     _assert_habit_stat_value(stats_response.text, "Активные", "2")
     _assert_habit_stat_value(stats_response.text, "На сегодня", "2")
     _assert_habit_stat_value(stats_response.text, "Выполнено сегодня", "1")
-    _assert_habit_stat_value(stats_response.text, "Success rate сегодня", "50%")
+    _assert_habit_stat_value(stats_response.text, "Успех сегодня", "50%")

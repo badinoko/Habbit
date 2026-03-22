@@ -18,12 +18,13 @@
 
 .stats-toolbar {
   position: sticky;
-  top: calc(var(--nav-h) + 16px);
+  top: calc(var(--nav-h) + 14px);
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  margin-top: -2px;
   padding: 12px 14px;
   backdrop-filter: blur(18px);
 }
@@ -276,6 +277,11 @@
   grid-template-columns: 1.2fr 1fr;
 }
 
+.stats-section-layout-tasks,
+.stats-section-layout-habits {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .stats-detail-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -295,6 +301,11 @@
   gap: 16px;
   padding: 22px;
   color: #fff;
+}
+
+.stats-accent-panel-tasks,
+.stats-accent-panel-habits {
+  align-content: start;
 }
 
 .stats-accent-panel-tasks {
@@ -392,6 +403,11 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.stats-section-layout-tasks .stats-summary-grid,
+.stats-section-layout-habits .stats-summary-grid {
+  align-content: start;
+}
+
 .stats-summary-row {
   display: flex;
   align-items: center;
@@ -402,6 +418,10 @@
   border: 1px solid var(--border);
   color: var(--text-soft);
   font-size: 13px;
+}
+
+.stats-summary-row span {
+  min-width: 0;
 }
 
 .stats-summary-row strong {
