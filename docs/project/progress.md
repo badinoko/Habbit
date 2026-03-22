@@ -119,3 +119,13 @@
 - All changes verified in both light and dark mode via Playwright screenshots.
 - Updated `docs/reviews/upstream-proposal-v2-draft.md` with a full v3 delta section for upstream handoff.
 - Tagged as `v3.0`.
+
+### v4.0 mobile adaptation pass
+
+- Audited all 14 mobile screenshots from `docs/screenshots/current_state/mobile/` and identified critical defects on the homepage (sidebar pushing hero below the fold) and stats page (hero too large, toolbar consuming excessive space, KPI cards in single column).
+- Homepage mobile fix: sidebar now renders **after** page content via CSS `order: 2` on `@media (max-width: 1100px)`, with sidebar sections collapsed into accordion toggles (button + JS `open` class) that expand on tap; desktop layout remains unchanged with sidebar always visible.
+- Stats mobile fix: reduced hero padding and font sizes (title 46→28px, lead 15→13px), compressed toolbar (smaller padding, tighter tab buttons), and switched KPI grid from single-column to 2-column layout on mobile; trend chart bars reduced to 80px min-height with tighter gaps.
+- Added `initSidebarCollapse` to `main.js` via `registerInit` for sidebar accordion toggle on mobile; the toggle preserves link clicks (e.g. "Настроить") while toggling collapse body visibility.
+- Updated `asset_v` to `v4-20260322a` for cache busting.
+- Verified all changes in both light and dark mode on mobile (375×812) and desktop (1440×900) viewports via Playwright.
+- All existing api_unit tests pass (stats, themes, tasks, habits routers).

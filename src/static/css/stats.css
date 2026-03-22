@@ -742,33 +742,52 @@
 
 @media (max-width: 760px) {
   .stats-hero {
-    padding: 22px 18px;
+    padding: 16px 18px;
   }
 
   .stats-hero-title {
-    font-size: 34px;
-    line-height: 1;
+    font-size: 28px;
+    line-height: 1.1;
+  }
+
+  .stats-hero-lead {
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.5;
   }
 
   .stats-toolbar {
-    top: calc(var(--nav-h) + 14px);
-    padding: 10px;
+    top: calc(var(--nav-h) + 8px);
+    padding: 8px;
+    gap: 8px;
   }
 
   .stats-section-nav-link {
-    min-width: 44px;
-    padding: 0 12px;
+    min-width: 40px;
+    min-height: 38px;
+    padding: 0 10px;
   }
 
   .stats-section-card {
-    padding: 18px;
+    padding: 14px;
   }
 
   .stats-section-nav-link span {
     display: none;
   }
 
-  .stats-kpi-grid,
+  .stats-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stats-kpi-card {
+    padding: 14px;
+  }
+
+  .stats-kpi-value {
+    font-size: 22px;
+  }
+
   .stats-summary-grid,
   .stats-mini-grid {
     grid-template-columns: 1fr;
@@ -781,6 +800,7 @@
   .stats-range-trigger {
     width: 100%;
     min-width: 0;
+    min-height: 44px;
   }
 
   .stats-range-menu {
@@ -791,5 +811,19 @@
 
   .stats-range-link {
     width: 100%;
+  }
+
+  .stats-section-layout-tasks,
+  .stats-section-layout-habits {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-trend-chart {
+    grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+    gap: 6px;
+  }
+
+  .stats-trend-bar {
+    min-height: 80px;
   }
 }
