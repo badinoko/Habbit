@@ -168,7 +168,7 @@ async def test_get_stats_returns_html_and_sets_current_page(
     response = await client.get("/stats")
 
     assert_html_response(response, status_code=200)
-    assert '<div class="surface-card stats-toolbar">' in response.text
+    assert 'class="surface-card stats-toolbar"' in response.text
     assert 'data-stats-target="overview"' in response.text
     assert 'data-stats-target="insights"' in response.text
     assert "Пульс задач" in response.text
@@ -231,12 +231,14 @@ async def test_get_stats_supports_90d_and_all_ranges(
     response_90d = await client.get("/stats?range=90d")
     assert_html_response(response_90d, status_code=200)
     assert "Создано за квартал" in response_90d.text
+    assert "Недельная динамика" in response_90d.text
     assert '/stats?range=90d' in response_90d.text
     assert captured["statistics_service"].selected_range == "90d"
 
     response_all = await client.get("/stats?range=all")
     assert_html_response(response_all, status_code=200)
     assert "Создано за всё время" in response_all.text
+    assert "Месячная динамика" in response_all.text
     assert '/stats?range=all' in response_all.text
     assert captured["statistics_service"].selected_range == "all"
 

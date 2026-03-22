@@ -249,18 +249,26 @@ v1 редизайн реализован и отгружен. v2 polish wave в 
 
 | ID | Статус | Описание |
 |----|--------|----------|
-| HF-011 | ACTIVE | v2 visual iteration (типографика, цветовой баланс, навбар) |
-| HF-014 | ACTIVE | v2 typography и navbar direction |
+| HF-016 | ACTIVE | Baseline security pass: серверная валидация имён, security headers, deploy-facing hardening notes |
+| HF-017 | ACTIVE | Stats expansion pass: dropdown periods, UX-polish, period-aware aggregations, tabbed screenshot coverage |
 
 ### Что уже реализовано в v2
 
 - Типографика: Onest (UI) + Cormorant Garamond (hero display)
 - Навбар: компактные pills, упрощённый user dropdown (только «Выход»)
 - Stats: sticky section-switcher с пятью панелями, compact toolbar
+- Stats ranges: `Неделя / Месяц / Квартал / Всё время`; для `Квартал` в привычках используется недельная динамика, для `Всё время` — месячная
 - Формы: единый pipeline валидации и сабмита, удалён legacy `update.js`
 - Модальные окна: общий confirm-modal вместо native `window.confirm`
 - Overflow: truncation с ellipsis для длинных пользовательских строк
 - Cache-busting для статических ресурсов
+
+### Актуальный screenshot baseline
+
+- Папка: `docs/screenshots/current_state/`
+- Инвентарь: `docs/screenshots/current_state/inventory.md`
+- Набор: `14` состояний на desktop и `14` на mobile
+- `/stats` больше нельзя считать одним экраном для review: отдельными состояниями считаются `overview`, `tasks`, `habits`, `themes`, `insights`
 
 ## 14. Безопасность
 
@@ -274,9 +282,10 @@ v1 редизайн реализован и отгружен. v2 polish wave в 
 | Сессии/куки | HttpOnly, SameSite=lax, Redis-хранилище |
 | Open Redirect | Защищён через `_normalize_next()` |
 | XSS через innerHTML | Исправлено 2026-03-22 (ui.js → DOM API) |
+| Серверная валидация имён | Добавлена для тем / задач / привычек: пустые после trim, control characters и `<` / `>` запрещены |
+| CSP | Базовый nonce-based CSP уже добавлен в `main.py` / `base.html` |
 
 ### Известные пробелы (TODO)
 
-- Серверная валидация: запретить HTML-теги (`<`, `>`) и control characters в названиях тем/задач/привычек
-- CSP-заголовки: добавить Content Security Policy
-- Прод: `AUTH_SESSION_HTTPS_ONLY=true`
+- Прод: включить `AUTH_SESSION_HTTPS_ONLY=true` и `UI_SESSION_HTTPS_ONLY=true` в реальном production-конфиге
+- При желании усилить CSP после стабилизации фронта: сузить список разрешённых источников и отдельно пересмотреть внешние CDN-зависимости

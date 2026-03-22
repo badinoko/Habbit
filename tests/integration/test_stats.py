@@ -19,7 +19,7 @@ async def test_get_stats_page_smoke(client: AsyncClient) -> None:
     response = await client.get("/stats")
 
     assert_html_response(response, status_code=200)
-    assert '<div class="surface-card stats-toolbar">' in response.text
+    assert 'class="surface-card stats-toolbar"' in response.text
     assert "/stats?range=30d" in response.text
     assert "/stats?range=90d" in response.text
     assert "/stats?range=all" in response.text
@@ -160,11 +160,13 @@ async def test_stats_page_supports_90d_and_all_ranges(
     assert_html_response(response_90d, status_code=200)
     assert "Создано за квартал" in response_90d.text
     assert "Завершено за квартал" in response_90d.text
+    assert "Недельная динамика" in response_90d.text
 
     response_all = await client.get("/stats?range=all")
     assert_html_response(response_all, status_code=200)
     assert "Создано за всё время" in response_all.text
     assert "Завершено за всё время" in response_all.text
+    assert "Месячная динамика" in response_all.text
 
 
 async def test_stats_page_shows_owner_habit_history_only(

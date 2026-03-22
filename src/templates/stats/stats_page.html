@@ -18,6 +18,7 @@
 {% set task_created_labels = {"7d": "Создано за неделю", "30d": "Создано за месяц", "90d": "Создано за квартал", "all": "Создано за всё время"} %}
 {% set task_completed_labels = {"7d": "Завершено за неделю", "30d": "Завершено за месяц", "90d": "Завершено за квартал", "all": "Завершено за всё время"} %}
 {% set habit_success_labels = {"7d": "Успех за неделю", "30d": "Успех за месяц", "90d": "Успех за квартал", "all": "Успех за всё время"} %}
+{% set trend_titles = {"7d": "Дневная динамика", "30d": "Дневная динамика", "90d": "Недельная динамика", "all": "Месячная динамика"} %}
 {% set current_created_value = {"7d": page_data.tasks.created_in_7d, "30d": page_data.tasks.created_in_30d, "90d": page_data.tasks.created_in_90d, "all": page_data.tasks.total}.get(page_data.range, page_data.tasks.created_in_7d) %}
 {% set current_completed_value = {"7d": page_data.tasks.completed_in_7d, "30d": page_data.tasks.completed_in_30d, "90d": page_data.tasks.completed_in_90d, "all": page_data.tasks.completed}.get(page_data.range, page_data.tasks.completed_in_7d) %}
 {% set current_habit_success = {"7d": page_data.habits.success_rate_7d, "30d": page_data.habits.success_rate_30d, "90d": page_data.habits.success_rate_90d, "all": page_data.habits.success_rate_all}.get(page_data.range, page_data.habits.success_rate_7d) %}
@@ -253,11 +254,11 @@
 
                 <article class="stats-detail-card">
                     <div class="stats-detail-header">
-                        <h3>Дневная динамика</h3>
+                        <h3>{{ trend_titles.get(page_data.range, "Дневная динамика") }}</h3>
                         <span>{{ current_period_label }}</span>
                     </div>
                     {% if page_data.habits.completions_by_day %}
-                    <div class="stats-trend-chart" aria-label="Дневная динамика привычек">
+                    <div class="stats-trend-chart" aria-label="{{ trend_titles.get(page_data.range, 'Дневная динамика') }} привычек">
                         {% for item in page_data.habits.completions_by_day %}
                         <div class="stats-trend-column">
                             <div class="stats-trend-bar"><span style="height: {{ 18 + (item.value * 14) }}px;"></span></div>

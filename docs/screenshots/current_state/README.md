@@ -14,14 +14,18 @@ Screen set:
 - 01 home dashboard
 - 02 tasks list
 - 03 habits list
-- 04 stats (habits tab)
-- 05 themes list
-- 06 task form
-- 07 habit form
-- 08 theme form
-- 09 login
-- 10 register
+- 04 stats overview
+- 05 stats tasks
+- 06 stats habits
+- 07 stats themes
+- 08 stats insights
+- 09 themes list
+- 10 task form
+- 11 habit form
+- 12 theme form
+- 13 login
+- 14 register
 
 Seeded users:
-- desktop capture user: `currentstate.ebe1e812e1944fdd@example.com`
-- mobile capture user: `currentstate.6982df576dec441c@example.com`
+- desktop capture user: `currentstate.c06ea772a8024903@example.com`
+- mobile capture user: `currentstate.c06ea772a8024903@example.com`

@@ -432,6 +432,12 @@ class HabitService:
             trend_counts_by_month = dict.fromkeys(
                 self._iter_period_months(trend_start, today), 0
             )
+        elif selected_range == "90d":
+            trend_start = self._period_start(today, selected_period_days)
+            trend_counts_by_week = {
+                (week_start, week_end): 0
+                for week_start, week_end in self._iter_period_weeks(trend_start, today)
+            }
         else:
             trend_start = self._period_start(today, selected_period_days)
             trend_counts = dict.fromkeys(self._iter_period_dates(trend_start, today), 0)
@@ -445,6 +451,11 @@ class HabitService:
                 if trend_start <= completed_on <= today:
                     if selected_period_days is None:
                         trend_counts_by_month[(completed_on.year, completed_on.month)] += 1
+                    elif selected_range == "90d":
+                        for week_start, week_end in trend_counts_by_week:
+                            if week_start <= completed_on <= week_end:
+                                trend_counts_by_week[(week_start, week_end)] += 1
+                                break
                     else:
                         trend_counts[completed_on] += 1
 
@@ -483,6 +494,31 @@ class HabitService:
                 habit, theme_cache=theme_cache
             )
             top_theme_counts[theme_label] = top_theme_counts.get(theme_label, 0) + 1
+
+        if selected_range == "all":
+            completions_by_period = [
+                StatsBreakdownItem(
+                    label=f"{month:02d}.{str(year)[-2:]}",
+                    value=trend_counts_by_month[(year, month)],
+                )
+                for year, month in self._iter_period_months(trend_start, today)
+            ]
+        elif selected_range == "90d":
+            completions_by_period = [
+                StatsBreakdownItem(
+                    label=f"{week_start:%d.%m}-{week_end:%d.%m}",
+                    value=trend_counts_by_week[(week_start, week_end)],
+                )
+                for week_start, week_end in self._iter_period_weeks(trend_start, today)
+            ]
+        else:
+            completions_by_period = [
+                StatsBreakdownItem(
+                    label=current_day.strftime("%d.%m"),
+                    value=trend_counts[current_day],
+                )
+                for current_day in self._iter_period_dates(trend_start, today)
+            ]
 
         return HabitStatisticsPage(
             total=len(habits),
@@ -524,23 +560,7 @@ class HabitService:
                 for schedule_type, count in schedule_type_counts.items()
                 if count > 0
             },
-            completions_by_day=(
-                [
-                    StatsBreakdownItem(
-                        label=f"{month:02d}.{str(year)[-2:]}",
-                        value=trend_counts_by_month[(year, month)],
-                    )
-                    for year, month in self._iter_period_months(trend_start, today)
-                ]
-                if selected_period_days is None
-                else [
-                    StatsBreakdownItem(
-                        label=current_day.strftime("%d.%m"),
-                        value=trend_counts[current_day],
-                    )
-                    for current_day in self._iter_period_dates(trend_start, today)
-                ]
-            ),
+            completions_by_day=completions_by_period,
             top_streaks=[
                 StatsBreakdownItem(label=name, value=streak)
                 for streak, name, _, _ in sorted(
@@ -704,6 +724,19 @@ class HabitService:
         while (year, month) <= (period_end.year, period_end.month):
             result.append((year, month))
             year, month = (year + 1, 1) if month == 12 else (year, month + 1)
+
+        return result
+
+    def _iter_period_weeks(
+        self, period_start: date, period_end: date
+    ) -> list[tuple[date, date]]:
+        result: list[tuple[date, date]] = []
+        current_start = period_start
+
+        while current_start <= period_end:
+            current_end = min(current_start + timedelta(days=6), period_end)
+            result.append((current_start, current_end))
+            current_start = current_end + timedelta(days=1)
 
         return result
 

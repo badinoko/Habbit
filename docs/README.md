@@ -17,6 +17,7 @@ This file is the navigation index for documentation in this repository.
 ## Evidence And Inputs
 
 - `docs/screenshots/current_state/` = baseline UI captures for audit and redesign.
+- `docs/screenshots/current_state/inventory.md` = current UI-state inventory for screenshot coverage, including the separate `/stats` tab states.
 - `docs/prompts/artifacts-master-prompt.md` = master prompt to paste into the Artifacts tab before visual exploration.
 - `docs/prompts/cursor-prompt.md` = reverse implementation prompt for Cursor based on the generated redesign artifacts.
 - `docs/artifacts/` = local HTML artifact pack that drives the current frontend implementation wave.

@@ -30,19 +30,23 @@ DESKTOP_VIEWPORT = {"width": 1920, "height": 1080}
 MOBILE_VIEWPORT = {"width": 390, "height": 844}
 
 GUEST_SHOTS: list[tuple[str, str]] = [
-    ("09_login", "/auth/login"),
-    ("10_register", "/auth/register"),
+    ("13_login", "/auth/login"),
+    ("14_register", "/auth/register"),
 ]
 
 AUTH_SHOTS: list[tuple[str, str]] = [
     ("01_home_dashboard", "/"),
     ("02_tasks_list", "/tasks"),
     ("03_habits_list", "/habits?status=active"),
-    ("04_stats", "/stats?range=30d#stats-habits"),
-    ("05_themes_list", "/themes"),
-    ("06_task_form", "/tasks/new"),
-    ("07_habit_form", "/habits/new"),
-    ("08_theme_form", "/themes/new"),
+    ("04_stats_overview", "/stats"),
+    ("05_stats_tasks", "/stats#stats-tasks"),
+    ("06_stats_habits", "/stats?range=30d#stats-habits"),
+    ("07_stats_themes", "/stats#stats-themes"),
+    ("08_stats_insights", "/stats#stats-insights"),
+    ("09_themes_list", "/themes"),
+    ("10_task_form", "/tasks/new"),
+    ("11_habit_form", "/habits/new"),
+    ("12_theme_form", "/themes/new"),
 ]
 
 
@@ -76,6 +80,48 @@ async def prepare_authenticated_context(
     return context, page, email
 
 
+async def seed_capture_account(browser: Browser, base: str) -> tuple[str, str]:
+    context = await browser.new_context(
+        viewport=DESKTOP_VIEWPORT,
+        device_scale_factor=1,
+        extra_http_headers={"Cache-Control": "no-cache"},
+    )
+    page = await context.new_page()
+    email = f"currentstate.{uuid4().hex[:16]}@example.com"
+    password = "CurrentState1!"
+
+    try:
+        await register_or_login(page, base, email, password)
+        await seed_demo_data(page, context, base)
+        await complete_first_n_tasks(page, base, 2)
+        await _goto(page, f"{base}/")
+        await ensure_demo_quote(page)
+    finally:
+        await context.close()
+
+    return email, password
+
+
+async def open_existing_authenticated_context(
+    browser: Browser,
+    base: str,
+    viewport: dict[str, int],
+    *,
+    email: str,
+    password: str,
+) -> tuple[BrowserContext, Page]:
+    context = await browser.new_context(
+        viewport=viewport,
+        device_scale_factor=1,
+        extra_http_headers={"Cache-Control": "no-cache"},
+    )
+    page = await context.new_page()
+    await register_or_login(page, base, email, password)
+    await _goto(page, f"{base}/")
+    await ensure_demo_quote(page)
+    return context, page
+
+
 async def capture_guest_set(browser: Browser, base: str, kind: str) -> None:
     viewport = DESKTOP_VIEWPORT if kind == "desktop" else MOBILE_VIEWPORT
     context = await browser.new_context(viewport=viewport, device_scale_factor=1)
@@ -88,14 +134,30 @@ async def capture_guest_set(browser: Browser, base: str, kind: str) -> None:
 
 
 async def capture_auth_set(browser: Browser, base: str, kind: str) -> str:
+    raise NotImplementedError
+
+
+async def capture_auth_set_with_account(
+    browser: Browser,
+    base: str,
+    kind: str,
+    *,
+    email: str,
+    password: str,
+) -> None:
     viewport = DESKTOP_VIEWPORT if kind == "desktop" else MOBILE_VIEWPORT
-    context, page, email = await prepare_authenticated_context(browser, base, viewport)
+    context, page = await open_existing_authenticated_context(
+        browser,
+        base,
+        viewport,
+        email=email,
+        password=password,
+    )
     try:
         for slug, suffix in AUTH_SHOTS:
             await capture_page(page, base, suffix, shot_path(kind, slug))
     finally:
         await context.close()
-    return email
 
 
 async def main() -> int:
@@ -107,10 +169,23 @@ async def main() -> int:
     async with async_playwright() as playwright:
         browser = await playwright.chromium.launch(headless=True)
         try:
+            shared_email, shared_password = await seed_capture_account(browser, base)
             await capture_guest_set(browser, base, "desktop")
-            desktop_email = await capture_auth_set(browser, base, "desktop")
+            await capture_auth_set_with_account(
+                browser,
+                base,
+                "desktop",
+                email=shared_email,
+                password=shared_password,
+            )
             await capture_guest_set(browser, base, "mobile")
-            mobile_email = await capture_auth_set(browser, base, "mobile")
+            await capture_auth_set_with_account(
+                browser,
+                base,
+                "mobile",
+                email=shared_email,
+                password=shared_password,
+            )
         finally:
             await browser.close()
 
@@ -134,17 +209,21 @@ async def main() -> int:
                 "- 01 home dashboard",
                 "- 02 tasks list",
                 "- 03 habits list",
-                "- 04 stats (habits tab)",
-                "- 05 themes list",
-                "- 06 task form",
-                "- 07 habit form",
-                "- 08 theme form",
-                "- 09 login",
-                "- 10 register",
+                "- 04 stats overview",
+                "- 05 stats tasks",
+                "- 06 stats habits",
+                "- 07 stats themes",
+                "- 08 stats insights",
+                "- 09 themes list",
+                "- 10 task form",
+                "- 11 habit form",
+                "- 12 theme form",
+                "- 13 login",
+                "- 14 register",
                 "",
                 "Seeded users:",
-                f"- desktop capture user: `{desktop_email}`",
-                f"- mobile capture user: `{mobile_email}`",
+                f"- desktop capture user: `{shared_email}`",
+                f"- mobile capture user: `{shared_email}`",
             ]
         )
         + "\n",
