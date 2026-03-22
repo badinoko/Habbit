@@ -9,7 +9,7 @@
 
 .habit-card:hover {
   border-color: var(--border-strong);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-elevated);
 }
 
 .habit-card-inner {

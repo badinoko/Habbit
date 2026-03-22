@@ -12,7 +12,7 @@
 
 .task-item:hover {
   border-color: var(--border-strong);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-elevated);
 }
 
 .task-item-accent {

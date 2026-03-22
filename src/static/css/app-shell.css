@@ -21,11 +21,24 @@
   display: grid;
   gap: 16px;
   min-width: 0;
+  padding: 14px;
+  background: var(--surface-recessed);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
 }
 
 .sidebar-card {
   padding: 16px;
   min-width: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.sidebar-card + .sidebar-card {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 16px;
 }
 
 .sidebar-header {
@@ -115,9 +128,9 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 13px;
-  border-radius: 14px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  border-radius: var(--radius-inset);
+  background: var(--ambient-accent);
+  border: 1px solid var(--border-subtle);
 }
 
 .sidebar-stat-value {
@@ -212,6 +225,7 @@
   display: grid;
   gap: 16px;
   padding: 18px 20px;
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
 }
 
 .filters-grid {
